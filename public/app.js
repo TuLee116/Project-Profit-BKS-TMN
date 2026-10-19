@@ -47,7 +47,7 @@ function applyBranding(s) {
 // =====================================================================
 // Tab
 // =====================================================================
-const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => loadUsers().then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => loadReport() };
+const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => loadUsers().then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
 
 function showTab(name) {
   $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
@@ -1834,7 +1834,7 @@ async function loadLogs(auto = false, more = false) {
   $('#nk-tbody').innerHTML = NK.items.length ? NK.items.map((l) => {
     const [main, change] = String(l.noi_dung).split(' | ');
     return `<tr>
-      <td class="nk-time">${dt(l.at)}</td>
+      <td class="nk-time">${dt(l.at)}${l.luu_tru ? '<div class="nk-arch" title="Dòng này lấy từ kho lưu trữ nén">lưu trữ nén</div>' : ''}</td>
       <td><b>${esc(l.username || '—')}</b>${l.ho_ten ? `<div class="muted small">${esc(l.ho_ten)}</div>` : ''}</td>
       <td><span class="nk-act nk-${NK_CLS[l.hanh_dong] || 'edit'}">${esc(l.hanh_dong)}</span></td>
       <td>${esc(l.doi_tuong)}</td>
@@ -1844,6 +1844,12 @@ async function loadLogs(auto = false, more = false) {
   }).join('') : '<tr><td colspan="7" class="empty">Chưa có hoạt động phù hợp</td></tr>';
   $('#nk-more').hidden = !NK.more;
   $('#nk-count').textContent = NK.items.length ? `Đang hiển thị ${NK.items.length} dòng mới nhất${NK.more ? '' : ' (hết)'}` : '';
+  if (r.thong_ke) {
+    const s = r.thong_ke, kb = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+    const giam = s.arch.goc ? Math.round((1 - s.arch.nen / s.arch.goc) * 100) : 0;
+    $('#nk-stat').innerHTML = `Gần đây (${s.hot_days} ngày): <b>${fmt.format(s.hot.n)}</b> dòng · ${kb(s.hot.bytes)}`
+      + (s.arch.n ? ` &nbsp;|&nbsp; Lưu trữ nén: <b>${fmt.format(s.arch.ngay)}</b> ngày, <b>${fmt.format(s.arch.n)}</b> dòng · <b>${kb(s.arch.nen)}</b> (gốc ${kb(s.arch.goc)}, giảm <b>${giam}%</b>)` : ' &nbsp;|&nbsp; Chưa có nhật ký cũ cần nén');
+  }
 }
 let nkTimer;
 $('#nk-filter')?.addEventListener('input', () => { clearTimeout(nkTimer); nkTimer = setTimeout(() => loadLogs().catch((e) => alert(e.message)), 300); });

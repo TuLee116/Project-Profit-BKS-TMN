@@ -5,7 +5,8 @@
 let BC = null;                                  // dữ liệu báo cáo
 const BST = { project: '', vat: 'gt', ky: 'nam', tu: '', den: '', chi_tiet: false }; // phạm vi, cơ sở VAT, kỳ báo cáo
 try { Object.assign(BST, JSON.parse(localStorage.getItem('bao_cao') || '{}')); } catch {}
-const bSave = () => { try { localStorage.setItem('bao_cao', JSON.stringify(BST)); } catch {} };
+BST.chi_tiet = false; // phần Phân tích chi tiết luôn ẩn khi mở báo cáo; chỉ mở khi người dùng bấm xem
+const bSave = () => { try { localStorage.setItem('bao_cao', JSON.stringify({ ...BST, chi_tiet: false })); } catch {} };
 
 // Bảng màu doanh nghiệp (đã kiểm tra phân biệt màu cho người mù màu): Doanh thu navy · Chi phí đồng · Lợi nhuận teal
 const BCOL = { dt: '#2c5fa3', cp: '#c27a3e', dk: '#16968a', th: '#2c5fa3', thu: '#2c5fa3', chi: '#c27a3e', ts: '#7e5aa6' };
@@ -1173,7 +1174,7 @@ $('#b-report').addEventListener('click', async (e) => {
 // ---------------------------------------------------------------------
 // Sự kiện
 // ---------------------------------------------------------------------
-$('#b-project').addEventListener('change', (e) => { BST.project = e.target.value; bSave(); renderReport(); });
+$('#b-project').addEventListener('change', (e) => { BST.project = e.target.value; BST.chi_tiet = false; bSave(); renderReport(); });
 $('#b-vat').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; BST.vat = b.dataset.v; bSave(); renderReport(); });
 $('#b-ky').addEventListener('change', (e) => { BST.ky = e.target.value; bSave(); renderReport(); });
 $('#b-ky-custom').addEventListener('change', () => { BST.tu = $('#b-tu').value; BST.den = $('#b-den').value; bSave(); renderReport(); });
@@ -1185,7 +1186,7 @@ $('#b-report').addEventListener('click', (e) => {
   if (kp) return $('.ky-pop') ? $('.ky-pop').remove() : bKyPopover(kp);
   if (e.target.id === 'b-detail-toggle') return bSetDetail(!BST.chi_tiet);
   if (e.target.id === 'pc-back') {
-    BST.project = ''; bSave(); renderReport();
+    BST.project = ''; BST.chi_tiet = false; bSave(); renderReport(); // về tổng quan -> tự ẩn chi tiết
     return $('#pc-sec')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   const go = e.target.dataset.bgo;

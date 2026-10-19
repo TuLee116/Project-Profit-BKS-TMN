@@ -195,7 +195,7 @@ api.get('/nhat-ky', auth.requireRole('admin'), wrap(async (req, res) => {
     user_id: parseId(q.user_id), hanh_dong: audit.HANH_DONG.includes(q.hanh_dong) ? q.hanh_dong : '',
     q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit,
   });
-  res.json({ items: rows.slice(0, limit), more: rows.length > limit, hanh_dong: audit.HANH_DONG });
+  res.json({ items: rows.slice(0, limit), more: rows.length > limit, hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats() }) });
 }));
 
 api.get('/auth/me', (req, res) => res.json(req.user));
