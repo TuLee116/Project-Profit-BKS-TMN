@@ -57,6 +57,13 @@ function showTab(name) {
 }
 $('#tabs').addEventListener('click', (e) => e.target.dataset.tab && showTab(e.target.dataset.tab));
 
+// Tín hiệu trực tuyến: khi trang đang mở và đang xem, báo máy chủ mỗi phút (cập nhật "Truy cập gần nhất");
+// tab Tài khoản tự làm mới danh sách mỗi 30 giây để thấy trạng thái theo thời gian thực
+setInterval(() => { if (document.visibilityState === 'visible') api('/api/auth/me').catch(() => {}); }, 60 * 1000);
+setInterval(() => {
+  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') loadUsers().catch(() => {});
+}, 30 * 1000);
+
 $('#btn-logout').addEventListener('click', async () => {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
   location.href = '/login';
@@ -1764,11 +1771,11 @@ async function onTpDlgClick(e) {
 const uForm = $('#u-form');
 attachPwChecklist(uForm?.elements.password);
 
-// Truy cập gần nhất: < 5 phút = đang trực tuyến; kèm thời gian tương đối
+// Truy cập gần nhất: < 3 phút = đang trực tuyến (trang đang mở gửi tín hiệu mỗi phút); kèm thời gian tương đối
 function seenTxt(t) {
   if (!t) return '<span class="muted">—</span>';
   const m = Math.max(0, Math.floor((Date.now() - new Date(t)) / 60000));
-  const rel = m < 5 ? '<span class="st st-hoan-thanh">Đang trực tuyến</span>'
+  const rel = m < 3 ? '<span class="st st-hoan-thanh">Đang trực tuyến</span>'
     : `<span class="muted small">${m < 60 ? `${m} phút trước` : m < 1440 ? `${Math.floor(m / 60)} giờ trước` : `${Math.floor(m / 1440)} ngày trước`}</span>`;
   return `<span class="muted">${dt(t)}</span><br>${rel}`;
 }
