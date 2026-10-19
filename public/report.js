@@ -171,6 +171,82 @@ function bPrjColors(list, v, P) {
   return m;
 }
 
+// ---------------------------------------------------------------------
+// THỰC THU – THỰC CHI – CÒN LẠI THỰC (tiền thật, sau VAT, lũy kế đến hết kỳ đang chọn)
+//  Thực thu = tiền về · Thực chi = chi phí đã chi + trả thầu phụ (gồm tạm ứng) · Còn lại thực = thu − chi
+//  Trả nợ gốc vay là tiền ra nhưng không phải chi phí -> tách riêng. Kế hoạch = theo HĐ (HĐ + PL; đã quyết toán theo QT)
+// ---------------------------------------------------------------------
+function bThuc(d, to) {
+  const o = { thu: 0, cp: 0, tp: 0, goc: 0 };
+  const T = d.tien_thuc || { thang: {}, chua_ngay: {} };
+  for (const [m, t] of Object.entries(T.thang)) if (m <= to) for (const k in o) o[k] += t[k];
+  if (to >= bNowYm()) for (const k in o) o[k] += T.chua_ngay[k] || 0; // dòng chưa nhập ngày: tính khi xem đến hiện tại
+  o.chi = o.cp + o.tp; o.con = o.thu - o.chi;
+  o.kh_thu = d.du_kien.doanh_thu.sv; o.kh_chi = d.du_kien.chi_phi.sv;
+  o.phai_thu = o.kh_thu - o.thu; o.phai_chi = o.kh_chi - o.chi;
+  return o;
+}
+function bThucHtml(list) {
+  const P = bPeriod(list);
+  const to = P.to < bNowYm() ? P.to : bNowYm();
+  const rows = list.map((d) => ({ d, ...bThuc(d, to) }));
+  const T = rows.reduce((a, x) => { for (const k of ['thu', 'cp', 'tp', 'goc', 'chi', 'con', 'kh_thu', 'kh_chi', 'phai_thu', 'phai_chi']) a[k] = (a[k] || 0) + x[k]; return a; }, {});
+  const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
+  const meter = (a, b, color) => `<span class="f-meter"><i style="width:${b > 0 ? Math.max(0, Math.min(100, (a / b) * 100)) : 0}%;background:${color}"></i></span>`;
+  const card = (cls, title, val, lines) => `<div class="tt-k ${cls}"><div class="f-title">${title}</div><div class="f-val ${val < 0 ? 'neg' : ''}">${bTy(val)} <small>tỷ</small></div>
+    <div class="f-lines">${lines.map((x) => `<div>${x}</div>`).join('')}</div></div>`;
+  return `<section class="card b-sec tt-sec">
+    <div class="f-head"><h2>Thực thu – Thực chi – Còn lại thực</h2>
+      <span class="f-range">Lũy kế đến hết ${ymTxt(to)} · tiền thật, sau VAT</span></div>
+    <p class="muted small tt-intro">Tiền <b>thực tế đã về tài khoản</b> và <b>thực tế đã chi ra</b> của ${list.length > 1 ? `${list.length} công trình` : 'công trình'}, đặt cạnh <b>kế hoạch theo hợp đồng</b> (HĐ + phụ lục; HĐ đã quyết toán lấy theo quyết toán).</p>
+    <div class="tt-grid">
+      ${card('tt-thu', 'Thực thu (tiền về)', T.thu, [`${meter(T.thu, T.kh_thu, BCOL.thu)} <b>${bpct(T.thu, T.kh_thu)}</b> kế hoạch`, `Kế hoạch thu: <b>${bTy(T.kh_thu)}</b> tỷ`])}
+      ${card('tt-chi', 'Thực chi (tiền ra)', T.chi, [`${meter(T.chi, T.kh_chi, BCOL.chi)} <b>${bpct(T.chi, T.kh_chi)}</b> kế hoạch`, `Chi phí <b>${bTy(T.cp)}</b> · Trả thầu phụ <b>${bTy(T.tp)}</b> tỷ`])}
+      ${card('tt-con', 'Còn lại thực (thu − chi)', T.con, [`Đã trả nợ gốc vay: <b>${bTy(T.goc)}</b> tỷ`, `Sau trả nợ gốc: <b class="${T.con - T.goc < 0 ? 'neg' : ''}">${bTy(T.con - T.goc)}</b> tỷ`])}
+      ${card('tt-kh', 'Còn phải thu', T.phai_thu, [`Còn phải chi: <b class="${T.phai_chi < 0 ? 'neg' : ''}">${bTy(T.phai_chi)}</b> tỷ`, `Còn lại khi hoàn tất theo KH: <b class="${T.kh_thu - T.kh_chi < 0 ? 'neg' : ''}">${bTy(T.kh_thu - T.kh_chi)}</b> tỷ`])}
+    </div>
+    <div class="f-box tt-chart"><h3>Diễn biến tiền thật lũy kế <small class="muted">· thu, chi và còn lại theo tháng</small></h3><div id="tt-ch" class="chart"></div></div>
+    <div class="table-wrap"><table class="b-table tt-table">
+      <thead>
+        <tr><th rowspan="2">Công trình</th><th colspan="4" class="grp">THU (tiền về)</th><th colspan="4" class="grp f-sep">CHI (tiền ra)</th><th rowspan="2" class="num f-sep">Còn lại thực<br><small>thu − chi</small></th></tr>
+        <tr><th class="num">Kế hoạch</th><th class="num">Thực thu</th><th>% KH</th><th class="num">Còn phải thu</th>
+          <th class="num f-sep">Kế hoạch</th><th class="num">Thực chi</th><th>% KH</th><th class="num">Còn phải chi</th></tr>
+      </thead>
+      <tbody>${rows.map((x) => `<tr><td title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="muted small">${esc(x.d.ten_du_an)}</span></td>
+        <td class="num">${bTy(x.kh_thu)}</td><td class="num strong">${bTy(x.thu)}</td><td class="f-pct">${meter(x.thu, x.kh_thu, BCOL.thu)}${bpct(x.thu, x.kh_thu)}</td><td class="num">${ty(x.phai_thu)}</td>
+        <td class="num f-sep">${bTy(x.kh_chi)}</td><td class="num strong">${bTy(x.chi)}</td><td class="f-pct">${meter(x.chi, x.kh_chi, BCOL.chi)}${bpct(x.chi, x.kh_chi)}</td><td class="num">${ty(x.phai_chi)}</td>
+        <td class="num strong f-sep ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Tổng cộng</td><td class="num">${bTy(T.kh_thu)}</td><td class="num">${bTy(T.thu)}</td><td>${bpct(T.thu, T.kh_thu)}</td><td class="num">${ty(T.phai_thu)}</td>
+        <td class="num f-sep">${bTy(T.kh_chi)}</td><td class="num">${bTy(T.chi)}</td><td>${bpct(T.chi, T.kh_chi)}</td><td class="num">${ty(T.phai_chi)}</td>
+        <td class="num f-sep ${T.con < 0 ? 'neg' : ''}">${bTy(T.con)}</td></tr></tfoot>
+    </table></div>
+    <p class="muted small f-note">Tỷ đồng, sau VAT · Thực chi = chi phí đã chi + thanh toán thầu phụ (gồm tạm ứng); không gồm trả nợ gốc vay (${bTy(T.goc)} tỷ, là trả nợ, không phải chi phí) · Còn lại âm = đang bỏ tiền ra nhiều hơn tiền thu về · Kế hoạch theo hợp đồng chỉ để so sánh, không phải tiền thật.</p>
+  </section>`;
+}
+function bThucDraw(list) {
+  const el = $('#tt-ch');
+  if (!el) return;
+  const P = bPeriod(list);
+  const to = P.to < bNowYm() ? P.to : bNowYm();
+  const m = {};
+  for (const d of list) for (const [k, t] of Object.entries(d.tien_thuc?.thang || {})) if (k <= to) { const o = (m[k] ||= { thu: 0, chi: 0 }); o.thu += t.thu; o.chi += t.cp + t.tp; }
+  const keys = Object.keys(m).sort();
+  if (!keys.length) return bEmpty(el, 'Chưa có tiền về / tiền chi có ngày');
+  const pts = [];
+  let thu = 0, chi = 0;
+  for (let k = keys[0]; k <= to; k = ymAdd(k, 1)) {
+    const o = m[k] || { thu: 0, chi: 0 };
+    thu += o.thu; chi += o.chi;
+    pts.push({ k, label: `${k.slice(5)}/${k.slice(2, 4)}`, thu, chi, con: thu - chi });
+  }
+  if (to >= bNowYm()) { // dòng chưa nhập ngày: cộng vào điểm cuối để khớp bảng
+    const last = pts[pts.length - 1];
+    for (const d of list) { const u = d.tien_thuc?.chua_ngay || {}; last.thu += u.thu || 0; last.chi += (u.cp || 0) + (u.tp || 0); }
+    last.con = last.thu - last.chi;
+  }
+  bLineChart(el, pts, [{ key: 'thu', name: 'Thực thu lũy kế', color: BCOL.thu }, { key: 'chi', name: 'Thực chi lũy kế', color: BCOL.chi }, { key: 'con', name: 'Còn lại thực', color: BCOL.dk }]);
+}
+
 function bFinHtml(list, v) {
   const P = bPeriod(list);
   const cur = bSumRange(list, v, P.from, P.to);
@@ -690,6 +766,8 @@ function renderReport() {
 
   ${bFinHtml(list, v)}
 
+  ${bThucHtml(list)}
+
   ${bPcSection(list, v)}
 
   <div class="card b-detail-bar">
@@ -884,6 +962,7 @@ $('#b-report').addEventListener('keydown', (e) => {
 
 function bDrawCharts(list, v, one) {
   if ($('#f-ch-col')) bFinDraw(list, v);
+  bThucDraw(list);
   $$('#b-report .pc-card').forEach(bPcDraw);
   if (!$('#b-ch-line')) return; // báo cáo đang tải lại
   if (pcScrollTo) { const el = $(`#pc-${pcScrollTo}`); pcScrollTo = null; if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }
@@ -1409,6 +1488,14 @@ $('#b-xlsx').addEventListener('click', (e) => bBusy(e.target, async () => {
   ], [38, 22, 22]);
   const ws0 = wb.Sheets['Tong quan'];
   ['B13', 'C13'].forEach((c) => { if (ws0[c]) ws0[c].z = '0.0%'; });
+  {
+    const P2 = bPeriod(list), to = P2.to < bNowYm() ? P2.to : bNowYm();
+    const R = list.map((d) => ({ d, ...bThuc(d, to) }));
+    table('Thuc thu thuc chi', ['Mã DA', 'Tên dự án', 'Kế hoạch thu (sau VAT)', 'Thực thu', '% KH thu', 'Còn phải thu', 'Kế hoạch chi (sau VAT)',
+      'Thực chi', 'Trong đó: chi phí', 'Trong đó: trả thầu phụ', '% KH chi', 'Còn phải chi', 'Còn lại thực (thu − chi)', 'Trả nợ gốc vay', 'Còn lại sau trả nợ gốc'],
+    R.map((x) => [x.d.ma_du_an, x.d.ten_du_an, x.kh_thu, x.thu, x.kh_thu ? x.thu / x.kh_thu : null, x.phai_thu, x.kh_chi, x.chi, x.cp, x.tp,
+      x.kh_chi ? x.chi / x.kh_chi : null, x.phai_chi, x.con, x.goc, x.con - x.goc]), [10, 30, 18, 16, 9, 16, 18, 16, 16, 16, 9, 16, 18, 14, 18]);
+  }
   table('Du an', ['Mã DA', 'Tên dự án', 'Chủ đầu tư', 'Trạng thái', 'Tiến độ %', 'Số HĐ CĐT', 'HĐ đã QT', 'Số HĐTP', 'HĐTP đã QT',
     `DT dự kiến (${vt})`, `CP dự kiến (${vt})`, `LN dự kiến (${vt})`, `DT thực hiện (${vt})`, `CP thực hiện (${vt})`, `LN thực hiện (${vt})`,
     'Tiền về', 'Còn phải thu', 'Đã trả TP', 'Còn phải trả TP', 'Trả nợ gốc vay', 'Số cảnh báo'],
