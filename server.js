@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const store = require('./lib/db');
 const auth = require('./lib/auth');
 const security = require('./lib/security');
+const audit = require('./lib/audit');
 const { TRANG_THAI, ROLES, validateProject, validateUser, validateSettings, validateContact, validateTarget, validateRevenue, validateTienVe, validateCost, validateTp, validateTpLine, validateTpPay, passwordErrors, passcodeErrors } = require('./lib/validate');
 const { buildContracts, summarizeContracts } = require('./lib/subcontract');
 const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = require('./lib/cost');
@@ -146,18 +147,25 @@ api.post('/auth/login', wrap(async (req, res) => {
     if (user) auth.loginFailed('u:' + username);
     security.loginFailedIp(ip);
     security.log(`Đăng nhập sai: "${username.slice(0, 50)}" từ IP ${ip}`);
+    audit.log(req, 'Đăng nhập sai', 'Tài khoản', user ? 'Sai mật khẩu' : 'Tên đăng nhập không tồn tại', { username: username.slice(0, 50), ho_ten: user?.full_name || '', user_id: user?.id || null });
     return bad(res, 'Sai tên đăng nhập hoặc mật khẩu', 401);
   }
   if (!user.active) return bad(res, 'Tài khoản đã bị khóa. Liên hệ quản trị viên', 403);
   auth.loginOk(ip);
   auth.loginOk('u:' + username);
   console.log(`[ĐĂNG NHẬP] ${new Date().toISOString()} ${user.username} từ IP ${ip}`);
+  audit.log(req, 'Đăng nhập', 'Tài khoản', `Đăng nhập thành công · ${audit.device(req.get('User-Agent'))}`,
+    { user_id: user.id, username: user.username, ho_ten: user.full_name });
   await auth.startSession(req, res, user.id);
   await store.touchLogin(user.id);
   res.json({ ok: true });
 }));
 
 api.post('/auth/logout', wrap(async (req, res) => {
+  if (req.user) {
+    const idle = req.body?.ly_do === 'het_phien';
+    audit.log(req, idle ? 'Hết phiên' : 'Đăng xuất', 'Tài khoản', idle ? `Tự đăng xuất do không thao tác ${store.IDLE_SEC / 60} phút` : 'Đăng xuất');
+  }
   await auth.endSession(req, res);
   res.json({ ok: true });
 }));
@@ -169,6 +177,26 @@ api.post('/auth/away', wrap(async (req, res) => {
 
 // Từ đây trở xuống: bắt buộc đăng nhập
 api.use(auth.requireAuth);
+api.use(audit.middleware); // ghi nhật ký mọi thao tác thêm / sửa / xóa
+
+// ---------- Nhật ký hoạt động ----------
+const SU_KIEN = { xuat_excel: 'Excel', xuat_pptx: 'PowerPoint', in_pdf: 'In / PDF', xuat_csv: 'CSV' };
+api.post('/nhat-ky/su-kien', wrap(async (req, res) => {
+  const loai = SU_KIEN[req.body?.loai];
+  if (!loai) return bad(res, 'Sự kiện không hợp lệ');
+  audit.log(req, 'Xuất báo cáo', 'Báo cáo', `${loai} · ${String(req.body?.pham_vi || '').replace(/[<>]/g, '').slice(0, 200)}`);
+  res.json({ ok: true });
+}));
+api.get('/nhat-ky', auth.requireRole('admin'), wrap(async (req, res) => {
+  const q = req.query;
+  const date = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : '');
+  const limit = Math.min(500, Math.max(1, Number(q.limit) || 100));
+  const rows = await store.listLogs({
+    user_id: parseId(q.user_id), hanh_dong: audit.HANH_DONG.includes(q.hanh_dong) ? q.hanh_dong : '',
+    q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit,
+  });
+  res.json({ items: rows.slice(0, limit), more: rows.length > limit, hanh_dong: audit.HANH_DONG });
+}));
 
 api.get('/auth/me', (req, res) => res.json(req.user));
 
@@ -842,6 +870,7 @@ app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy tại cổng ${PORT
       await migrateTpHdCdt();
       dbState.ready = true;
       dbState.error = null;
+      audit.startPrune();
       console.log(`Đã kết nối CSDL (${store.kind}) sau ${dbState.attempts} lần thử`);
       return;
     } catch (e) {

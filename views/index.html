@@ -212,6 +212,27 @@
           </table>
         </div>
       </div>
+      <div class="card" id="nk-card">
+        <div class="nk-head">
+          <h2>Nhật ký hoạt động</h2>
+          <span class="muted small">Tự ghi mọi thao tác thêm / sửa / xóa, đăng nhập, xuất báo cáo · lưu 1 năm · tự làm mới 10 giây</span>
+        </div>
+        <form id="nk-filter" class="nk-filter">
+          <label>Tài khoản<select name="user_id"><option value="">Tất cả</option></select></label>
+          <label>Hành động<select name="hanh_dong"><option value="">Tất cả</option></select></label>
+          <label>Từ ngày<input type="date" name="tu"></label>
+          <label>Đến ngày<input type="date" name="den"></label>
+          <label class="nk-q">Tìm<input type="search" name="q" placeholder="Mã dự án, nội dung, IP..."></label>
+          <div class="nk-actions"><button type="button" id="nk-reset">Xóa lọc</button><button type="button" id="nk-csv">Xuất CSV</button></div>
+        </form>
+        <div class="table-wrap">
+          <table class="nk-table">
+            <thead><tr><th>Thời gian</th><th>Tài khoản</th><th>Hành động</th><th>Đối tượng</th><th>Dự án</th><th>Nội dung</th><th>IP</th></tr></thead>
+            <tbody id="nk-tbody"><tr><td colspan="7" class="empty">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="nk-more"><button type="button" id="nk-more" hidden>Xem thêm</button><span id="nk-count" class="muted small"></span></div>
+      </div>
     </section>
 
     <!-- ================= CÀI ĐẶT ================= -->

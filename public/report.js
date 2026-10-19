@@ -22,6 +22,11 @@ async function loadReport() {
   renderReport();
 }
 
+// Mô tả phạm vi báo cáo để ghi nhật ký
+function bLogScope() {
+  const { one } = bScope();
+  return `${one ? one.ma_du_an + ' – ' + one.ten_du_an : 'Tất cả dự án'} · ${bPeriod(BC.du_an).label} · ${BST.vat === 'gt' ? 'trước VAT' : 'sau VAT'}`;
+}
 function bScope() {
   const id = Number(BST.project);
   const list = id ? BC.du_an.filter((d) => d.id === id) : BC.du_an;
@@ -1218,7 +1223,7 @@ window.addEventListener('afterprint', () => {
   $$('#b-report details.b-proj').forEach((d, i) => (d.open = bOpenState[i]));
   bOpenState = null;
 });
-$('#b-print').addEventListener('click', () => window.print());
+$('#b-print').addEventListener('click', () => { logEvent('in_pdf', bLogScope()); window.print(); });
 
 // ---------------------------------------------------------------------
 // Tải thư viện xuất (nhúng sẵn trong /vendor, chỉ tải khi cần)
@@ -1242,6 +1247,7 @@ async function bBusy(btn, fn) {
 
 // ---------- Excel ----------
 $('#b-xlsx').addEventListener('click', (e) => bBusy(e.target, async () => {
+  logEvent('xuat_excel', bLogScope());
   await bLoad('/vendor/xlsx-0.18.5.full.min.js');
   const { list, one } = bScope();
   const v = BST.vat, vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
@@ -1333,6 +1339,7 @@ $('#b-xlsx').addEventListener('click', (e) => bBusy(e.target, async () => {
 
 // ---------- PowerPoint ----------
 $('#b-pptx').addEventListener('click', (e) => bBusy(e.target, async () => {
+  logEvent('xuat_pptx', bLogScope());
   await bLoad('/vendor/pptxgenjs-3.12.0.bundle.js');
   const { list, one } = bScope();
   const v = BST.vat, vt = v === 'gt' ? 'trước VAT' : 'sau VAT';

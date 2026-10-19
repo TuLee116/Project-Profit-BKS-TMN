@@ -47,7 +47,7 @@ function applyBranding(s) {
 // =====================================================================
 // Tab
 // =====================================================================
-const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: loadUsers, settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => loadReport() };
+const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => loadUsers().then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => loadReport() };
 
 function showTab(name) {
   $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
@@ -72,8 +72,8 @@ const actRead = () => { try { return Number(localStorage.getItem('last_act')) ||
 actStore(lastAct);
 const idleFor = () => Date.now() - Math.max(lastAct, actRead());
 setInterval(async () => {
-  if (idleFor() >= idleMs()) {
-    await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  if (idleFor() >= idleMs() - 60 * 1000) { // trước hạn máy chủ 1 phút để còn ghi nhật ký "Hết phiên"
+    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({ ly_do: 'het_phien' }) }).catch(() => {});
     location.href = '/login?het_phien=1';
     return;
   }
@@ -87,7 +87,10 @@ window.addEventListener('pagehide', () => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') api('/api/auth/me', AUTO).catch(() => {}); });
 setInterval(() => {
-  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') loadUsers(true).catch(() => {});
+  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') {
+    loadUsers(true).catch(() => {});
+    loadLogs(true).catch(() => {});
+  }
 }, 10 * 1000);
 
 $('#btn-logout').addEventListener('click', async () => {
@@ -272,7 +275,13 @@ $('#p-csv').addEventListener('click', () => {
   a.download = `du-an_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  logEvent('xuat_csv', `Danh sách dự án (${projects.length} dự án)`);
 });
+
+// Ghi nhật ký xuất báo cáo (không chặn thao tác nếu lỗi)
+function logEvent(loai, pham_vi) {
+  api('/api/nhat-ky/su-kien', { method: 'POST', body: JSON.stringify({ loai, pham_vi }) }).catch(() => {});
+}
 
 // =====================================================================
 // DOANH THU theo công trình
@@ -1796,6 +1805,70 @@ async function onTpDlgClick(e) {
 // =====================================================================
 const uForm = $('#u-form');
 attachPwChecklist(uForm?.elements.password);
+
+// ---------- Nhật ký hoạt động (quản trị) ----------
+const NK = { items: [], more: false, hd: [] };
+const NK_CLS = { 'Đăng nhập': 'in', 'Đăng xuất': 'out', 'Hết phiên': 'out', 'Đăng nhập sai': 'bad', 'Thêm': 'add', 'Sửa': 'edit', 'Cập nhật': 'edit', 'Xóa': 'del', 'Xuất báo cáo': 'exp' };
+function nkParams(extra = {}) {
+  const f = $('#nk-filter');
+  const p = new URLSearchParams();
+  for (const k of ['user_id', 'hanh_dong', 'tu', 'den', 'q']) { const v = f.elements[k].value.trim(); if (v) p.set(k, v); }
+  for (const [k, v] of Object.entries(extra)) if (v) p.set(k, v);
+  return p;
+}
+function nkFillSelects() {
+  const f = $('#nk-filter');
+  const su = f.elements.user_id, sh = f.elements.hanh_dong;
+  const keepU = su.value, keepH = sh.value;
+  su.innerHTML = '<option value="">Tất cả</option>' + users.map((u) => `<option value="${u.id}">${esc(u.username)} – ${esc(u.full_name)}</option>`).join('');
+  sh.innerHTML = '<option value="">Tất cả</option>' + NK.hd.map((h) => `<option>${esc(h)}</option>`).join('');
+  su.value = keepU; sh.value = keepH;
+}
+async function loadLogs(auto = false, more = false) {
+  if (!$('#nk-card')) return;
+  if (auto && NK.items.length > 100) return; // đang xem các trang sau -> không tự làm mới để khỏi mất chỗ đang đọc
+  const r = await api('/api/nhat-ky?' + nkParams({ before: more ? NK.items.at(-1)?.id : 0 }), auto ? AUTO : {});
+  if (!NK.hd.length || !auto) { NK.hd = r.hanh_dong; nkFillSelects(); }
+  NK.items = more ? [...NK.items, ...r.items] : r.items;
+  NK.more = r.more;
+  $('#nk-tbody').innerHTML = NK.items.length ? NK.items.map((l) => {
+    const [main, change] = String(l.noi_dung).split(' | ');
+    return `<tr>
+      <td class="nk-time">${dt(l.at)}</td>
+      <td><b>${esc(l.username || '—')}</b>${l.ho_ten ? `<div class="muted small">${esc(l.ho_ten)}</div>` : ''}</td>
+      <td><span class="nk-act nk-${NK_CLS[l.hanh_dong] || 'edit'}">${esc(l.hanh_dong)}</span></td>
+      <td>${esc(l.doi_tuong)}</td>
+      <td>${l.du_an ? `<b class="p-ma">${esc(l.du_an)}</b>` : '<span class="muted">—</span>'}</td>
+      <td class="nk-nd">${esc(main)}${change ? `<div class="nk-diff">${esc(String(l.noi_dung).split(' | ').slice(1).join(' · '))}</div>` : ''}</td>
+      <td class="muted small">${esc(l.ip)}</td></tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty">Chưa có hoạt động phù hợp</td></tr>';
+  $('#nk-more').hidden = !NK.more;
+  $('#nk-count').textContent = NK.items.length ? `Đang hiển thị ${NK.items.length} dòng mới nhất${NK.more ? '' : ' (hết)'}` : '';
+}
+let nkTimer;
+$('#nk-filter')?.addEventListener('input', () => { clearTimeout(nkTimer); nkTimer = setTimeout(() => loadLogs().catch((e) => alert(e.message)), 300); });
+$('#nk-filter')?.addEventListener('submit', (e) => e.preventDefault());
+$('#nk-reset')?.addEventListener('click', () => { $('#nk-filter').reset(); loadLogs().catch((e) => alert(e.message)); });
+$('#nk-more')?.addEventListener('click', () => loadLogs(false, true).catch((e) => alert(e.message)));
+$('#nk-csv')?.addEventListener('click', async (e) => {
+  const btn = e.target; btn.disabled = true; btn.textContent = 'Đang xuất...';
+  try {
+    let all = [], before = 0, more = true;
+    while (more && all.length < 20000) {
+      const r = await api('/api/nhat-ky?' + nkParams({ limit: 500, before }));
+      all = all.concat(r.items); more = r.more; before = all.at(-1)?.id;
+    }
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const head = ['Thời gian', 'Tên đăng nhập', 'Họ tên', 'Hành động', 'Đối tượng', 'Dự án', 'Nội dung', 'IP'];
+    const csv = [head.map(q).join(','), ...all.map((l) => [dt(l.at), l.username, l.ho_ten, l.hanh_dong, l.doi_tuong, l.du_an, l.noi_dung, l.ip].map(q).join(','))].join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `nhat-ky_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    logEvent('xuat_csv', `Nhật ký hoạt động (${all.length} dòng)`);
+  } catch (err) { alert(err.message); } finally { btn.disabled = false; btn.textContent = 'Xuất CSV'; }
+});
 
 // Truy cập gần nhất: trạng thái trực tuyến do máy chủ tính (còn phiên đăng nhập và trang đang mở); kèm thời gian tương đối
 function seenTxt(t, online) {
