@@ -777,3 +777,18 @@ body.pc-modal-on { overflow: hidden; }
 @media (max-width: 1100px) { .tt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .tt-grid { grid-template-columns: 1fr; } }
 @media print { .tt-sec { break-before: page; } }
+/* Số bấm được (Thực thu – Thực chi) + bảng chi tiết */
+.tt-link { display: inline; padding: 0; margin: 0; border: 0; background: none; box-shadow: none; font: inherit; color: inherit; cursor: pointer;
+  text-decoration: underline dotted rgba(31,58,110,.35); text-underline-offset: 4px; }
+.tt-link:hover { color: var(--teal, #0fa3a3); text-decoration-color: currentColor; }
+.tt-k button.f-val { display: block; text-align: left; }
+.tt-sm { font-weight: 700; color: var(--navy); }
+.tt-sm.neg { color: #d92d35; }
+dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+.tt-dlg-h { display: flex; align-items: center; justify-content: space-between; }
+.tt-dlg-h h3 { margin: 0; }
+.tt-dlg .pc-x { position: static; box-shadow: none; border: 1px solid var(--border); }
+.tt-formula { padding: 10px 14px; border-radius: 10px; background: #eef6ff; color: var(--navy); font-weight: 600; font-size: 13.5px; border-left: 4px solid #2c5fa3; }
+.tt-dl { max-height: 320px; overflow: auto; }
+.tt-dlg h4 { margin: 12px 0 6px; color: var(--navy); }
+.tt-dlg .tt-dlg-h h3 { color: var(--navy); }

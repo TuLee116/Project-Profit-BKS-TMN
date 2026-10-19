@@ -193,17 +193,19 @@ function bThucHtml(list) {
   const T = rows.reduce((a, x) => { for (const k of ['thu', 'cp', 'tp', 'goc', 'chi', 'con', 'kh_thu', 'kh_chi', 'phai_thu', 'phai_chi']) a[k] = (a[k] || 0) + x[k]; return a; }, {});
   const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
   const meter = (a, b, color) => `<span class="f-meter"><i style="width:${b > 0 ? Math.max(0, Math.min(100, (a / b) * 100)) : 0}%;background:${color}"></i></span>`;
-  const card = (cls, title, val, lines) => `<div class="tt-k ${cls}"><div class="f-title">${title}</div><div class="f-val ${val < 0 ? 'neg' : ''}">${bTy(val)} <small>tỷ</small></div>
+  const card = (cls, key, title, val, lines) => `<div class="tt-k ${cls}"><div class="f-title">${title}</div>
+    <button type="button" class="tt-link f-val ${val < 0 ? 'neg' : ''}" data-ttd="${key}" title="Bấm để xem cách tính và chi tiết">${bTy(val)} <small>tỷ</small></button>
     <div class="f-lines">${lines.map((x) => `<div>${x}</div>`).join('')}</div></div>`;
+  const lk = (key, val, cls = '') => `<button type="button" class="tt-link tt-sm ${cls} ${val < 0 ? 'neg' : ''}" data-ttd="${key}" title="Bấm để xem chi tiết">${bTy(val)}</button>`;
   return `<section class="card b-sec tt-sec">
     <div class="f-head"><h2>Thực thu – Thực chi – Còn lại thực</h2>
       <span class="f-range">Lũy kế đến hết ${ymTxt(to)} · tiền thật, sau VAT</span></div>
     <p class="muted small tt-intro">Tiền <b>thực tế đã về tài khoản</b> và <b>thực tế đã chi ra</b> của ${list.length > 1 ? `${list.length} công trình` : 'công trình'}, đặt cạnh <b>kế hoạch theo hợp đồng</b> (HĐ + phụ lục; HĐ đã quyết toán lấy theo quyết toán).</p>
     <div class="tt-grid">
-      ${card('tt-thu', 'Thực thu (tiền về)', T.thu, [`${meter(T.thu, T.kh_thu, BCOL.thu)} <b>${bpct(T.thu, T.kh_thu)}</b> kế hoạch`, `Kế hoạch thu: <b>${bTy(T.kh_thu)}</b> tỷ`])}
-      ${card('tt-chi', 'Thực chi (tiền ra)', T.chi, [`${meter(T.chi, T.kh_chi, BCOL.chi)} <b>${bpct(T.chi, T.kh_chi)}</b> kế hoạch`, `Chi phí <b>${bTy(T.cp)}</b> · Trả thầu phụ <b>${bTy(T.tp)}</b> tỷ`])}
-      ${card('tt-con', 'Còn lại thực (thu − chi)', T.con, [`Đã trả nợ gốc vay: <b>${bTy(T.goc)}</b> tỷ`, `Sau trả nợ gốc: <b class="${T.con - T.goc < 0 ? 'neg' : ''}">${bTy(T.con - T.goc)}</b> tỷ`])}
-      ${card('tt-kh', 'Còn phải thu', T.phai_thu, [`Còn phải chi: <b class="${T.phai_chi < 0 ? 'neg' : ''}">${bTy(T.phai_chi)}</b> tỷ`, `Còn lại khi hoàn tất theo KH: <b class="${T.kh_thu - T.kh_chi < 0 ? 'neg' : ''}">${bTy(T.kh_thu - T.kh_chi)}</b> tỷ`])}
+      ${card('tt-thu', 'thu', 'Thực thu (tiền về)', T.thu, [`${meter(T.thu, T.kh_thu, BCOL.thu)} <b>${bpct(T.thu, T.kh_thu)}</b> kế hoạch`, `Kế hoạch thu: ${lk('kh_thu', T.kh_thu)} tỷ`])}
+      ${card('tt-chi', 'chi', 'Thực chi (tiền ra)', T.chi, [`${meter(T.chi, T.kh_chi, BCOL.chi)} <b>${bpct(T.chi, T.kh_chi)}</b> kế hoạch`, `Chi phí ${lk('cp', T.cp)} · Trả thầu phụ ${lk('tp', T.tp)} tỷ`])}
+      ${card('tt-con', 'con', 'Còn lại thực (thu − chi)', T.con, [`Đã trả nợ gốc vay: ${lk('goc', T.goc)} tỷ`, `Sau trả nợ gốc: ${lk('sau_goc', T.con - T.goc)} tỷ`])}
+      ${card('tt-kh', 'phai_thu', 'Còn phải thu', T.phai_thu, [`Còn phải chi: ${lk('phai_chi', T.phai_chi)} tỷ`, `Còn lại khi hoàn tất theo KH: ${lk('kh_con', T.kh_thu - T.kh_chi)} tỷ`])}
     </div>
     <div class="f-box tt-chart"><h3>Diễn biến tiền thật lũy kế <small class="muted">· thu, chi và còn lại theo tháng</small></h3><div id="tt-ch" class="chart"></div></div>
     <div class="table-wrap"><table class="b-table tt-table">
@@ -223,6 +225,64 @@ function bThucHtml(list) {
     <p class="muted small f-note">Tỷ đồng, sau VAT · Thực chi = chi phí đã chi + thanh toán thầu phụ (gồm tạm ứng); không gồm trả nợ gốc vay (${bTy(T.goc)} tỷ, là trả nợ, không phải chi phí) · Còn lại âm = đang bỏ tiền ra nhiều hơn tiền thu về · Kế hoạch theo hợp đồng chỉ để so sánh, không phải tiền thật.</p>
   </section>`;
 }
+// Bấm vào số -> bảng chi tiết: công thức, số từng công trình, các dòng tiền liên quan, nút tới tab nhập liệu
+const TTD = {
+  thu: { t: 'Thực thu (tiền về)', f: 'Tổng tiền đã thực về tài khoản: tạm ứng + thanh toán đợt + quyết toán (sau VAT)', cols: [['thu', 'Thực thu']], go: 'revenue', lines: 'tv' },
+  kh_thu: { t: 'Kế hoạch thu', f: 'Giá trị HĐ + phụ lục (sau VAT); HĐ đã quyết toán lấy theo giá trị quyết toán', cols: [['kh_thu', 'Kế hoạch thu']], go: 'revenue' },
+  chi: { t: 'Thực chi (tiền ra)', f: 'Chi phí đã chi (không gồm trả nợ gốc vay) + tiền đã trả thầu phụ (gồm tạm ứng), sau VAT', cols: [['cp', 'Chi phí đã chi'], ['tp', 'Đã trả thầu phụ'], ['chi', 'Thực chi']], go: 'cost' },
+  cp: { t: 'Chi phí đã chi', f: 'Tổng các dòng chi phí (sau VAT), không gồm trả nợ gốc vay', cols: [['cp', 'Chi phí đã chi']], go: 'cost' },
+  tp: { t: 'Đã trả thầu phụ', f: 'Tổng thanh toán cho thầu phụ: tạm ứng + thanh toán đợt + quyết toán (sau VAT)', cols: [['tp', 'Đã trả thầu phụ']], go: 'cost' },
+  con: { t: 'Còn lại thực', f: 'Còn lại thực = Thực thu − Thực chi', cols: [['thu', 'Thực thu'], ['chi', 'Thực chi'], ['con', 'Còn lại thực']], go: 'revenue' },
+  goc: { t: 'Đã trả nợ gốc vay', f: 'Các dòng chi phí "Trả nợ vay ngân hàng › Trả nợ gốc" – là tiền ra để trả nợ, không tính vào chi phí', cols: [['goc', 'Trả nợ gốc']], go: 'cost', lines: 'goc' },
+  sau_goc: { t: 'Còn lại sau trả nợ gốc', f: 'Còn lại sau trả nợ gốc = Còn lại thực − Đã trả nợ gốc vay. Lưu ý: hệ thống chưa ghi tiền vay nhận về, nên số này chỉ trừ phần trả.', cols: [['con', 'Còn lại thực'], ['goc', 'Trả nợ gốc'], ['sau_goc', 'Sau trả nợ gốc']], go: 'cost' },
+  phai_thu: { t: 'Còn phải thu', f: 'Còn phải thu = Kế hoạch thu (HĐ + PL; đã QT theo QT, sau VAT) − Thực thu', cols: [['kh_thu', 'Kế hoạch thu'], ['thu', 'Thực thu'], ['phai_thu', 'Còn phải thu']], go: 'revenue' },
+  phai_chi: { t: 'Còn phải chi', f: 'Còn phải chi = Kế hoạch chi − Thực chi. Kế hoạch chi = chi phí đã ghi nhận + giá trị HT/QT thầu phụ (sau VAT), nên phần lớn là thầu phụ còn phải trả.', cols: [['kh_chi', 'Kế hoạch chi'], ['chi', 'Thực chi'], ['phai_chi', 'Còn phải chi']], go: 'cost' },
+  kh_con: { t: 'Còn lại khi hoàn tất theo kế hoạch', f: 'Còn lại khi hoàn tất = Kế hoạch thu − Kế hoạch chi (nếu thu, chi đúng kế hoạch theo HĐ)', cols: [['kh_thu', 'Kế hoạch thu'], ['kh_chi', 'Kế hoạch chi'], ['kh_con', 'Còn lại khi hoàn tất']], go: 'revenue' },
+};
+function bThucDrill(key) {
+  const cfg = TTD[key];
+  if (!cfg) return;
+  const { list } = bScope();
+  const P = bPeriod(list);
+  const to = P.to < bNowYm() ? P.to : bNowYm();
+  const rows = list.map((d) => { const x = bThuc(d, to); return { d, ...x, sau_goc: x.con - x.goc, kh_con: x.kh_thu - x.kh_chi }; });
+  const main = cfg.cols[cfg.cols.length - 1][0];
+  rows.sort((a, b) => Math.abs(b[main]) - Math.abs(a[main]));
+  const tot = Object.fromEntries(cfg.cols.map(([k]) => [k, rows.reduce((s2, x) => s2 + x[k], 0)]));
+  const cell = (v) => `<td class="num ${v < 0 ? 'neg' : ''}">${bn(v)}</td>`;
+  const inRange = (ngay) => (!ngay ? to >= bNowYm() : String(ngay).slice(0, 7) <= to);
+  let lines = '';
+  if (cfg.lines === 'goc' || cfg.lines === 'tv') {
+    const L = list.flatMap((d) => (cfg.lines === 'goc' ? d.chi_tiet.chi_phi.filter((r) => r.tinh_cp.startsWith('Không')).map((r) => ({ d, ngay: r.ngay, a: r.doi_tac, b: r.noi_dung, v: r.sau_vat }))
+      : d.chi_tiet.tien_ve.map((r) => ({ d, ngay: r.ngay, a: r.hd, b: r.loai, v: r.so_tien }))).filter((x) => inRange(x.ngay)))
+      .sort((a, b) => String(b.ngay || '').localeCompare(String(a.ngay || '')));
+    lines = `<h4>${cfg.lines === 'goc' ? 'Các lần trả nợ gốc' : 'Các lần tiền về'} (${L.length})</h4>
+      <div class="table-wrap tt-dl"><table class="b-table"><thead><tr><th>Ngày</th><th>Công trình</th><th>${cfg.lines === 'goc' ? 'Ngân hàng' : 'Hợp đồng'}</th><th>Nội dung</th><th class="num">Số tiền</th></tr></thead>
+      <tbody>${L.slice(0, 300).map((x) => `<tr><td>${dmy(x.ngay) || '<span class="muted">chưa có ngày</span>'}</td><td><b>${esc(x.d.ma_du_an)}</b></td><td>${esc(x.a || '')}</td><td>${esc(x.b || '')}</td><td class="num">${bn(x.v)}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  const dlg = document.createElement('dialog');
+  dlg.className = 'pass-dlg tt-dlg';
+  dlg.innerHTML = `<div class="stack">
+    <div class="tt-dlg-h"><h3>${cfg.t}</h3><button type="button" class="pc-x" data-x title="Đóng">×</button></div>
+    <div class="tt-formula">${cfg.f}</div>
+    <p class="muted small">Lũy kế đến hết ${ymTxt(to)} · đồng, sau VAT · ${list.length} công trình · bấm <b>Mở</b> để tới tab ${cfg.go === 'cost' ? 'Chi phí' : 'Doanh thu'} của công trình</p>
+    <div class="table-wrap"><table class="b-table"><thead><tr><th>Công trình</th>${cfg.cols.map(([, h]) => `<th class="num">${h}</th>`).join('')}<th></th></tr></thead>
+      <tbody>${rows.map((x) => `<tr><td><b>${esc(x.d.ma_du_an)}</b> <span class="muted small">${esc(x.d.ten_du_an)}</span></td>${cfg.cols.map(([k]) => cell(x[k])).join('')}
+        <td><button type="button" class="sm" data-tgo="${cfg.go}" data-id="${x.d.id}">Mở</button></td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Tổng cộng</td>${cfg.cols.map(([k]) => cell(tot[k])).join('')}<td></td></tr></tfoot></table></div>
+    ${lines}
+  </div>`;
+  document.body.appendChild(dlg);
+  const close = () => { dlg.close(); dlg.remove(); };
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg || e.target.closest('[data-x]')) return close();
+    const g = e.target.closest('[data-tgo]');
+    if (g) { close(); revProjectId = Number(g.dataset.id); showTab(g.dataset.tgo); }
+  });
+  dlg.addEventListener('close', () => dlg.remove());
+  dlg.showModal();
+}
+
 function bThucDraw(list) {
   const el = $('#tt-ch');
   if (!el) return;
@@ -1371,6 +1431,8 @@ $('#b-report').addEventListener('click', (e) => {
   }
   const go = e.target.dataset.bgo;
   if (go) { e.preventDefault(); revProjectId = Number(e.target.dataset.id); showTab(go); }
+  const ttd = e.target.closest('[data-ttd]');
+  if (ttd) return bThucDrill(ttd.dataset.ttd);
 });
 let bResize;
 window.addEventListener('resize', () => { clearTimeout(bResize); bResize = setTimeout(() => { if (BC && !$('#tab-report').hidden) bDrawCharts(bScope().list, BST.vat, bScope().one); }, 200); });
