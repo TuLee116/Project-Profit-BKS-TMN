@@ -1155,52 +1155,57 @@ function bPcCard(d, idx) {
   </article>`;
 }
 
+const PC_U = '<em class="pc-u">tỷ đ</em>'; // đơn vị hiển thị cạnh số tiền trong khung tổng quan
+const bNat = (a, b) => String(a).localeCompare(String(b), 'vi', { numeric: true, sensitivity: 'base' }); // a→z, 1→9
+const bTyU = (n) => bTy(n) + PC_U;
 function bPcBody(d, tab) {
   const v = BST.vat;
   const P = bPeriod(bScope().list);
   const cur = bSumRange([d], v, P.from, P.to);
   const prv = P.prev ? bSumRange([d], v, P.prev.from, P.prev.to) : null;
   const K = d.du_kien, H = d.thuc_hien;
-  const mini = (label, val, extra = '', cls = '') => `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTy(val) : val}</b>${extra}</div>`;
-  const row = (l, val, cls = '') => `<li><span>${l}</span><b class="${cls} ${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTy(val) + ' tỷ' : val}</b></li>`;
+  const mini = (label, val, extra = '', cls = '') => `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTyU(val) : val}</b>${extra}</div>`;
+  const row = (l, val, cls = '') => `<li><span>${l}</span><b class="${cls} ${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTyU(val) : val}</b></li>`;
   const tpv = (x) => (v === 'gt' ? x.qt_gt : x.qt_sv);
   const kyNote = `<div class="pc-note">Kỳ ${esc(P.label)} · đơn vị tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'})</div>`;
   switch (tab) {
     case 'dt': return `<div class="pc-kpis">${mini('DT dự kiến', K.doanh_thu[v])}${mini('DT thực hiện', H.doanh_thu[v], '<small>lũy kế</small>')}${mini('DT trong kỳ', cur.dt, bDeltaS(cur.dt, prv?.dt))}${mini('% hoàn thành', bpct(H.doanh_thu.sv, K.doanh_thu.sv))}</div>
-      <table class="pc-tbl"><thead><tr><th>HĐ chủ đầu tư</th><th class="num">HĐ + PL</th><th class="num">Nghiệm thu</th><th>% HT</th></tr></thead>
-      <tbody>${d.hds.map((x) => `<tr><td>${esc(x.so_ma)}${x.da_qt ? ' <span class="st st-hoan-thanh">QT</span>' : ''}</td><td class="num">${bTy(x.hd[v])}</td><td class="num">${bTy(x.nt[v])}</td>
+      <table class="pc-tbl"><thead><tr><th>HĐ chủ đầu tư</th><th class="num">HĐ + PL (tỷ đ)</th><th class="num">Nghiệm thu (tỷ đ)</th><th>% HT</th></tr></thead>
+      <tbody>${[...d.hds].sort((a, b) => bNat(a.so_ma, b.so_ma)).map((x) => `<tr><td>${esc(x.so_ma)}${x.da_qt ? ' <span class="st st-hoan-thanh">QT</span>' : ''}</td><td class="num">${bTy(x.hd[v])}</td><td class="num">${bTy(x.nt[v])}</td>
         <td><span class="pc-bar"><i style="width:${Math.min(100, x.pct_ht * 100)}%"></i></span>${(x.pct_ht * 100).toFixed(0)}%</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có HĐ</td></tr>'}</tbody></table>
-      <div class="pc-note">Đơn vị tỷ đồng</div>`;
+      <div class="pc-note">Đơn vị: tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'})</div>`;
     case 'cp': {
       const tong = K.chi_phi[v];
       const pct = (x) => (tong ? Math.max(0, (x / tong) * 100) : 0);
       const blocks = d.khoi.map((k) => {
         const ns = d.nhom.filter((n) => n.khoi === k.code && n[v]).sort((a, b) => b[v] - a[v]);
-        return `<li class="pc-khoi"><span>${esc(k.ten)}</span><span class="pc-bar wide"><i style="width:${pct(k[v])}%"></i></span><b>${bTy(k[v])} · ${bpct(k[v], tong)}</b></li>` +
-          ns.map((n) => `<li class="pc-nhom"><span>${esc(n.code === 'tc_tra_no' ? 'Lãi vay ngân hàng' : n.ten)}${n.code === 'thau_phu' ? ` <small class="muted">(${d.so_tp} HĐTP · ${d.so_tp_qt} QT)</small>` : ''}</span><span class="pc-bar wide"><i style="width:${pct(n[v])}%"></i></span><b>${bTy(n[v])} · ${bpct(n[v], tong)}</b></li>`).join('');
+        return `<li class="pc-khoi"><span>${esc(k.ten)}</span><span class="pc-bar wide"><i style="width:${pct(k[v])}%"></i></span><b>${bTyU(k[v])} · ${bpct(k[v], tong)}</b></li>` +
+          ns.map((n) => `<li class="pc-nhom"><span>${esc(n.code === 'tc_tra_no' ? 'Lãi vay ngân hàng' : n.ten)}${n.code === 'thau_phu' ? ` <small class="muted">(${d.so_tp} HĐTP · ${d.so_tp_qt} QT)</small>` : ''}</span><span class="pc-bar wide"><i style="width:${pct(n[v])}%"></i></span><b>${bTyU(n[v])} · ${bpct(n[v], tong)}</b></li>`).join('');
       }).join('');
       return `<div class="pc-kpis">${mini('CP dự kiến', tong)}${mini('CP thực hiện', H.chi_phi[v], '<small>lũy kế</small>')}${mini('CP trong kỳ', cur.cp, bDeltaS(cur.cp, prv?.cp, false))}${mini('% DT dự kiến', bpct(tong, K.doanh_thu[v]))}</div>
         <div class="pc-sub-h">Cơ cấu chi phí dự kiến: khối → nhóm chi phí</div>
         <ul class="pc-list pc-cp">${blocks}</ul>
-        <div class="pc-note">Tỷ đồng · tỷ trọng trên tổng chi phí dự kiến · trả nợ gốc vay ${bTy(d.tra_goc.sv)} tỷ không tính vào chi phí</div>`;
+        <div class="pc-note">Đơn vị: tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'}) · tỷ trọng trên tổng chi phí dự kiến · trả nợ gốc vay ${bTy(d.tra_goc.sv)} tỷ không tính vào chi phí</div>`;
     }
     case 'ln': {
       const a = K.doanh_thu[v] - K.chi_phi[v], b = H.doanh_thu[v] - H.chi_phi[v];
-      const items = d.hds.map((x) => ({ l: x.so_ma, val: x.dk[v] - tpv(x.tp) }));
+      const items = d.hds.map((x) => ({ l: x.so_ma, val: x.dk[v] - tpv(x.tp) })).sort((a, b) => bNat(a.l, b.l));
       const mx = Math.max(1, ...items.map((x) => Math.abs(x.val)));
       return `<div class="pc-kpis">${mini('LN dự kiến', a, `<small>${bpct(a, K.doanh_thu[v])}</small>`)}${mini('LN thực hiện', b, `<small>lũy kế · ${bpct(b, H.doanh_thu[v])}</small>`)}${mini('LN trong kỳ', cur.ln, bDeltaS(cur.ln, prv?.ln))}${mini('Tỷ suất kỳ', bpct(cur.ln, cur.dt))}</div>
         <div class="pc-sub-h">Lãi gộp dự kiến theo HĐ (DT − thầu phụ)</div>
-        <ul class="pc-list">${items.map((x) => `<li><span>${esc(x.l)}</span><span class="pc-bar wide ${x.val < 0 ? 'neg-bar' : ''}"><i style="width:${(Math.abs(x.val) / mx) * 100}%"></i></span><b class="${x.val < 0 ? 'neg' : ''}">${bTy(x.val)}</b></li>`).join('') || '<li class="muted">Chưa có HĐ</li>'}</ul>`;
+        <ul class="pc-list">${items.map((x) => `<li><span>${esc(x.l)}</span><span class="pc-bar wide ${x.val < 0 ? 'neg-bar' : ''}"><i style="width:${(Math.abs(x.val) / mx) * 100}%"></i></span><b class="${x.val < 0 ? 'neg' : ''}">${bTyU(x.val)}</b></li>`).join('') || '<li class="muted">Chưa có HĐ</li>'}</ul>
+        <div class="pc-note">Đơn vị: tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'}) · HĐ xếp theo số hiệu</div>`;
     }
     case 'dong': return `<div class="pc-kpis">${mini('Thu (tiền về)', cur.thu, bDeltaS(cur.thu, prv?.thu))}${mini('Chi', cur.chi, bDeltaS(cur.chi, prv?.chi, false))}${mini('Dòng tiền', cur.dong_tien)}${mini('Số dư cuối kỳ', bBalance([d], P.to))}</div>
       <div class="chart pc-chart" data-pcchart="dong"></div>${kyNote.replace('trước VAT', 'sau VAT')}`;
     case 'cn': {
-      const thu = d.hds.filter((x) => x.phai_thu).sort((a, b) => b.phai_thu - a.phai_thu);
-      const tra = [...d.hds.filter((x) => x.tp.con_lai).map((x) => ({ l: x.so_ma, val: x.tp.con_lai })), ...(d.tp.chua_gan.con_lai ? [{ l: 'Chưa gắn HĐ CĐT', val: d.tp.chua_gan.con_lai }] : [])].sort((a, b) => b.val - a.val);
+      const thu = d.hds.filter((x) => x.phai_thu).sort((a, b) => bNat(a.so_ma, b.so_ma));
+      const tra = [...d.hds.filter((x) => x.tp.con_lai).map((x) => ({ l: x.so_ma, val: x.tp.con_lai })), ...(d.tp.chua_gan.con_lai ? [{ l: 'Chưa gắn HĐ CĐT', val: d.tp.chua_gan.con_lai }] : [])];
+      tra.sort((a, b) => (a.l === 'Chưa gắn HĐ CĐT') - (b.l === 'Chưa gắn HĐ CĐT') || bNat(a.l, b.l));
       return `<div class="pc-kpis">${mini('Phải thu', H.con_lai)}${mini('Phải trả TP', d.tp.con_lai)}${mini('Đã trả TP', d.tp.da_tt)}${mini('Trả nợ gốc vay', d.tra_goc.sv)}</div>
         <div class="pc-2col"><div><div class="pc-sub-h">Phải thu theo HĐ</div><ul class="pc-list compact">${thu.map((x) => row(x.so_ma, x.phai_thu)).join('') || '<li class="muted">Không có</li>'}</ul></div>
         <div><div class="pc-sub-h">Phải trả thầu phụ theo HĐ CĐT</div><ul class="pc-list compact">${tra.map((x) => row(x.l, x.val)).join('') || '<li class="muted">Không có</li>'}</ul></div></div>
-        <div class="pc-note">Sau VAT · phải thu = nghiệm thu − tiền về (âm: CĐT ứng trước)</div>`;
+        <div class="pc-note">Đơn vị: tỷ đồng (sau VAT) · phải thu = nghiệm thu − tiền về (âm: CĐT ứng trước)</div>`;
     }
     default: { // tổng quan
       const groups = d.nhom.filter((n) => n[v] > 0).sort((a, b) => b[v] - a[v]);
@@ -1234,13 +1239,13 @@ function bSysMoc(d, td) {
 }
 const bTodayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
 function bTdBox(label, cls, val, sys, isPct) {
-  const fmtV = (x) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTy(x));
+  const fmtV = (x) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x));
   let note;
   if (val === null || sys === null) note = `HT ${fmtV(sys)}`;
   else {
     const diff = val - sys;
     const near = isPct ? Math.abs(diff) < 0.0005 : Math.abs(diff) <= Math.max(1000, Math.abs(sys) * 0.005);
-    const dtx = isPct ? `${diff > 0 ? '+' : ''}${(diff * 100).toFixed(1).replace('.', ',')} điểm %` : `${diff > 0 ? '+' : ''}${bTy(diff)}`;
+    const dtx = isPct ? `${diff > 0 ? '+' : ''}${(diff * 100).toFixed(1).replace('.', ',')} điểm %` : `${diff > 0 ? '+' : ''}${bTy(diff)} tỷ đ`;
     note = `HT ${fmtV(sys)} · <i class="${near ? 'ok' : 'lech'}">${near ? 'khớp' : 'lệch ' + dtx}</i>`;
   }
   return `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${fmtV(val)}</b><small class="pc-td-ht">${note}</small></div>`;

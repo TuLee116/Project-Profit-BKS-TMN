@@ -792,3 +792,6 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .tt-dl { max-height: 320px; overflow: auto; }
 .tt-dlg h4 { margin: 12px 0 6px; color: var(--navy); }
 .tt-dlg .tt-dlg-h h3 { color: var(--navy); }
+/* Đơn vị tiền cạnh số trong khung tổng quan công trình */
+.pc-u { font-style: normal; font-size: .58em; font-weight: 600; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
+.pc-list .pc-u, .pc-td-ht .pc-u { font-size: .85em; margin-left: 3px; }
