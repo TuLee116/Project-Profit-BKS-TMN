@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const store = require('./lib/db');
 const auth = require('./lib/auth');
+const security = require('./lib/security');
 const { TRANG_THAI, ROLES, validateProject, validateUser, validateSettings, validateContact, validateTarget, validateRevenue, validateTienVe, validateCost, validateTp, validateTpLine, validateTpPay, passwordErrors, passcodeErrors } = require('./lib/validate');
 const { buildContracts, summarizeContracts } = require('./lib/subcontract');
 const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = require('./lib/cost');
@@ -19,10 +20,8 @@ const SETUP_TOKEN = (process.env.SETUP_TOKEN || '').trim();
 
 app.set('trust proxy', 1); // Railway đứng sau proxy HTTPS
 app.disable('x-powered-by');
-app.use((_req, res, next) => {
-  res.set({ 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin' });
-  next();
-});
+app.use(security.headers);   // header bảo mật (CSP, HSTS, chặn iframe...)
+app.use(security.rateLimit); // giới hạn tần suất theo IP, vượt ngưỡng chặn tạm thời
 app.use(express.json({ limit: '1mb' }));
 
 // Trạng thái kết nối CSDL (web vẫn chạy khi CSDL lỗi để hiển thị nguyên nhân)
@@ -91,6 +90,7 @@ app.get('/setup', wrap(async (_req, res) => {
 // API
 // =====================================================================
 const api = express.Router();
+api.use(security.sameOrigin);
 api.use(auth.csrfGuard);
 
 api.get('/meta', wrap(async (_req, res) => {
@@ -132,19 +132,25 @@ api.post('/setup', wrap(async (req, res) => {
 // ---------- Đăng nhập / đăng xuất ----------
 api.post('/auth/login', wrap(async (req, res) => {
   const ip = req.ip;
-  const wait = auth.loginBlocked(ip);
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const wait = Math.max(auth.loginBlocked(ip), auth.loginBlocked('u:' + username));
   if (wait) return bad(res, `Sai quá nhiều lần. Thử lại sau ${wait} phút`, 429);
 
-  const username = String(req.body?.username || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
   const user = await store.getUserForLogin(username);
   const ok = await auth.verifyPassword(password, user ? user.password_hash : auth.DUMMY_HASH);
   if (!user || !ok) {
+    // khóa theo IP và theo tài khoản (chống dò mật khẩu từ nhiều IP vào 1 tài khoản)
     auth.loginFailed(ip);
+    if (user) auth.loginFailed('u:' + username);
+    security.loginFailedIp(ip);
+    security.log(`Đăng nhập sai: "${username.slice(0, 50)}" từ IP ${ip}`);
     return bad(res, 'Sai tên đăng nhập hoặc mật khẩu', 401);
   }
   if (!user.active) return bad(res, 'Tài khoản đã bị khóa. Liên hệ quản trị viên', 403);
   auth.loginOk(ip);
+  auth.loginOk('u:' + username);
+  console.log(`[ĐĂNG NHẬP] ${new Date().toISOString()} ${user.username} từ IP ${ip}`);
   await auth.startSession(req, res, user.id);
   await store.touchLogin(user.id);
   res.json({ ok: true });
