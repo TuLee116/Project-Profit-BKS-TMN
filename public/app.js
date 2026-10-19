@@ -1764,6 +1764,15 @@ async function onTpDlgClick(e) {
 const uForm = $('#u-form');
 attachPwChecklist(uForm?.elements.password);
 
+// Truy cập gần nhất: < 5 phút = đang trực tuyến; kèm thời gian tương đối
+function seenTxt(t) {
+  if (!t) return '<span class="muted">—</span>';
+  const m = Math.max(0, Math.floor((Date.now() - new Date(t)) / 60000));
+  const rel = m < 5 ? '<span class="st st-hoan-thanh">Đang trực tuyến</span>'
+    : `<span class="muted small">${m < 60 ? `${m} phút trước` : m < 1440 ? `${Math.floor(m / 60)} giờ trước` : `${Math.floor(m / 1440)} ngày trước`}</span>`;
+  return `<span class="muted">${dt(t)}</span><br>${rel}`;
+}
+
 async function loadUsers() {
   users = await api('/api/users');
   $('#u-tbody').innerHTML = users.map((u) => `
@@ -1773,6 +1782,7 @@ async function loadUsers() {
       <td><span class="st role-${u.role}">${esc(META.roles[u.role] || u.role)}</span></td>
       <td>${u.active ? '<span class="st st-hoan-thanh">Hoạt động</span>' : '<span class="st st-tam-dung">Đã khóa</span>'}</td>
       <td class="muted">${dt(u.last_login_at)}</td>
+      <td>${seenTxt(u.last_seen_at)}</td>
       <td class="row-actions">
         <button data-uedit="${u.id}">Sửa</button>
         ${u.id === ME.id ? '' : `<button class="danger" data-udel="${u.id}">Xóa</button>`}
