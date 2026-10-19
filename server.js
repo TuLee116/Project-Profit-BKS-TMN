@@ -11,6 +11,7 @@ const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = requir
 const { summarizeProject } = require('./lib/dashboard');
 const { projectReport } = require('./lib/report');
 const { DEMO_PREFIX, seedDemo } = require('./lib/demo');
+const { buildDtcp, costLinesFor } = require('./lib/export-dtcp');
 const PHIEN_BAN = require('./lib/version').readVersion(); // đọc 1 lần khi khởi động
 const { LOAI_DOANH_THU, calcLine, summarize, sortRevenue, tienVeLabel, sortTienVe, summarizeTienVe } = require('./lib/revenue');
 
@@ -404,15 +405,23 @@ api.get('/dashboard', wrap(async (_req, res) => {
 }));
 
 // ---------- Báo cáo tổng quan (tab Báo cáo): toàn bộ số liệu liên kết + dòng chi tiết để xuất ----------
-api.get('/bao-cao', wrap(async (req, res) => {
+// Số liệu báo cáo của các dự án (withCost: kèm dòng chi phí gốc cho bản xuất Excel mẫu TMN)
+async function reportProjects({ withCost = false } = {}) {
   const list = await store.listProjects();
   const du_an = await Promise.all(list.map(async (p) => {
     const [rev, tienVe, cost, tp] = await Promise.all([
       store.listRevenue(p.id), store.listTienVe(p.id), store.listCost(p.id), store.listTp(p.id)]);
-    return projectReport(p, { rev: sortRevenue(rev).map(calcLine), tienVe: sortTienVe(tienVe), cost: sortCost(cost).map(costLine), tp: buildContracts(tp) });
+    const lines = sortCost(cost).map(costLine);
+    const d = projectReport(p, { rev: sortRevenue(rev).map(calcLine), tienVe: sortTienVe(tienVe), cost: lines, tp: buildContracts(tp) });
+    if (withCost) d.chi_tiet_cp = costLinesFor(lines);
+    return d;
   }));
   const tds = await store.listThoiDiem();
   for (const d of du_an) d.thoi_diem = tds.filter((t) => t.du_an_id === d.id).map(({ du_an_id, ...t }) => t);
+  return du_an;
+}
+api.get('/bao-cao', wrap(async (req, res) => {
+  const du_an = await reportProjects();
   const s = await store.getSettings();
   res.json({
     lap_luc: new Date().toISOString(), nguoi_lap: req.user.full_name || req.user.username,
@@ -420,6 +429,20 @@ api.get('/bao-cao', wrap(async (req, res) => {
     khoi: KHOI_CHI_PHI.map((k) => ({ code: k.code, ten: k.ten })), du_an,
     muc_tieu: await readTargets(), la_quan_tri: req.user.role === 'admin',
   });
+}));
+
+// Xuất Excel theo mẫu trình ký TMN (logo, font, bố cục) – ?ids=1,2,3 (bỏ trống = tất cả dự án)
+api.get('/bao-cao/dtcp.xlsx', wrap(async (req, res) => {
+  const ids = String(req.query.ids || '').split(',').map(Number).filter(Boolean);
+  const all = await reportProjects({ withCost: true });
+  const du_an = ids.length ? all.filter((d) => ids.includes(d.id)) : all;
+  if (!du_an.length) return bad(res, 'Không có dự án để xuất');
+  const ngay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+  const buf = await buildDtcp({ du_an, ngay, nguoi_lap: req.user.full_name || req.user.username });
+  audit.log(req, 'Xuất báo cáo', 'Báo cáo', `Excel mẫu TMN (DT–CP) · ${du_an.length} dự án`);
+  const ten = `BaoCao_DTCP_TMN_${ngay.replace(/-/g, '')}.xlsx`;
+  res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${ten}"` });
+  res.send(Buffer.from(buf));
 }));
 
 // ---------- Thời điểm chốt số thực tế của công trình (TĐ1–TĐ3) ----------

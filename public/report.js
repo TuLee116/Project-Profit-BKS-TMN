@@ -1497,6 +1497,17 @@ async function bBusy(btn, fn) {
 }
 
 // ---------- Excel ----------
+// Excel theo mẫu trình ký TMN: máy chủ dựng file có định dạng sẵn (logo, font, màu, công thức) cho các dự án đang xem
+$('#b-xlsx-tmn').addEventListener('click', (e) => bBusy(e.target, async () => {
+  const ids = bScope().list.map((d) => d.id).join(',');
+  const r = await fetch(`/api/bao-cao/dtcp.xlsx?ids=${ids}`, { credentials: 'same-origin' });
+  if (!r.ok) { let m = 'Không xuất được file'; try { m = (await r.json()).errors.join('; '); } catch { /* không phải JSON */ } throw new Error(m); }
+  const blob = await r.blob();
+  const name = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || 'BaoCao_DTCP_TMN.xlsx';
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}));
 $('#b-xlsx').addEventListener('click', (e) => bBusy(e.target, async () => {
   logEvent('xuat_excel', bLogScope());
   await bLoad('/vendor/xlsx-0.18.5.full.min.js');
