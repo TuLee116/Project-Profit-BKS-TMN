@@ -1068,7 +1068,7 @@ function bPcBody(d, tab) {
       const top = groups.slice(0, 5);
       const rest = groups.slice(5).reduce((s2, n) => s2 + n[v], 0);
       const parts = [...top.map((n, i) => ({ l: NHOM_NGAN[n.code] || n.ten, val: n[v], c: PROJ_COLORS[i] })), ...(rest ? [{ l: 'Khác', val: rest, c: '#b5b3ab' }] : [])];
-      return `<div class="pc-kpis">${mini('Doanh thu', cur.dt, bDeltaS(cur.dt, prv?.dt), 'k-dt')}${mini('Chi phí', cur.cp, bDeltaS(cur.cp, prv?.cp, false), 'k-cp')}${mini('Lợi nhuận', cur.ln, bDeltaS(cur.ln, prv?.ln), 'k-ln')}${mini('Tỷ suất LN', bpct(cur.ln, cur.dt), '', 'k-ts')}</div>
+      return `${bTdBlock(d)}
         <div class="pc-sub-h">Doanh thu – Chi phí – Lợi nhuận (tỷ đồng)</div>
         <div class="chart pc-chart" data-pcchart="tong"></div>
         <div class="pc-2col">
@@ -1078,6 +1078,101 @@ function bPcBody(d, tab) {
         </div>${kyNote}`;
     }
   }
+}
+
+// ---------------------------------------------------------------------
+// Thời điểm chốt số (TĐ1–TĐ3): số thực tế nhập tay, so với số hệ thống tự tính đến cùng ngày (trước VAT)
+// Chỉ hiện các TĐ đã nhập (có TĐ2 thì hiện TĐ1–TĐ2, có TĐ3 thì hiện đủ); chưa có TĐ nào -> 1 dòng chờ nhập TĐ1
+// ---------------------------------------------------------------------
+function bSysAt(d, ngay) {
+  let dt = 0, cp = 0;
+  for (const [k, t] of Object.entries(d.thuc_hien.ngay || {})) if (k <= ngay) { dt += t.dt_gt; cp += t.cp_gt; }
+  return { dt, cp, ln: dt - cp };
+}
+const bTodayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+function bTdBox(label, cls, val, sys, isPct) {
+  const fmtV = (x) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTy(x));
+  let note;
+  if (val === null || sys === null) note = `HT ${fmtV(sys)}`;
+  else {
+    const diff = val - sys;
+    const near = isPct ? Math.abs(diff) < 0.0005 : Math.abs(diff) <= Math.max(1000, Math.abs(sys) * 0.005);
+    const dtx = isPct ? `${diff > 0 ? '+' : ''}${(diff * 100).toFixed(1).replace('.', ',')} điểm %` : `${diff > 0 ? '+' : ''}${bTy(diff)}`;
+    note = `HT ${fmtV(sys)} · <i class="${near ? 'ok' : 'lech'}">${near ? 'khớp' : 'lệch ' + dtx}</i>`;
+  }
+  return `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${fmtV(val)}</b><small class="pc-td-ht">${note}</small></div>`;
+}
+function bTdBlock(d) {
+  const tds = [...(d.thoi_diem || [])].sort((a, b) => a.td - b.td);
+  const edit = canEditPc();
+  const pct = (a, b) => (b ? a / b : null);
+  const rows = tds.map((t) => {
+    const s = bSysAt(d, t.ngay), ln = t.dt - t.cp;
+    return `<div class="pc-td" ${t.ghi_chu ? `title="${esc(t.ghi_chu)}"` : ''}>
+      <div class="pc-td-lab"><b>TĐ${t.td}</b><span>${dmy(t.ngay)}</span>${edit ? `<button type="button" class="pc-td-edit no-print" data-tdedit="${t.td}">Sửa</button>` : ''}</div>
+      <div class="pc-kpis">${bTdBox('Doanh thu', 'k-dt', t.dt, s.dt)}${bTdBox('Chi phí', 'k-cp', t.cp, s.cp)}${bTdBox('Lợi nhuận', 'k-ln', ln, s.ln)}${bTdBox('Tỷ suất LN', 'k-ts', pct(ln, t.dt), pct(s.ln, s.dt), true)}</div>
+    </div>`;
+  });
+  if (!tds.length) {
+    const s = bSysAt(d, bTodayIso());
+    rows.push(`<div class="pc-td pc-td-empty">
+      <div class="pc-td-lab"><b>TĐ1</b><span>Chưa nhập</span></div>
+      <div class="pc-td-none">${edit ? '<button type="button" class="primary sm no-print" data-tdedit="1">+ Nhập số thực tế TĐ1</button>' : '<span class="muted">Chưa nhập số thực tế tại thời điểm nào</span>'}
+        <span class="muted small">Hệ thống đến hôm nay: DT <b>${bTy(s.dt)}</b> · CP <b>${bTy(s.cp)}</b> · LN <b class="${s.ln < 0 ? 'neg' : ''}">${bTy(s.ln)}</b> tỷ</span></div>
+    </div>`);
+  }
+  const next = tds.length + 1;
+  const add = edit && tds.length && next <= 3 ? `<button type="button" class="pc-td-add no-print" data-tdedit="${next}">+ Thêm TĐ${next}</button>` : '';
+  return `<div class="pc-tds">${rows.join('')}${add}
+    <div class="pc-note">Số thực tế nhập tay tại từng thời điểm (trước VAT, tỷ đồng) · dòng nhỏ <b>HT</b> = số hệ thống tự tính đến cùng ngày để đối chiếu</div></div>`;
+}
+function bTdDialog(d, n) {
+  const t = (d.thoi_diem || []).find((x) => x.td === n);
+  const last = Math.max(0, ...(d.thoi_diem || []).map((x) => x.td));
+  const dlg = document.createElement('dialog');
+  dlg.className = 'pass-dlg f-dlg';
+  const mv = (x) => (x === null || x === undefined ? '' : bf.format(x));
+  dlg.innerHTML = `<form method="dialog" class="stack">
+    <h3>TĐ${n} · ${esc(d.ma_du_an)}</h3>
+    <p class="muted small">Số thực tế chốt tại thời điểm (trước VAT, đồng). Hệ thống hiện kèm số tự tính đến cùng ngày để đối chiếu.</p>
+    <label>Ngày chốt số<input name="ngay" type="date" value="${t?.ngay || bTodayIso()}" required></label>
+    <label>Doanh thu thực tế (đồng)<input name="dt" class="money" value="${mv(t?.dt)}" required></label>
+    <label>Chi phí thực tế (đồng)<input name="cp" class="money" value="${mv(t?.cp)}" required></label>
+    <label>Ghi chú<input name="ghi_chu" maxlength="200" value="${esc(t?.ghi_chu || '')}" placeholder="VD: số kế toán chốt quý III"></label>
+    <div class="td-sys muted small"></div>
+    <button type="button" class="sm" data-fill>Lấy số hệ thống đến ngày này</button>
+    <div class="msg" role="alert"></div>
+    <div class="actions"><button type="submit" class="primary">Lưu</button>${t && n === last ? '<button type="button" class="danger" data-del>Xóa TĐ' + n + '</button>' : ''}<button type="button" data-x>Hủy</button></div>
+  </form>`;
+  document.body.appendChild(dlg);
+  const f = $('form', dlg);
+  $$('input.money', f).forEach(attachMoneyInput);
+  const sysNote = () => {
+    const s = bSysAt(d, f.elements.ngay.value || bTodayIso());
+    $('.td-sys', f).innerHTML = `Hệ thống đến ${dmy(f.elements.ngay.value)}: DT <b>${bn(s.dt)}</b> · CP <b>${bn(s.cp)}</b> · LN <b>${bn(s.ln)}</b> đ`;
+    return s;
+  };
+  sysNote();
+  f.elements.ngay.addEventListener('change', sysNote);
+  $('[data-fill]', f).addEventListener('click', () => { const s = sysNote(); f.elements.dt.value = bf.format(s.dt); f.elements.cp.value = bf.format(s.cp); });
+  const close = () => { dlg.close(); dlg.remove(); };
+  const done = (list) => { d.thoi_diem = list; close(); if (pcOpenId) bPcOpen(pcOpenId); else renderReport(); };
+  $('[data-x]', f).addEventListener('click', close);
+  $('[data-del]', f)?.addEventListener('click', async () => {
+    if (!confirm(`Xóa số liệu TĐ${n} của ${d.ma_du_an}?`)) return;
+    try { await api(`/api/du-an/${d.id}/thoi-diem/${n}`, { method: 'DELETE' }); done((d.thoi_diem || []).filter((x) => x.td !== n)); }
+    catch (err) { showMsg($('.msg', f), err.message, 'err'); }
+  });
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const dt = parseMoney(f.elements.dt.value), cp = parseMoney(f.elements.cp.value);
+    if (dt === '' || cp === '') return showMsg($('.msg', f), 'Nhập đủ Doanh thu và Chi phí thực tế', 'err');
+    try {
+      const list = await api(`/api/du-an/${d.id}/thoi-diem/${n}`, { method: 'PUT', body: JSON.stringify({ ngay: f.elements.ngay.value, dt: Number(dt), cp: Number(cp), ghi_chu: f.elements.ghi_chu.value }) });
+      done(list.map(({ du_an_id, ...x }) => x));
+    } catch (err) { showMsg($('.msg', f), err.message, 'err'); }
+  });
+  dlg.showModal();
 }
 
 function bPcDraw(card) {
@@ -1141,6 +1236,8 @@ $('#b-report').addEventListener('click', async (e) => {
   const card = e.target.closest('.pc-card');
   if (!card) return;
   const id = Number(card.dataset.pc);
+  const te = e.target.closest('[data-tdedit]');
+  if (te) return bTdDialog(BC.du_an.find((x) => x.id === id), Number(te.dataset.tdedit));
   const t = e.target.closest('[data-pt]');
   if (t) {
     pcTab[id] = t.dataset.pt;

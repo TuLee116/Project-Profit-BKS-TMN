@@ -411,6 +411,8 @@ api.get('/bao-cao', wrap(async (req, res) => {
       store.listRevenue(p.id), store.listTienVe(p.id), store.listCost(p.id), store.listTp(p.id)]);
     return projectReport(p, { rev: sortRevenue(rev).map(calcLine), tienVe: sortTienVe(tienVe), cost: sortCost(cost).map(costLine), tp: buildContracts(tp) });
   }));
+  const tds = await store.listThoiDiem();
+  for (const d of du_an) d.thoi_diem = tds.filter((t) => t.du_an_id === d.id).map(({ du_an_id, ...t }) => t);
   const s = await store.getSettings();
   res.json({
     lap_luc: new Date().toISOString(), nguoi_lap: req.user.full_name || req.user.username,
@@ -418,6 +420,46 @@ api.get('/bao-cao', wrap(async (req, res) => {
     khoi: KHOI_CHI_PHI.map((k) => ({ code: k.code, ten: k.ten })), du_an,
     muc_tieu: await readTargets(), la_quan_tri: req.user.role === 'admin',
   });
+}));
+
+// ---------- Thời điểm chốt số thực tế của công trình (TĐ1–TĐ3) ----------
+const tdVal = (b) => {
+  const errors = [];
+  const td = Number(b.td), ngay = String(b.ngay || ''), dt = Number(b.dt), cp = Number(b.cp);
+  if (![1, 2, 3].includes(td)) errors.push('Thời điểm phải là TĐ1, TĐ2 hoặc TĐ3');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ngay) || Number.isNaN(Date.parse(ngay))) errors.push('Nhập ngày chốt số hợp lệ');
+  if (!Number.isInteger(dt) || dt < 0 || dt > 1e15) errors.push('Doanh thu phải là số nguyên không âm (đồng)');
+  if (!Number.isInteger(cp) || cp < 0 || cp > 1e15) errors.push('Chi phí phải là số nguyên không âm (đồng)');
+  return { data: { td, ngay, dt, cp, ghi_chu: String(b.ghi_chu || '').trim().slice(0, 200) }, errors };
+};
+const tdTxt = (t) => (t ? `${t.ngay.split('-').reverse().join('/')} · DT ${new Intl.NumberFormat('vi-VN').format(t.dt)} đ · CP ${new Intl.NumberFormat('vi-VN').format(t.cp)} đ` : '—');
+api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  const p = id && (await store.getProject(id));
+  if (!p) return bad(res, 'Không tìm thấy công trình', 404);
+  const { data, errors } = tdVal({ ...(req.body || {}), td: req.params.td });
+  if (errors.length) return bad(res, errors);
+  const all = await store.listThoiDiem(id);
+  const old = all.find((t) => t.td === data.td);
+  const prev = all.find((t) => t.td === data.td - 1), next = all.find((t) => t.td === data.td + 1);
+  // Nhập theo thứ tự: có TĐ trước mới nhập TĐ sau; ngày không lùi so với TĐ trước, không vượt TĐ sau
+  if (data.td > 1 && !prev) return bad(res, `Cần nhập TĐ${data.td - 1} trước khi nhập TĐ${data.td}`);
+  if (prev && data.ngay < prev.ngay) return bad(res, `Ngày TĐ${data.td} không được trước ngày TĐ${data.td - 1} (${prev.ngay.split('-').reverse().join('/')})`);
+  if (next && data.ngay > next.ngay) return bad(res, `Ngày TĐ${data.td} không được sau ngày TĐ${data.td + 1} (${next.ngay.split('-').reverse().join('/')})`);
+  await store.setThoiDiem(id, data.td, data, req.user.id);
+  audit.log(req, old ? 'Sửa' : 'Thêm', 'Thời điểm', `TĐ${data.td} · ${tdTxt(data)}${old ? ` | Trước: ${tdTxt(old)}` : ''}`, { du_an: p.ma_du_an });
+  res.json(await store.listThoiDiem(id));
+}));
+api.delete('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id), td = Number(req.params.td);
+  const p = id && (await store.getProject(id));
+  if (!p) return bad(res, 'Không tìm thấy công trình', 404);
+  const all = await store.listThoiDiem(id);
+  const old = all.find((t) => t.td === td);
+  if (all.some((t) => t.td > td)) return bad(res, `Xóa TĐ${Math.max(...all.map((t) => t.td))} trước (xóa từ thời điểm sau cùng)`);
+  if (!old || !(await store.deleteThoiDiem(id, td))) return bad(res, 'Thời điểm chưa có số liệu', 404);
+  audit.log(req, 'Xóa', 'Thời điểm', `TĐ${td} · ${tdTxt(old)}`, { du_an: p.ma_du_an });
+  res.status(204).end();
 }));
 
 // ---------- Mục tiêu năm (Báo cáo) ----------
