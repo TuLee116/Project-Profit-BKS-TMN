@@ -1022,7 +1022,7 @@ function bPcSection(list, v) {
     </div>
     ${one
     ? `<div class="pc-grid one">${list.map((d) => bPcCard(d, BC.du_an.indexOf(d))).join('')}</div>`
-    : `<p class="muted small pc-gal-hint no-print">Bấm vào công trình để xem tổng quan nhanh · trong khung tổng quan bấm <b>Xem chi tiết công trình</b> để xem đầy đủ.</p>
+    : `<p class="muted small pc-gal-hint no-print">Số trên ô: <b>tiền thật</b> (thực thu, thực chi, còn lại = thu − chi; tỷ đồng, sau VAT, lũy kế đến hết kỳ) · bấm vào công trình để xem tổng quan nhanh, trong đó bấm <b>Xem chi tiết công trình</b> để xem đầy đủ.</p>
        <div class="pc-gal">${list.map((d) => bPcTile(d, BC.du_an.indexOf(d), v, P)).join('')}</div>
        <div class="pc-modal" id="pc-modal" hidden></div>`}
   </section>`;
@@ -1031,7 +1031,7 @@ function bPcSection(list, v) {
 // Ô công trình (lưới): ảnh + tên + trạng thái + số chính trong kỳ; bấm -> khung tổng quan nhanh
 function bPcTile(d, idx, v, P) {
   const color = PROJ_COLORS[idx % PROJ_COLORS.length];
-  const cur = bSumRange([d], v, P.from, P.to);
+  const t = bThuc(d, P.to < bNowYm() ? P.to : bNowYm()); // tiền thật, sau VAT, lũy kế đến hết kỳ
   const sub = [d.loai_cong_trinh, d.dia_diem].filter(Boolean).join(' – ') || d.chu_dau_tu || '';
   const img = d.co_anh
     ? `<img src="/api/du-an/${d.id}/anh?v=${d.anh_v}" alt="Ảnh ${esc(d.ten_du_an)}" loading="lazy">`
@@ -1043,7 +1043,7 @@ function bPcTile(d, idx, v, P) {
       <span class="pc-tile-ten">${esc(d.ten_du_an)}</span>
       <span class="pc-tile-sub">${esc(sub) || '&nbsp;'}</span>
       <span class="pc-tile-prog"><i><b style="width:${Math.min(100, d.tien_do)}%"></b></i>${d.tien_do}%</span>
-      <span class="pc-tile-kpi"><span>Doanh thu<b>${bTy(cur.dt)}</b></span><span>Lợi nhuận<b class="${cur.ln < 0 ? 'neg' : 'pos'}">${bTy(cur.ln)}</b></span><span>Tỷ suất<b class="${cur.ln < 0 ? 'neg' : ''}">${cur.dt ? bpct(cur.ln, cur.dt) : '—'}</b></span></span>
+      <span class="pc-tile-kpi" title="Tiền thật, sau VAT, lũy kế đến hết kỳ · Thực chi = chi phí đã chi + trả thầu phụ"><span>Thực thu<b>${bTy(t.thu)}</b></span><span>Thực chi<b>${bTy(t.chi)}</b></span><span>Còn lại<b class="${t.con < 0 ? 'neg' : 'pos'}">${bTy(t.con)}</b></span></span>
     </span>
   </button>`;
 }

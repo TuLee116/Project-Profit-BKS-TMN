@@ -681,9 +681,9 @@ body.pc-modal-on { overflow: hidden; }
   .pc-tile-noimg small { display: none; }
   .pc-tile-body { padding: 8px 10px 10px; }
   .pc-tile-ten { font-size: 13px; }
-  .pc-tile-kpi { grid-template-columns: 1fr 1fr; }
-  .pc-tile-kpi span:nth-child(3) { display: none; }
-  .pc-tile-kpi b { font-size: 13px; }
+  .pc-tile-kpi { gap: 2px; }
+  .pc-tile-kpi span { font-size: 9.5px; }
+  .pc-tile-kpi b { font-size: 12px; }
   .pc-modal { padding: 24px 8px; } .pc-x { top: -10px; right: -4px; }
 }
 @media print { .pc-modal, .pc-gal-hint { display: none !important; } .pc-gal { grid-template-columns: repeat(4, 1fr); } .pc-tile { break-inside: avoid; box-shadow: none; } }
