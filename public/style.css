@@ -710,3 +710,28 @@ body.pc-modal-on { overflow: hidden; }
 @media (max-width: 1000px) { .nk-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); } .nk-actions { grid-column: 1 / -1; } }
 .nk-stat { margin: 2px 0 4px; }
 .nk-arch { display: inline-block; margin-top: 2px; padding: 0 6px; border-radius: 4px; font-size: 10.5px; color: #64748b; background: #eef2f7; }
+
+/* Khung tổng quan nhanh: mở rộng gần toàn màn hình, chữ và biểu đồ lớn hơn */
+.pc-modal { padding: 28px 24px; }
+.pc-modal-box { width: min(1280px, 100%); }
+.pc-modal .pc-head { padding: 18px 22px; gap: 18px; }
+.pc-modal .pc-img { flex-basis: 200px; height: 130px; }
+.pc-modal .pc-title h3 { font-size: 22px; }
+.pc-modal .pc-sub { font-size: 14px; }
+.pc-modal .pc-tabs button { font-size: 14px; padding: 9px 16px; }
+.pc-modal .pc-body { padding: 16px 22px 8px; }
+.pc-modal .pc-kpis { gap: 12px; }
+.pc-modal .pc-k { padding: 12px 14px; }
+.pc-modal .pc-k span { font-size: 12.5px; }
+.pc-modal .pc-k b { font-size: 26px; }
+.pc-modal .pc-k small, .pc-modal .pc-k .f-delta { font-size: 12px; }
+.pc-modal .pc-sub-h { font-size: 15px; margin-top: 14px; }
+.pc-modal .pc-chart { min-height: 340px; }
+.pc-modal .pc-2col { gap: 28px; }
+.pc-modal .pc-donut svg { width: 150px; height: 150px; }
+.pc-modal .pc-legend { font-size: 13px; }
+.pc-modal .pc-list li { font-size: 14px; padding: 6px 0; }
+.pc-modal .pc-tbl { font-size: 13.5px; }
+.pc-modal .pc-note { font-size: 12.5px; }
+.pc-modal .pc-more { font-size: 15px; padding: 13px; margin: 8px 22px 20px; width: auto; }
+@media (max-width: 900px) { .pc-modal { padding: 20px 8px; } .pc-modal .pc-k b { font-size: 19px; } .pc-modal .pc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pc-modal .pc-2col { grid-template-columns: 1fr; } .pc-modal .pc-img { flex-basis: 120px; height: 86px; } }

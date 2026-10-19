@@ -1085,11 +1085,12 @@ function bPcDraw(card) {
   const d = BC.du_an.find((x) => x.id === id);
   if (!d) return;
   const P = bPeriod(bScope().list);
+  const H = card.closest('#pc-modal') ? 340 : 170; // khung tổng quan nhanh: biểu đồ cao gấp đôi
   const ch = $('[data-pcchart]', card);
   if (ch) {
     const pts = bSeries([d], BST.vat, P);
-    if (ch.dataset.pcchart === 'dong') bColChart(ch, pts, [{ key: 'thu', name: 'Thu', color: BCOL.thu }, { key: 'chi', name: 'Chi', color: BCOL.chi }], { height: 170, valueLabels: pts.length <= 4 });
-    else bColChart(ch, pts, [{ key: 'dt', name: 'Doanh thu', color: BCOL.dt }, { key: 'cp', name: 'Chi phí', color: BCOL.cp }, { key: 'ln', name: 'Lợi nhuận', color: BCOL.dk }], { height: 170, valueLabels: pts.length <= 4 });
+    if (ch.dataset.pcchart === 'dong') bColChart(ch, pts, [{ key: 'thu', name: 'Thu', color: BCOL.thu }, { key: 'chi', name: 'Chi', color: BCOL.chi }], { height: H, valueLabels: pts.length <= 4 });
+    else bColChart(ch, pts, [{ key: 'dt', name: 'Doanh thu', color: BCOL.dt }, { key: 'cp', name: 'Chi phí', color: BCOL.cp }, { key: 'ln', name: 'Lợi nhuận', color: BCOL.dk }], { height: H, valueLabels: pts.length <= 4 });
   }
   const dn = $('[data-pcdonut]', card);
   if (dn) bMiniDonut(dn, JSON.parse(dn.dataset.pcdonut));
