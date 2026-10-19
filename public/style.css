@@ -639,3 +639,51 @@ dialog.pass-dlg.f-dlg h3 { color: var(--navy); }
 .env-bar { position: sticky; top: 0; z-index: 60; padding: 6px 12px; text-align: center; font-size: 12.5px; font-weight: 700; letter-spacing: .3px; color: #fff;
   background: repeating-linear-gradient(-45deg, #c2410c 0 14px, #b93a08 14px 28px); }
 @media print { .env-bar { display: none; } }
+
+/* ---- Báo cáo theo công trình: lưới ô công trình + khung tổng quan nhanh ---- */
+.pc-gal-hint { margin: -4px 0 12px; }
+.pc-gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.pc-tile { display: flex; flex-direction: column; padding: 0; text-align: left; border-radius: 14px; border: 1px solid var(--border);
+  border-top: 4px solid var(--pc); background: #fff; overflow: hidden; color: inherit; font: inherit; cursor: pointer; box-shadow: 0 1px 3px rgba(15,23,42,.06);
+  transition: transform .15s ease, box-shadow .15s ease; }
+.pc-tile:hover, .pc-tile:focus-visible { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(15,23,42,.14); outline: none; }
+.pc-tile-img { position: relative; display: block; aspect-ratio: 16 / 10; background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 80%, #000) 0%, var(--pc) 100%); }
+.pc-tile-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pc-tile-noimg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 4px; color: rgba(255,255,255,.85); }
+.pc-tile-noimg svg { width: 44px; height: 44px; }
+.pc-tile-noimg small { font-size: 11px; }
+.pc-tile-no { position: absolute; top: 8px; left: 8px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; display: grid; place-items: center;
+  background: rgba(255,255,255,.95); color: var(--pc); font-weight: 800; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.pc-tile-st { position: absolute; right: 8px; bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.pc-tile-body { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px 12px; }
+.pc-tile-ma { font-size: 11.5px; font-weight: 800; color: var(--pc); letter-spacing: .3px; }
+.pc-tile-ten { font-weight: 700; color: var(--navy); font-size: 14px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+.pc-tile-sub { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-tile-prog { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+.pc-tile-prog i { flex: 1; height: 6px; border-radius: 3px; background: #e8edf4; overflow: hidden; }
+.pc-tile-prog b { display: block; height: 100%; background: var(--pc); border-radius: 3px; }
+.pc-tile-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.pc-tile-kpi span { display: flex; flex-direction: column; font-size: 10.5px; color: var(--muted); }
+.pc-tile-kpi b { font-size: 14px; color: var(--navy); font-variant-numeric: tabular-nums; }
+.pc-tile-kpi b.pos { color: #16968a; }
+.pc-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: start center; padding: 40px 16px; overflow-y: auto;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
+.pc-modal[hidden] { display: none; }
+.pc-modal-box { position: relative; width: min(720px, 100%); animation: pcPop .18s ease; }
+.pc-modal-box .pc-card { box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+.pc-x { position: absolute; top: -14px; right: -14px; z-index: 2; width: 36px; height: 36px; padding: 0; border-radius: 50%; border: 0;
+  background: #fff; color: var(--navy); font-size: 22px; line-height: 1; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
+.pc-x:hover { background: #f1f5f9; }
+body.pc-modal-on { overflow: hidden; }
+@keyframes pcPop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) {
+  .pc-gal { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .pc-tile-noimg small { display: none; }
+  .pc-tile-body { padding: 8px 10px 10px; }
+  .pc-tile-ten { font-size: 13px; }
+  .pc-tile-kpi { grid-template-columns: 1fr 1fr; }
+  .pc-tile-kpi span:nth-child(3) { display: none; }
+  .pc-tile-kpi b { font-size: 13px; }
+  .pc-modal { padding: 24px 8px; } .pc-x { top: -10px; right: -4px; }
+}
+@media print { .pc-modal, .pc-gal-hint { display: none !important; } .pc-gal { grid-template-columns: repeat(4, 1fr); } .pc-tile { break-inside: avoid; box-shadow: none; } }

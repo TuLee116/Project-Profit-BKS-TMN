@@ -881,6 +881,7 @@ function bDrawCharts(list, v, one) {
   $$('#b-report .pc-card').forEach(bPcDraw);
   if (!$('#b-ch-line')) return; // báo cáo đang tải lại
   if (pcScrollTo) { const el = $(`#pc-${pcScrollTo}`); pcScrollTo = null; if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }
+  if (pcOpenId) { if ($('#pc-modal')) bPcOpen(pcOpenId); else bPcClose(); } // vẽ lại (đổi VAT, tải ảnh) -> giữ khung đang mở
   const pts = bMonths(list, v);
   bLineChart($('#b-ch-line'), pts, [{ key: 'luy_dt', name: 'Doanh thu', color: BCOL.dt }, { key: 'luy_cp', name: 'Chi phí', color: BCOL.cp }]);
   bColChart($('#b-ch-flow'), pts, [{ key: 'thu', name: 'Thu (tiền về)', color: BCOL.thu }, { key: 'chi', name: 'Chi', color: BCOL.chi }],
@@ -934,9 +935,56 @@ function bPcSection(list, v) {
       </div>
       <div class="f-range print-only">Kỳ: ${esc(P.label)} · ${P.range}</div>
     </div>
-    <div class="pc-grid ${list.length === 1 ? 'one' : ''}">${list.map((d) => bPcCard(d, BC.du_an.indexOf(d))).join('')}</div>
+    ${one
+    ? `<div class="pc-grid one">${list.map((d) => bPcCard(d, BC.du_an.indexOf(d))).join('')}</div>`
+    : `<p class="muted small pc-gal-hint no-print">Bấm vào công trình để xem tổng quan nhanh · trong khung tổng quan bấm <b>Xem chi tiết công trình</b> để xem đầy đủ.</p>
+       <div class="pc-gal">${list.map((d) => bPcTile(d, BC.du_an.indexOf(d), v, P)).join('')}</div>
+       <div class="pc-modal" id="pc-modal" hidden></div>`}
   </section>`;
 }
+
+// Ô công trình (lưới): ảnh + tên + trạng thái + số chính trong kỳ; bấm -> khung tổng quan nhanh
+function bPcTile(d, idx, v, P) {
+  const color = PROJ_COLORS[idx % PROJ_COLORS.length];
+  const cur = bSumRange([d], v, P.from, P.to);
+  const sub = [d.loai_cong_trinh, d.dia_diem].filter(Boolean).join(' – ') || d.chu_dau_tu || '';
+  const img = d.co_anh
+    ? `<img src="/api/du-an/${d.id}/anh?v=${d.anh_v}" alt="Ảnh ${esc(d.ten_du_an)}" loading="lazy">`
+    : `<span class="pc-tile-noimg">${BUILDING}<small>Chưa có ảnh</small></span>`;
+  return `<button type="button" class="pc-tile" data-pctile="${d.id}" style="--pc:${color}" title="Xem tổng quan ${esc(d.ma_du_an)}">
+    <span class="pc-tile-img">${img}<span class="pc-tile-no">${idx + 1}</span><span class="st st-${slug(d.trang_thai)} pc-tile-st">${esc(d.trang_thai)}</span></span>
+    <span class="pc-tile-body">
+      <span class="pc-tile-ma">${esc(d.ma_du_an)}</span>
+      <span class="pc-tile-ten">${esc(d.ten_du_an)}</span>
+      <span class="pc-tile-sub">${esc(sub) || '&nbsp;'}</span>
+      <span class="pc-tile-prog"><i><b style="width:${Math.min(100, d.tien_do)}%"></b></i>${d.tien_do}%</span>
+      <span class="pc-tile-kpi"><span>Doanh thu<b>${bTy(cur.dt)}</b></span><span>Lợi nhuận<b class="${cur.ln < 0 ? 'neg' : 'pos'}">${bTy(cur.ln)}</b></span><span>Tỷ suất<b class="${cur.ln < 0 ? 'neg' : ''}">${cur.dt ? bpct(cur.ln, cur.dt) : '—'}</b></span></span>
+    </span>
+  </button>`;
+}
+
+// Khung tổng quan nhanh 1 công trình (dùng lại thẻ báo cáo 6 tab)
+let pcOpenId = null;
+function bPcOpen(id) {
+  const m = $('#pc-modal');
+  const d = BC.du_an.find((x) => x.id === id);
+  if (!m || !d) return;
+  pcOpenId = id;
+  m.innerHTML = `<div class="pc-modal-box" role="dialog" aria-modal="true" aria-label="Tổng quan ${esc(d.ma_du_an)}">
+    <button type="button" class="pc-x" data-pcclose title="Đóng (Esc)">×</button>${bPcCard(d, BC.du_an.indexOf(d))}</div>`;
+  m.hidden = false;
+  document.body.classList.add('pc-modal-on');
+  bPcDraw($('.pc-card', m));
+  $('.pc-x', m).focus({ preventScroll: true });
+}
+function bPcClose() {
+  pcOpenId = null;
+  const m = $('#pc-modal');
+  if (m) { m.hidden = true; m.innerHTML = ''; }
+  document.body.classList.remove('pc-modal-on');
+  hideTip();
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pcOpenId) bPcClose(); });
 
 function bPcCard(d, idx) {
   const color = PROJ_COLORS[idx % PROJ_COLORS.length];
@@ -1080,6 +1128,9 @@ async function bUploadImage(id, file) {
 }
 
 $('#b-report').addEventListener('click', async (e) => {
+  const tile = e.target.closest('[data-pctile]');
+  if (tile) return bPcOpen(Number(tile.dataset.pctile));
+  if (e.target.closest('[data-pcclose]') || e.target.id === 'pc-modal') return bPcClose();
   const card = e.target.closest('.pc-card');
   if (!card) return;
   const id = Number(card.dataset.pc);
@@ -1091,6 +1142,7 @@ $('#b-report').addEventListener('click', async (e) => {
     return bPcDraw(card);
   }
   if (e.target.closest('[data-pdetail]')) {
+    bPcClose();
     BST.project = String(id); BST.chi_tiet = true; bSave(); renderReport();
     return $('.b-detail-bar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
