@@ -432,7 +432,8 @@ const tdVal = (b) => {
   if (!Number.isInteger(cp) || cp < 0 || cp > 1e15) errors.push('Chi phí phải là số nguyên không âm (đồng)');
   return { data: { td, ngay, dt, cp, ghi_chu: String(b.ghi_chu || '').trim().slice(0, 200) }, errors };
 };
-const tdTxt = (t) => (t ? `${t.ngay.split('-').reverse().join('/')} · DT ${new Intl.NumberFormat('vi-VN').format(t.dt)} đ · CP ${new Intl.NumberFormat('vi-VN').format(t.cp)} đ` : '—');
+const TD_TEN = { 1: 'Ban đầu', 2: 'Có phát sinh', 3: 'Quyết toán' };
+const tdTxt = (t) => (t ? `${TD_TEN[t.td] || ''} · ${t.ngay.split('-').reverse().join('/')} · DT ${new Intl.NumberFormat('vi-VN').format(t.dt)} đ · CP ${new Intl.NumberFormat('vi-VN').format(t.cp)} đ` : '—');
 api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const p = id && (await store.getProject(id));

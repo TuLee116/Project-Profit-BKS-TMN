@@ -2031,7 +2031,7 @@ $('#demo-seed')?.addEventListener('click', async (e) => {
   try {
     const r = await api('/api/demo', { method: 'POST', body: '{}' });
     const c = r.count;
-    showMsg($('#demo-msg'), `Đã tạo ${c.du_an} dự án · ${c.hd} HĐ CĐT · ${c.pl} PL · ${c.ht_qt} dòng HT/QT · ${c.tien_ve} dòng tiền về · ${c.thau_phu} HĐ thầu phụ · ${c.tp_thanh_toan} lần thanh toán TP · ${c.chi_phi} dòng chi phí (${(r.ms / 1000).toFixed(1)} giây). Xem ở tab Dự án.`);
+    showMsg($('#demo-msg'), `Đã tạo ${c.du_an} dự án · ${c.hd} HĐ CĐT · ${c.pl} PL · ${c.ht_qt} dòng HT/QT · ${c.tien_ve} dòng tiền về · ${c.thau_phu} HĐ thầu phụ · ${c.tp_thanh_toan} lần thanh toán TP · ${c.chi_phi} dòng chi phí · ${c.thoi_diem || 0} thời điểm TĐ (${(r.ms / 1000).toFixed(1)} giây). Xem ở tab Dự án.`);
   } catch (err) {
     showMsg($('#demo-msg'), err.message, 'err');
   }

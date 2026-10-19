@@ -1084,10 +1084,14 @@ function bPcBody(d, tab) {
 // Thời điểm chốt số (TĐ1–TĐ3): số thực tế nhập tay, so với số hệ thống tự tính đến cùng ngày (trước VAT)
 // Chỉ hiện các TĐ đã nhập (có TĐ2 thì hiện TĐ1–TĐ2, có TĐ3 thì hiện đủ); chưa có TĐ nào -> 1 dòng chờ nhập TĐ1
 // ---------------------------------------------------------------------
-function bSysAt(d, ngay) {
-  let dt = 0, cp = 0;
-  for (const [k, t] of Object.entries(d.thuc_hien.ngay || {})) if (k <= ngay) { dt += t.dt_gt; cp += t.cp_gt; }
-  return { dt, cp, ln: dt - cp };
+const TD_TEN = { 1: 'Ban đầu', 2: 'Có phát sinh', 3: 'Quyết toán' };
+const TD_HT = { 1: 'HĐ gốc', 2: 'HĐ + phụ lục', 3: 'quyết toán' };
+// Số hệ thống theo mốc: TĐ1 = HĐ gốc · TĐ2 = HĐ + PL · TĐ3 = quyết toán (DT); CP = thầu phụ cùng mốc + chi phí khác đã ghi nhận
+function bSysMoc(d, td) {
+  const m = d.moc || {};
+  const dt = td === 1 ? m.dt_goc : td === 2 ? m.dt_ps : m.dt_qt;
+  const cp = (td === 1 ? m.tp_goc : td === 2 ? m.tp_ps : m.tp_qt) + (m.cp_khac || 0);
+  return { dt: dt || 0, cp: cp || 0, ln: (dt || 0) - (cp || 0) };
 }
 const bTodayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
 function bTdBox(label, cls, val, sys, isPct) {
@@ -1107,24 +1111,24 @@ function bTdBlock(d) {
   const edit = canEditPc();
   const pct = (a, b) => (b ? a / b : null);
   const rows = tds.map((t) => {
-    const s = bSysAt(d, t.ngay), ln = t.dt - t.cp;
+    const s = bSysMoc(d, t.td), ln = t.dt - t.cp;
     return `<div class="pc-td" ${t.ghi_chu ? `title="${esc(t.ghi_chu)}"` : ''}>
-      <div class="pc-td-lab"><b>TĐ${t.td}</b><span>${dmy(t.ngay)}</span>${edit ? `<button type="button" class="pc-td-edit no-print" data-tdedit="${t.td}">Sửa</button>` : ''}</div>
+      <div class="pc-td-lab"><b>TĐ${t.td}</b><em>${TD_TEN[t.td]}</em><span>${dmy(t.ngay)}</span>${edit ? `<button type="button" class="pc-td-edit no-print" data-tdedit="${t.td}">Sửa</button>` : ''}</div>
       <div class="pc-kpis">${bTdBox('Doanh thu', 'k-dt', t.dt, s.dt)}${bTdBox('Chi phí', 'k-cp', t.cp, s.cp)}${bTdBox('Lợi nhuận', 'k-ln', ln, s.ln)}${bTdBox('Tỷ suất LN', 'k-ts', pct(ln, t.dt), pct(s.ln, s.dt), true)}</div>
     </div>`;
   });
   if (!tds.length) {
-    const s = bSysAt(d, bTodayIso());
+    const s = bSysMoc(d, 1);
     rows.push(`<div class="pc-td pc-td-empty">
-      <div class="pc-td-lab"><b>TĐ1</b><span>Chưa nhập</span></div>
-      <div class="pc-td-none">${edit ? '<button type="button" class="primary sm no-print" data-tdedit="1">+ Nhập số thực tế TĐ1</button>' : '<span class="muted">Chưa nhập số thực tế tại thời điểm nào</span>'}
-        <span class="muted small">Hệ thống đến hôm nay: DT <b>${bTy(s.dt)}</b> · CP <b>${bTy(s.cp)}</b> · LN <b class="${s.ln < 0 ? 'neg' : ''}">${bTy(s.ln)}</b> tỷ</span></div>
+      <div class="pc-td-lab"><b>TĐ1</b><em>${TD_TEN[1]}</em><span>Chưa nhập</span></div>
+      <div class="pc-td-none">${edit ? '<button type="button" class="primary sm no-print" data-tdedit="1">+ Nhập DT – CP ban đầu</button>' : '<span class="muted">Chưa nhập số liệu thời điểm</span>'}
+        <span class="muted small">Hệ thống theo HĐ gốc: DT <b>${bTy(s.dt)}</b> · CP <b>${bTy(s.cp)}</b> · LN <b class="${s.ln < 0 ? 'neg' : ''}">${bTy(s.ln)}</b> tỷ</span></div>
     </div>`);
   }
   const next = tds.length + 1;
-  const add = edit && tds.length && next <= 3 ? `<button type="button" class="pc-td-add no-print" data-tdedit="${next}">+ Thêm TĐ${next}</button>` : '';
+  const add = edit && tds.length && next <= 3 ? `<button type="button" class="pc-td-add no-print" data-tdedit="${next}">+ Thêm TĐ${next} – ${TD_TEN[next]}</button>` : '';
   return `<div class="pc-tds">${rows.join('')}${add}
-    <div class="pc-note">Số thực tế nhập tay tại từng thời điểm (trước VAT, tỷ đồng) · dòng nhỏ <b>HT</b> = số hệ thống tự tính đến cùng ngày để đối chiếu</div></div>`;
+    <div class="pc-note">TĐ1 ban đầu · TĐ2 có phát sinh · TĐ3 quyết toán – số nhập tay (trước VAT, tỷ đồng) · dòng nhỏ <b>HT</b> = số hệ thống theo mốc tương ứng (HĐ gốc / HĐ + phụ lục / quyết toán; CP gồm thầu phụ cùng mốc + chi phí khác)</div></div>`;
 }
 function bTdDialog(d, n) {
   const t = (d.thoi_diem || []).find((x) => x.td === n);
@@ -1133,14 +1137,14 @@ function bTdDialog(d, n) {
   dlg.className = 'pass-dlg f-dlg';
   const mv = (x) => (x === null || x === undefined ? '' : bf.format(x));
   dlg.innerHTML = `<form method="dialog" class="stack">
-    <h3>TĐ${n} · ${esc(d.ma_du_an)}</h3>
-    <p class="muted small">Số thực tế chốt tại thời điểm (trước VAT, đồng). Hệ thống hiện kèm số tự tính đến cùng ngày để đối chiếu.</p>
-    <label>Ngày chốt số<input name="ngay" type="date" value="${t?.ngay || bTodayIso()}" required></label>
-    <label>Doanh thu thực tế (đồng)<input name="dt" class="money" value="${mv(t?.dt)}" required></label>
-    <label>Chi phí thực tế (đồng)<input name="cp" class="money" value="${mv(t?.cp)}" required></label>
+    <h3>TĐ${n} – ${TD_TEN[n]} · ${esc(d.ma_du_an)}</h3>
+    <p class="muted small">Doanh thu – chi phí ${TD_TEN[n].toLowerCase()} của công trình (trước VAT, đồng). Hệ thống hiện kèm số theo ${TD_HT[n]} để đối chiếu.</p>
+    <label>Ngày ${n === 1 ? 'ký HĐ / lập dự toán' : n === 2 ? 'phát sinh (phụ lục)' : 'quyết toán'}<input name="ngay" type="date" value="${t?.ngay || bTodayIso()}" required></label>
+    <label>Doanh thu ${TD_TEN[n].toLowerCase()} (đồng)<input name="dt" class="money" value="${mv(t?.dt)}" required></label>
+    <label>Chi phí ${TD_TEN[n].toLowerCase()} (đồng)<input name="cp" class="money" value="${mv(t?.cp)}" required></label>
     <label>Ghi chú<input name="ghi_chu" maxlength="200" value="${esc(t?.ghi_chu || '')}" placeholder="VD: số kế toán chốt quý III"></label>
     <div class="td-sys muted small"></div>
-    <button type="button" class="sm" data-fill>Lấy số hệ thống đến ngày này</button>
+    <button type="button" class="sm" data-fill>Lấy số hệ thống theo ${TD_HT[n]}</button>
     <div class="msg" role="alert"></div>
     <div class="actions"><button type="submit" class="primary">Lưu</button>${t && n === last ? '<button type="button" class="danger" data-del>Xóa TĐ' + n + '</button>' : ''}<button type="button" data-x>Hủy</button></div>
   </form>`;
@@ -1148,12 +1152,11 @@ function bTdDialog(d, n) {
   const f = $('form', dlg);
   $$('input.money', f).forEach(attachMoneyInput);
   const sysNote = () => {
-    const s = bSysAt(d, f.elements.ngay.value || bTodayIso());
-    $('.td-sys', f).innerHTML = `Hệ thống đến ${dmy(f.elements.ngay.value)}: DT <b>${bn(s.dt)}</b> · CP <b>${bn(s.cp)}</b> · LN <b>${bn(s.ln)}</b> đ`;
+    const s = bSysMoc(d, n);
+    $('.td-sys', f).innerHTML = `Hệ thống theo ${TD_HT[n]}: DT <b>${bn(s.dt)}</b> · CP <b>${bn(s.cp)}</b> · LN <b>${bn(s.ln)}</b> đ`;
     return s;
   };
   sysNote();
-  f.elements.ngay.addEventListener('change', sysNote);
   $('[data-fill]', f).addEventListener('click', () => { const s = sysNote(); f.elements.dt.value = bf.format(s.dt); f.elements.cp.value = bf.format(s.cp); });
   const close = () => { dlg.close(); dlg.remove(); };
   const done = (list) => { d.thoi_diem = list; close(); if (pcOpenId) bPcOpen(pcOpenId); else renderReport(); };
