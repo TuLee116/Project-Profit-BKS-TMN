@@ -154,6 +154,11 @@ api.post('/auth/logout', wrap(async (req, res) => {
   await auth.endSession(req, res);
   res.json({ ok: true });
 }));
+// Trang đóng / tải lại -> tạm ngoại tuyến (gửi bằng fetch keepalive khi rời trang)
+api.post('/auth/away', wrap(async (req, res) => {
+  await auth.markAway(req);
+  res.json({ ok: true });
+}));
 
 // Từ đây trở xuống: bắt buộc đăng nhập
 api.use(auth.requireAuth);

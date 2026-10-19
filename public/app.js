@@ -57,12 +57,16 @@ function showTab(name) {
 }
 $('#tabs').addEventListener('click', (e) => e.target.dataset.tab && showTab(e.target.dataset.tab));
 
-// Tín hiệu trực tuyến: khi trang đang mở và đang xem, báo máy chủ mỗi phút (cập nhật "Truy cập gần nhất");
-// tab Tài khoản tự làm mới danh sách mỗi 30 giây để thấy trạng thái theo thời gian thực
-setInterval(() => { if (document.visibilityState === 'visible') api('/api/auth/me').catch(() => {}); }, 60 * 1000);
+// Tín hiệu trực tuyến: trang đang mở báo máy chủ mỗi 20 giây; đóng / tải lại trang báo ngoại tuyến ngay.
+// Tab Tài khoản tự làm mới danh sách mỗi 10 giây (trạng thái do máy chủ tính, không phụ thuộc giờ máy người xem)
+setInterval(() => api('/api/auth/me').catch(() => {}), 20 * 1000);
+window.addEventListener('pagehide', () => {
+  try { fetch('/api/auth/away', { method: 'POST', keepalive: true, headers: { 'X-Requested-With': 'fetch' } }); } catch {}
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') api('/api/auth/me').catch(() => {}); });
 setInterval(() => {
   if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') loadUsers().catch(() => {});
-}, 30 * 1000);
+}, 10 * 1000);
 
 $('#btn-logout').addEventListener('click', async () => {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -1771,12 +1775,13 @@ async function onTpDlgClick(e) {
 const uForm = $('#u-form');
 attachPwChecklist(uForm?.elements.password);
 
-// Truy cập gần nhất: < 3 phút = đang trực tuyến (trang đang mở gửi tín hiệu mỗi phút); kèm thời gian tương đối
-function seenTxt(t) {
-  if (!t) return '<span class="muted">—</span>';
+// Truy cập gần nhất: trạng thái trực tuyến do máy chủ tính (còn phiên đăng nhập và trang đang mở); kèm thời gian tương đối
+function seenTxt(t, online) {
+  const on = '<span class="st st-hoan-thanh">● Đang trực tuyến</span>';
+  if (!t) return online ? on : '<span class="muted">—</span>';
   const m = Math.max(0, Math.floor((Date.now() - new Date(t)) / 60000));
-  const rel = m < 3 ? '<span class="st st-hoan-thanh">Đang trực tuyến</span>'
-    : `<span class="muted small">${m < 60 ? `${m} phút trước` : m < 1440 ? `${Math.floor(m / 60)} giờ trước` : `${Math.floor(m / 1440)} ngày trước`}</span>`;
+  const rel = online ? on : m < 1 ? '<span class="muted small">Ngoại tuyến · vừa xong</span>'
+    : `<span class="muted small">Ngoại tuyến · ${m < 60 ? `${m} phút trước` : m < 1440 ? `${Math.floor(m / 60)} giờ trước` : `${Math.floor(m / 1440)} ngày trước`}</span>`;
   return `<span class="muted">${dt(t)}</span><br>${rel}`;
 }
 
@@ -1789,7 +1794,7 @@ async function loadUsers() {
       <td><span class="st role-${u.role}">${esc(META.roles[u.role] || u.role)}</span></td>
       <td>${u.active ? '<span class="st st-hoan-thanh">Hoạt động</span>' : '<span class="st st-tam-dung">Đã khóa</span>'}</td>
       <td class="muted">${dt(u.last_login_at)}</td>
-      <td>${seenTxt(u.last_seen_at)}</td>
+      <td>${seenTxt(u.last_seen_at, u.online)}</td>
       <td class="row-actions">
         <button data-uedit="${u.id}">Sửa</button>
         ${u.id === ME.id ? '' : `<button class="danger" data-udel="${u.id}">Xóa</button>`}
