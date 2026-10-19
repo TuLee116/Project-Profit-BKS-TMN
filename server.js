@@ -107,6 +107,7 @@ api.get('/meta', wrap(async (_req, res) => {
     needs_setup: (await store.countUsers()) === 0,
     setup_token_required: Boolean(SETUP_TOKEN),
     phien_ban: PHIEN_BAN,
+    idle_phut: store.IDLE_SEC / 60, // không thao tác quá số phút này -> tự đăng xuất
     moi_truong: APP_ENV, // 'staging' = hệ thống thử nghiệm (đặt biến APP_ENV trên Railway)
   });
 }));

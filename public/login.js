@@ -1,3 +1,8 @@
+// Bị đăng xuất do không thao tác quá 60 phút
+if (new URLSearchParams(location.search).has('het_phien')) {
+  showMsg($('#msg'), 'Phiên làm việc đã kết thúc do không thao tác quá 60 phút. Vui lòng đăng nhập lại.', 'err');
+}
+
 (async () => {
   try {
     const meta = await api('/api/meta');

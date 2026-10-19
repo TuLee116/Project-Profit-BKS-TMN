@@ -59,13 +59,35 @@ $('#tabs').addEventListener('click', (e) => e.target.dataset.tab && showTab(e.ta
 
 // Tín hiệu trực tuyến: trang đang mở báo máy chủ mỗi 20 giây; đóng / tải lại trang báo ngoại tuyến ngay.
 // Tab Tài khoản tự làm mới danh sách mỗi 10 giây (trạng thái do máy chủ tính, không phụ thuộc giờ máy người xem)
-setInterval(() => api('/api/auth/me').catch(() => {}), 20 * 1000);
+// Không thao tác (chuột, bàn phím, cuộn, chạm) quá 60 phút -> tự đăng xuất; tính chung mọi tab của trình duyệt.
+const idleMs = () => (Number(META?.idle_phut) || 60) * 60 * 1000;
+const AUTO = { headers: { 'X-Auto': '1' } };
+let lastAct = Date.now(), actSent = 0;
+const actStore = (t) => { try { localStorage.setItem('last_act', String(t)); } catch {} };
+const actRead = () => { try { return Number(localStorage.getItem('last_act')) || 0; } catch { return 0; } };
+['mousemove', 'mousedown', 'keydown', 'wheel', 'scroll', 'touchstart'].forEach((ev) => window.addEventListener(ev, () => {
+  const t = Date.now();
+  if (t - lastAct > 5000) { lastAct = t; actStore(t); }
+}, { passive: true, capture: true }));
+actStore(lastAct);
+const idleFor = () => Date.now() - Math.max(lastAct, actRead());
+setInterval(async () => {
+  if (idleFor() >= idleMs()) {
+    await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    location.href = '/login?het_phien=1';
+    return;
+  }
+  // tín hiệu trực tuyến; có thao tác kể từ lần trước -> báo máy chủ gia hạn phiên
+  const acted = Math.max(lastAct, actRead()) > actSent;
+  if (acted) actSent = Date.now();
+  api('/api/auth/me', acted ? {} : AUTO).catch(() => {});
+}, 20 * 1000);
 window.addEventListener('pagehide', () => {
   try { fetch('/api/auth/away', { method: 'POST', keepalive: true, headers: { 'X-Requested-With': 'fetch' } }); } catch {}
 });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') api('/api/auth/me').catch(() => {}); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') api('/api/auth/me', AUTO).catch(() => {}); });
 setInterval(() => {
-  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') loadUsers().catch(() => {});
+  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') loadUsers(true).catch(() => {});
 }, 10 * 1000);
 
 $('#btn-logout').addEventListener('click', async () => {
@@ -1785,8 +1807,8 @@ function seenTxt(t, online) {
   return `<span class="muted">${dt(t)}</span><br>${rel}`;
 }
 
-async function loadUsers() {
-  users = await api('/api/users');
+async function loadUsers(auto = false) {
+  users = await api('/api/users', auto === true ? AUTO : {});
   $('#u-tbody').innerHTML = users.map((u) => `
     <tr>
       <td>${esc(u.username)}${u.id === ME.id ? ' <span class="badge light">Bạn</span>' : ''}</td>
