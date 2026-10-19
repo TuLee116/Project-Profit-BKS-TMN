@@ -125,12 +125,15 @@ function check(cond, what, detail = '') {
 
     // ---------- CHI PHÍ ----------
     const isGoc = (r) => r.nhom === 'tc_tra_no' && r.nhom_con === 'goc';
-    const other = cp.items.filter((r) => !isGoc(r));
+    const isVay = (r) => r.nhom === 'tc_tra_no' && r.nhom_con === 'giai_ngan';
+    const other = cp.items.filter((r) => !isGoc(r) && !isVay(r));
     const goc = cp.items.filter(isGoc);
+    const vay = cp.items.filter(isVay);
     const cpGt = other.reduce((s, r) => s + r.gia_tri, 0) + tpGt;
     const cpSv = other.reduce((s, r) => s + sv(r.gia_tri, r.vat), 0) + tpSv;
     check(cp.tong.sau_vat === cpSv, `${tag}: tổng chi phí tab Chi phí (sau VAT, không gồm trả gốc)`, `${cp.tong.sau_vat} ≠ ${cpSv}`);
     check(cp.tong.ngoai_cp.sau_vat === goc.reduce((s, r) => s + r.sau_vat, 0), `${tag}: trả nợ gốc tách riêng`);
+    check(cp.tong.vay.sau_vat === vay.reduce((s, r) => s + r.sau_vat, 0), `${tag}: tiền vay nhận về tách riêng (không tính chi phí)`);
     const khoi = cp.tong.theo_khoi;
     check(khoi.B1.sau_vat + khoi.B2.sau_vat + khoi.B3.sau_vat === cp.tong.sau_vat, `${tag}: Trực tiếp + Gián tiếp + Tài chính = Tổng`);
     const nhomSum = Object.values(cp.tong.theo_nhom).reduce((s, g) => s + g.sau_vat, 0);

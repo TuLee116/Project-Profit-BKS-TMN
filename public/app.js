@@ -1285,7 +1285,8 @@ function renderCost() {
   const pct = (v) => (tong.sau_vat ? ((v / tong.sau_vat) * 100).toFixed(1) + '%' : '—');
   $('#c-k-sau').textContent = money(tong.sau_vat);
   $('#c-k-sub').innerHTML = `Trước VAT ${money(tong.gia_tri)} · VAT ${money(tong.tien_vat)}${tong.tam_tinh ? ' · <span class="warn-text">có tạm tính</span>' : ''}` +
-    (tong.ngoai_cp.so_dong ? `<br>Không gồm trả nợ gốc vay: ${money(tong.ngoai_cp.sau_vat)}` : '');
+    (tong.ngoai_cp.so_dong ? `<br>Không gồm trả nợ gốc vay: ${money(tong.ngoai_cp.sau_vat)}` : '') +
+    (tong.vay?.so_dong ? `<br>Không gồm tiền vay nhận về (tiền vào): ${money(tong.vay.sau_vat)}` : '');
   for (const k of KHOI()) {
     const t = tong.theo_khoi[k.code];
     $(`#c-k-${k.code}`).textContent = money(t.sau_vat);
