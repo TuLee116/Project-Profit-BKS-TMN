@@ -11,7 +11,7 @@ const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = requir
 const { summarizeProject } = require('./lib/dashboard');
 const { projectReport } = require('./lib/report');
 const { DEMO_PREFIX, seedDemo } = require('./lib/demo');
-const { buildDtcp, costLinesFor } = require('./lib/export-dtcp');
+const { buildDtcp, costLinesFor, CONG_TY } = require('./lib/export-dtcp');
 const PHIEN_BAN = require('./lib/version').readVersion(); // đọc 1 lần khi khởi động
 const { LOAI_DOANH_THU, calcLine, summarize, sortRevenue, tienVeLabel, sortTienVe, summarizeTienVe } = require('./lib/revenue');
 
@@ -425,7 +425,7 @@ api.get('/bao-cao', wrap(async (req, res) => {
   const s = await store.getSettings();
   res.json({
     lap_luc: new Date().toISOString(), nguoi_lap: req.user.full_name || req.user.username,
-    ten_cong_ty: s.ten_cong_ty, ten_he_thong: s.ten_he_thong, phien_ban: PHIEN_BAN.ma,
+    ten_cong_ty: s.ten_cong_ty, ten_he_thong: s.ten_he_thong, phien_ban: PHIEN_BAN.ma, cong_ty: CONG_TY,
     khoi: KHOI_CHI_PHI.map((k) => ({ code: k.code, ten: k.ten })), du_an,
     muc_tieu: await readTargets(), la_quan_tri: req.user.role === 'admin',
   });

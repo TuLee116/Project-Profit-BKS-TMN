@@ -1508,103 +1508,265 @@ $('#b-xlsx-tmn').addEventListener('click', (e) => bBusy(e.target, async () => {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }));
+// ---------- Excel tổng hợp: định dạng theo mẫu trình ký TMN (ExcelJS) ----------
+// Mỗi trang: logo + thông tin công ty, đường kẻ, tiêu đề, ngày cập nhật; bảng Times New Roman, tiêu đề navy, khung viền,
+// số #,##0, tỷ lệ 0,0%, dòng TỔNG CỘNG (SUBTOTAL – lọc vẫn đúng), cố định tiêu đề, in ngang vừa trang.
+const XL = { FONT: 'Times New Roman', NAVY: 'FF002060', YELLOW: 'FFFFFF00', PEACH: 'FFF8CBAD', RED: 'FFFF0000',
+  NUM: '#,##0;(#,##0);"-"', PCT: '0.0%;-0.0%;"-"' };
+const xlDate = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? s.split('-').reverse().join('/') : s || '');
+function xlBook() {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = BC.nguoi_lap || 'PROJECT PROFIT';
+  wb.created = new Date();
+  return wb;
+}
+// Khung đầu trang chuẩn TMN. Trả về số dòng bắt đầu nội dung.
+function xlHeader(wb, ws, logoId, { title, sub, widths: w0 }) {
+  // Trang hẹp: thêm cột trống bên phải cho đủ chỗ khung thông tin công ty (~115 ký tự)
+  const widths = [...w0];
+  while (widths.reduce((s, x) => s + x, 0) < 115) widths.push(16);
+  const n = widths.length;
+  const CT = BC.cong_ty || { ten: BC.ten_cong_ty || '', dong: [] };
+  ws.columns = widths.map((w) => ({ width: w }));
+  // Logo chiếm các cột đầu (~30 ký tự); thông tin công ty căn giữa phần còn lại
+  let k = 0, acc = 0;
+  while (k < n - 1 && acc < 30) acc += widths[k++];
+  const from = Math.max(1, Math.min(k, n - 1)) + 1;
+  [CT.ten, ...CT.dong].forEach((t, i) => {
+    const r = i + 1;
+    if (from < n) ws.mergeCells(r, from, r, n);
+    const c = ws.getCell(r, from);
+    c.value = t;
+    c.font = { name: XL.FONT, size: i ? 11 : 13, bold: !i };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(r).height = i ? 18 : 21;
+  });
+  if (logoId !== null) ws.addImage(logoId, { tl: { col: 0.15, row: 0.1 }, ext: { width: 150, height: 95 }, editAs: 'oneCell' });
+  for (let c = 1; c <= n; c++) ws.getCell(6, c).border = { bottom: { style: 'medium' } };
+  ws.getRow(6).height = 8;
+  ws.mergeCells(7, 1, 7, n);
+  Object.assign(ws.getCell(7, 1), { value: title });
+  ws.getCell(7, 1).font = { name: XL.FONT, size: 20, bold: true, color: { argb: XL.NAVY } };
+  ws.getCell(7, 1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  ws.getRow(7).height = 34;
+  ws.mergeCells(8, 1, 8, n);
+  ws.getCell(8, 1).value = sub;
+  ws.getCell(8, 1).font = { name: XL.FONT, size: 12, bold: true };
+  ws.getCell(8, 1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  ws.getRow(8).height = 20;
+  ws.pageSetup = { orientation: 'landscape', paperSize: n > 10 ? 8 : 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
+    margins: { left: 0.35, right: 0.35, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
+  ws.headerFooter = { oddFooter: '&L&"Times New Roman"&9PROJECT PROFIT · Ban Kiểm soát&R&"Times New Roman"&9Trang &P/&N' };
+  return 10;
+}
+const xlBox = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+function xlHeadRow(ws, r, head) {
+  head.forEach((h, i) => {
+    const c = ws.getCell(r, i + 1);
+    c.value = h;
+    c.font = { name: XL.FONT, size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.NAVY } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = xlBox;
+  });
+  ws.getRow(r).height = Math.max(30, 15 * Math.ceil(Math.max(...head.map((h, i) => String(h).length / Math.max(6, (ws.getColumn(i + 1).width || 10) - 2)))));
+}
+// fmt: mảng kiểu cột 'num' | 'pct' | 'int' | 'txt' | 'date' (bỏ trống: tự đoán từ tiêu đề và giá trị)
+function xlGuess(head, rows) {
+  return head.map((h, i) => {
+    const t = String(h);
+    if (/^%|tỷ suất|tỷ trọng|% hoàn thành|% KH|% đạt|% thay đổi/i.test(t) && !/tiến độ|VAT/i.test(t)) return 'pct';
+    if (/^ngày/i.test(t)) return 'date';
+    if (/VAT %|tiến độ|^số |số PL|số HĐ|HĐTP|cảnh báo|HĐ đã QT/i.test(t)) return 'int';
+    return rows.some((r) => typeof r[i] === 'number' && Math.abs(r[i]) >= 1000) ? 'num' : 'txt';
+  });
+}
+function xlRows(ws, r0, rows, fmt, { band } = {}) {
+  rows.forEach((row, j) => {
+    const r = r0 + j;
+    row.forEach((v, i) => {
+      const c = ws.getCell(r, i + 1);
+      c.value = fmt[i] === 'date' ? xlDate(v) : v === null || v === undefined ? '' : v;
+      c.font = { name: XL.FONT, size: 11 };
+      c.border = xlBox;
+      if (fmt[i] === 'num') c.numFmt = XL.NUM;
+      if (fmt[i] === 'pct') c.numFmt = XL.PCT;
+      c.alignment = { vertical: 'middle', wrapText: fmt[i] === 'txt', horizontal: ['date', 'int', 'pct'].includes(fmt[i]) ? 'center' : undefined };
+      if (band && j % 2) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F5FA' } };
+    });
+  });
+}
+function xlTotal(ws, r, from, to, fmt, label = 'TỔNG CỘNG') {
+  fmt.forEach((f, i) => {
+    const c = ws.getCell(r, i + 1);
+    const col = ws.getColumn(i + 1).letter;
+    if (f === 'num') { c.value = { formula: `SUBTOTAL(9,${col}${from}:${col}${to})` }; c.numFmt = XL.NUM; }
+    c.font = { name: XL.FONT, size: 11, bold: true, color: { argb: XL.RED } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.YELLOW } };
+    c.border = xlBox;
+  });
+  const firstNum = fmt.findIndex((f) => f === 'num');
+  if (firstNum > 0) {
+    ws.mergeCells(r, 1, r, firstNum);
+    ws.getCell(r, 1).value = label;
+    ws.getCell(r, 1).alignment = { horizontal: 'center', vertical: 'middle' };
+  }
+  ws.getRow(r).height = 24;
+}
+// Bảng dữ liệu một trang: tiêu đề cột + dòng + tổng cộng; cố định tiêu đề, lọc
+function xlTable(wb, logoId, name, title, sub, head, rows, widths, { total = true } = {}) {
+  const ws = wb.addWorksheet(name);
+  const r0 = xlHeader(wb, ws, logoId, { title, sub, widths });
+  xlHeadRow(ws, r0, head);
+  const fmt = xlGuess(head, rows);
+  xlRows(ws, r0 + 1, rows, fmt, { band: true });
+  if (rows.length) {
+    ws.autoFilter = { from: { row: r0, column: 1 }, to: { row: r0 + rows.length, column: head.length } };
+    if (total && fmt.includes('num')) xlTotal(ws, r0 + rows.length + 1, r0 + 1, r0 + rows.length, fmt);
+  } else {
+    ws.mergeCells(r0 + 1, 1, r0 + 1, head.length);
+    ws.getCell(r0 + 1, 1).value = 'Không có dữ liệu';
+    ws.getCell(r0 + 1, 1).font = { name: XL.FONT, size: 11, italic: true };
+    ws.getCell(r0 + 1, 1).alignment = { horizontal: 'center' };
+  }
+  ws.views = [{ state: 'frozen', ySplit: r0, xSplit: 0, zoomScale: 90 }];
+  ws.pageSetup.printTitlesRow = `${r0}:${r0}`;
+  return ws;
+}
+// Trang dạng biểu mẫu nhiều khối: mỗi khối có tiêu đề navy + các dòng (fmt riêng theo khối)
+function xlForm(wb, logoId, name, title, sub, blocks, widths) {
+  const ws = wb.addWorksheet(name);
+  let r = xlHeader(wb, ws, logoId, { title, sub, widths });
+  for (const b of blocks) {
+    if (b.info) { // dòng thông tin: nhãn đậm – giá trị
+      b.info.forEach(([k, v]) => {
+        ws.getCell(r, 1).value = k; ws.getCell(r, 1).font = { name: XL.FONT, size: 11, bold: true };
+        if (widths.length > 2) ws.mergeCells(r, 2, r, widths.length);
+        ws.getCell(r, 2).value = v; ws.getCell(r, 2).font = { name: XL.FONT, size: 11 };
+        r++;
+      });
+      r++;
+      continue;
+    }
+    xlHeadRow(ws, r, b.head);
+    const fmt = b.fmt || xlGuess(b.head, b.rows);
+    xlRows(ws, r + 1, b.rows, fmt);
+    // dòng tỷ lệ trong khối số tiền: định dạng %
+    b.rows.forEach((row, j) => {
+      if (b.pctRows && b.pctRows.includes(row[0])) for (let i = 1; i < row.length; i++) { const c = ws.getCell(r + 1 + j, i + 1); c.value = row[i] === '' ? '' : row[i]; c.numFmt = XL.PCT; c.alignment = { horizontal: 'right' }; }
+      if (b.bold && b.bold.includes(row[0])) for (let i = 0; i < row.length; i++) { const c = ws.getCell(r + 1 + j, i + 1); c.font = { name: XL.FONT, size: 11, bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.PEACH } }; }
+    });
+    r += b.rows.length + 2;
+  }
+  ws.views = [{ state: 'normal', zoomScale: 90 }];
+  return ws;
+}
+async function xlLogo(wb) {
+  try {
+    const buf = await (await fetch('/img/tmn-logo.png')).arrayBuffer();
+    return wb.addImage({ buffer: buf, extension: 'png' });
+  } catch { return null; } // không tải được logo: vẫn xuất file
+}
+async function xlSave(wb, name) {
+  const buf = await wb.xlsx.writeBuffer();
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
 $('#b-xlsx').addEventListener('click', (e) => bBusy(e.target, async () => {
   logEvent('xuat_excel', bLogScope());
-  await bLoad('/vendor/xlsx-0.18.5.full.min.js');
+  await bLoad('/vendor/exceljs-4.4.0.min.js');
   const { list, one } = bScope();
   const v = BST.vat, vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
   const T = bTotals(list);
-  const wb = XLSX.utils.book_new();
-  const add = (name, rows, widths) => {
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    for (const k of Object.keys(ws)) if (k[0] !== '!' && ws[k].t === 'n' && Math.abs(ws[k].v) >= 1000) ws[k].z = '#,##0';
-    if (widths) ws['!cols'] = widths.map((w) => ({ wch: w }));
-    XLSX.utils.book_append_sheet(wb, ws, name);
-    return ws;
-  };
-  const table = (name, head, rows, widths) => {
-    const ws = add(name, [head, ...rows], widths);
-    if (rows.length) ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: head.length - 1 } }) };
-  };
+  const wb = xlBook();
+  const logo = await xlLogo(wb);
+  const today = bTodayIso().split('-').reverse().join('/');
+  const pham = one ? `${one.ma_du_an} – ${one.ten_du_an}` : `Tất cả dự án (${list.length})`;
+  const sub = (x) => `CẬP NHẬT: NGÀY ${today} · ${pham}${x ? ' · ' + x : ''}`;
   const F = bFinData(list, v);
   const chg = (a, b) => (F.prv && b ? (a - b) / Math.abs(b) : '');
-  const tsY = F.ytd.dt ? (F.ytd.ln / F.ytd.dt) * 100 : 0;
+  const tsY = F.ytd.dt ? F.ytd.ln / F.ytd.dt : 0;
   const pctT = (a, t) => (t ? a / t : '');
-  const wsF = add('Tai chinh ky', [
-    ['TỔNG QUAN TÀI CHÍNH THEO KỲ'], [BC.ten_cong_ty || ''],
-    ['Kỳ báo cáo', `${F.P.label} (${F.P.range})`], ['So với kỳ trước', F.P.prev ? `${ymTxt(F.P.prev.from)} – ${ymTxt(F.P.prev.to)}` : '—'], ['Đơn vị', `VNĐ, ${vt} (dòng tiền sau VAT)`], [],
-    ['Chỉ tiêu', 'Kỳ này', 'Kỳ trước', '% thay đổi'],
-    ['Tổng doanh thu', F.cur.dt, F.prv ? F.prv.dt : '', chg(F.cur.dt, F.prv?.dt)],
-    ['Tổng chi phí', F.cur.cp, F.prv ? F.prv.cp : '', chg(F.cur.cp, F.prv?.cp)],
-    ['Lợi nhuận', F.cur.ln, F.prv ? F.prv.ln : '', chg(F.cur.ln, F.prv?.ln)],
-    ['Tỷ suất lợi nhuận', F.cur.dt ? F.cur.ln / F.cur.dt : 0, F.prv && F.prv.dt ? F.prv.ln / F.prv.dt : '', ''],
-    ['Dòng tiền thực tế (thu − chi)', F.cur.dong_tien, F.prv ? F.prv.dong_tien : '', chg(F.cur.dong_tien, F.prv?.dong_tien)],
-    ['  Thu (tiền về + nhận tiền vay)', F.cur.thu, F.prv ? F.prv.thu : '', ''], ['  Chi', F.cur.chi, F.prv ? F.prv.chi : '', ''],
-    ['Số dư dòng tiền cuối kỳ', F.bal, '', ''], [],
-    [`Mục tiêu năm ${F.year}`, `Thực hiện 01/${F.year} – ${ymTxt(F.P.to)}`, 'Mục tiêu', '% đạt'],
-    ['Doanh thu', F.ytd.dt, F.tg.dt ?? '', pctT(F.ytd.dt, F.tg.dt)], ['Chi phí', F.ytd.cp, F.tg.cp ?? '', pctT(F.ytd.cp, F.tg.cp)],
-    ['Lợi nhuận', F.ytd.ln, F.tg.ln ?? '', pctT(F.ytd.ln, F.tg.ln)], ['Tỷ suất lợi nhuận (%)', Number(tsY.toFixed(2)), F.tg.ty_suat ?? '', pctT(tsY, F.tg.ty_suat)], [],
-    ['Theo tháng / quý', 'Doanh thu', 'Chi phí', 'Lợi nhuận', 'Thu', 'Chi', 'Dòng tiền'],
-    ...F.series.map((p) => [p.label, p.dt, p.cp, p.ln, p.thu, p.chi, p.dong_tien]), [],
-    ['Hiệu quả từng công trình', 'Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ suất LN', 'Tỷ trọng doanh thu'],
-    ...F.rows.map((x) => [`${x.d.ma_du_an} – ${x.d.ten_du_an}`, x.dt, x.cp, x.ln, x.dt ? x.ln / x.dt : '', F.cur.dt ? x.dt / F.cur.dt : '']),
-  ], [40, 22, 22, 18, 18, 18, 18]);
-  for (const k of Object.keys(wsF)) {
-    if (k[0] === '!') continue;
-    const { r: row, c } = XLSX.utils.decode_cell(k);
-    const isPct = (row === 10 && c <= 2) || (c === 3 && ((row >= 7 && row <= 11) || (row >= 17 && row <= 20))) || (row > 21 + F.series.length + 2 && (c === 4 || c === 5));
-    if (isPct && wsF[k].t === 'n') wsF[k].z = '0.0%';
-  }
+  const N4 = ['txt', 'num', 'num', 'pct'];
+  xlForm(wb, logo, 'Tai chinh ky', 'TỔNG QUAN TÀI CHÍNH THEO KỲ', sub(`Đơn vị: đồng, ${vt} (dòng tiền sau VAT)`), [
+    { info: [['Kỳ báo cáo', `${F.P.label} (${F.P.range})`], ['So với kỳ trước', F.P.prev ? `${ymTxt(F.P.prev.from)} – ${ymTxt(F.P.prev.to)}` : '—']] },
+    { head: ['Chỉ tiêu', 'Kỳ này', 'Kỳ trước', '% thay đổi'], fmt: N4, pctRows: ['Tỷ suất lợi nhuận'], bold: ['Lợi nhuận', 'Dòng tiền thực tế (thu − chi)'], rows: [
+      ['Tổng doanh thu', F.cur.dt, F.prv ? F.prv.dt : '', chg(F.cur.dt, F.prv?.dt)],
+      ['Tổng chi phí', F.cur.cp, F.prv ? F.prv.cp : '', chg(F.cur.cp, F.prv?.cp)],
+      ['Lợi nhuận', F.cur.ln, F.prv ? F.prv.ln : '', chg(F.cur.ln, F.prv?.ln)],
+      ['Tỷ suất lợi nhuận', F.cur.dt ? F.cur.ln / F.cur.dt : 0, F.prv && F.prv.dt ? F.prv.ln / F.prv.dt : '', ''],
+      ['Dòng tiền thực tế (thu − chi)', F.cur.dong_tien, F.prv ? F.prv.dong_tien : '', chg(F.cur.dong_tien, F.prv?.dong_tien)],
+      ['   Thu (tiền về + nhận tiền vay)', F.cur.thu, F.prv ? F.prv.thu : '', ''], ['   Chi', F.cur.chi, F.prv ? F.prv.chi : '', ''],
+      ['Số dư dòng tiền cuối kỳ', F.bal, '', '']] },
+    { head: [`Mục tiêu năm ${F.year}`, `Thực hiện 01/${F.year} – ${ymTxt(F.P.to)}`, 'Mục tiêu', '% đạt'], fmt: N4, pctRows: ['Tỷ suất lợi nhuận'], rows: [
+      ['Doanh thu', F.ytd.dt, F.tg.dt ?? '', pctT(F.ytd.dt, F.tg.dt)], ['Chi phí', F.ytd.cp, F.tg.cp ?? '', pctT(F.ytd.cp, F.tg.cp)],
+      ['Lợi nhuận', F.ytd.ln, F.tg.ln ?? '', pctT(F.ytd.ln, F.tg.ln)],
+      ['Tỷ suất lợi nhuận', tsY, F.tg.ty_suat != null ? F.tg.ty_suat / 100 : '', pctT(tsY * 100, F.tg.ty_suat)]] },
+    { head: ['Theo tháng / quý', 'Doanh thu', 'Chi phí', 'Lợi nhuận', 'Thu', 'Chi', 'Dòng tiền'], fmt: ['txt', 'num', 'num', 'num', 'num', 'num', 'num'],
+      rows: F.series.map((p) => [p.label, p.dt, p.cp, p.ln, p.thu, p.chi, p.dong_tien]) },
+    { head: ['Hiệu quả từng công trình', 'Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ suất LN', 'Tỷ trọng doanh thu'], fmt: ['txt', 'num', 'num', 'num', 'pct', 'pct'],
+      rows: F.rows.map((x) => [`${x.d.ma_du_an} – ${x.d.ten_du_an}`, x.dt, x.cp, x.ln, x.dt ? x.ln / x.dt : '', F.cur.dt ? x.dt / F.cur.dt : '']) },
+  ], [44, 22, 22, 20, 20, 20, 20]);
   const lnDk = T.dk.dt[v] - T.dk.cp[v], lnTh = T.th.dt[v] - T.th.cp[v];
-  add('Tong quan', [
-    ['BÁO CÁO TỔNG QUAN DỰ ÁN'], [BC.ten_cong_ty || ''],
-    ['Phạm vi', one ? `${one.ma_du_an} – ${one.ten_du_an}` : `Tất cả dự án (${list.length})`],
-    ['Lập lúc', new Date(BC.lap_luc).toLocaleString('vi-VN')], ['Người lập', BC.nguoi_lap], ['Phiên bản', BC.phien_ban], ['Đơn vị', `VNĐ, ${vt}`], [],
-    ['Chỉ tiêu', 'Dự kiến', 'Thực hiện'],
-    ['Doanh thu', T.dk.dt[v], T.th.dt[v]], ['Chi phí', T.dk.cp[v], T.th.cp[v]], ['Lợi nhuận', lnDk, lnTh],
-    ['Tỷ suất lợi nhuận', T.dk.dt[v] ? lnDk / T.dk.dt[v] : 0, T.th.dt[v] ? lnTh / T.th.dt[v] : 0], [],
-    ['Dòng tiền & công nợ (sau VAT)', 'Giá trị'], ['Tiền về', T.tien_ve], ['Còn phải thu (theo nghiệm thu)', T.th.con_lai], ['Còn lại theo HĐ', T.dk.con_lai],
-    ['Đã trả thầu phụ', T.tp_da_tt], ['Còn phải trả thầu phụ', T.tp_con_lai], ['Trả nợ gốc vay (không tính chi phí)', T.tra_goc], [],
-    ['Số dự án', T.so_da], ['HĐ chủ đầu tư', T.so_hd], ['HĐ CĐT đã quyết toán', T.so_hd_qt], ['HĐ thầu phụ', T.so_tp], ['HĐ thầu phụ đã quyết toán', T.so_tp_qt],
-  ], [38, 22, 22]);
-  const ws0 = wb.Sheets['Tong quan'];
-  ['B13', 'C13'].forEach((c) => { if (ws0[c]) ws0[c].z = '0.0%'; });
+  xlForm(wb, logo, 'Tong quan', 'BÁO CÁO TỔNG QUAN DỰ ÁN', sub(`Đơn vị: đồng, ${vt}`), [
+    { info: [['Người lập', BC.nguoi_lap], ['Lập lúc', new Date(BC.lap_luc).toLocaleString('vi-VN')], ['Phiên bản', BC.phien_ban]] },
+    { head: ['Chỉ tiêu', 'Dự kiến', 'Thực hiện'], fmt: ['txt', 'num', 'num'], pctRows: ['Tỷ suất lợi nhuận'], bold: ['Lợi nhuận'], rows: [
+      ['Doanh thu', T.dk.dt[v], T.th.dt[v]], ['Chi phí', T.dk.cp[v], T.th.cp[v]], ['Lợi nhuận', lnDk, lnTh],
+      ['Tỷ suất lợi nhuận', T.dk.dt[v] ? lnDk / T.dk.dt[v] : 0, T.th.dt[v] ? lnTh / T.th.dt[v] : 0]] },
+    { head: ['Dòng tiền & công nợ (sau VAT)', 'Giá trị'], fmt: ['txt', 'num'], rows: [
+      ['Tiền về', T.tien_ve], ['Còn phải thu (theo nghiệm thu)', T.th.con_lai], ['Còn lại theo HĐ', T.dk.con_lai],
+      ['Đã trả thầu phụ', T.tp_da_tt], ['Còn phải trả thầu phụ', T.tp_con_lai], ['Trả nợ gốc vay (không tính chi phí)', T.tra_goc]] },
+    { head: ['Số lượng', 'Số'], fmt: ['txt', 'int'], rows: [
+      ['Số dự án', T.so_da], ['HĐ chủ đầu tư', T.so_hd], ['HĐ CĐT đã quyết toán', T.so_hd_qt], ['HĐ thầu phụ', T.so_tp], ['HĐ thầu phụ đã quyết toán', T.so_tp_qt]] },
+  ], [44, 24, 24]);
   {
     const P2 = bPeriod(list), to = P2.to < bNowYm() ? P2.to : bNowYm();
     const R = list.map((d) => ({ d, ...bThuc(d, to) }));
-    table('Thuc thu thuc chi', ['Mã DA', 'Tên dự án', 'Kế hoạch thu (sau VAT)', 'Thực thu', '% KH thu', 'Còn phải thu', 'Kế hoạch chi (sau VAT)',
-      'Thực chi', 'Trong đó: chi phí', 'Trong đó: trả thầu phụ', '% KH chi', 'Còn phải chi', 'Còn lại thực (thu − chi)', 'Nhận tiền vay', 'Trả nợ gốc vay', 'Sau vay & trả nợ', 'Dư nợ vay'],
-    R.map((x) => [x.d.ma_du_an, x.d.ten_du_an, x.kh_thu, x.thu, x.kh_thu ? x.thu / x.kh_thu : null, x.phai_thu, x.kh_chi, x.chi, x.cp, x.tp,
-      x.kh_chi ? x.chi / x.kh_chi : null, x.phai_chi, x.con, x.vay, x.goc, x.sau_goc, x.du_no]), [10, 30, 18, 16, 9, 16, 18, 16, 16, 16, 9, 16, 18, 14, 14, 18, 14]);
+    xlTable(wb, logo, 'Thuc thu thuc chi', 'THỰC THU – THỰC CHI – CÒN LẠI THỰC', sub(`Lũy kế đến hết ${ymTxt(to)} · đồng, sau VAT`),
+      ['Mã DA', 'Tên dự án', 'Kế hoạch thu', 'Thực thu', '% KH thu', 'Còn phải thu', 'Kế hoạch chi',
+        'Thực chi', 'Trong đó: chi phí', 'Trong đó: trả thầu phụ', '% KH chi', 'Còn phải chi', 'Còn lại thực (thu − chi)', 'Nhận tiền vay', 'Trả nợ gốc vay', 'Sau vay & trả nợ', 'Dư nợ vay'],
+      R.map((x) => [x.d.ma_du_an, x.d.ten_du_an, x.kh_thu, x.thu, x.kh_thu ? x.thu / x.kh_thu : null, x.phai_thu, x.kh_chi, x.chi, x.cp, x.tp,
+        x.kh_chi ? x.chi / x.kh_chi : null, x.phai_chi, x.con, x.vay, x.goc, x.sau_goc, x.du_no]), [10, 32, 18, 18, 9, 18, 18, 18, 18, 18, 9, 18, 20, 16, 16, 18, 16]);
   }
-  table('Du an', ['Mã DA', 'Tên dự án', 'Chủ đầu tư', 'Trạng thái', 'Tiến độ %', 'Số HĐ CĐT', 'HĐ đã QT', 'Số HĐTP', 'HĐTP đã QT',
-    `DT dự kiến (${vt})`, `CP dự kiến (${vt})`, `LN dự kiến (${vt})`, `DT thực hiện (${vt})`, `CP thực hiện (${vt})`, `LN thực hiện (${vt})`,
-    'Tiền về', 'Còn phải thu', 'Đã trả TP', 'Còn phải trả TP', 'Trả nợ gốc vay', 'Số cảnh báo'],
-  list.map((d) => [d.ma_du_an, d.ten_du_an, d.chu_dau_tu, d.trang_thai, d.tien_do, d.so_hd, d.so_hd_qt, d.so_tp, d.so_tp_qt,
-    d.du_kien.doanh_thu[v], d.du_kien.chi_phi[v], d.du_kien.doanh_thu[v] - d.du_kien.chi_phi[v],
-    d.thuc_hien.doanh_thu[v], d.thuc_hien.chi_phi[v], d.thuc_hien.doanh_thu[v] - d.thuc_hien.chi_phi[v],
-    d.tien_ve, d.thuc_hien.con_lai, d.tp.da_tt, d.tp.con_lai, d.tra_goc.sv, d.canh_bao.length]),
-  [10, 32, 28, 14, 9, 9, 9, 9, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 16, 10]);
-  table('HD chu dau tu', ['Mã DA', 'Số HĐ', 'Ngày HĐ', 'VAT %', 'Số PL', `Giá trị HĐ+PL (${vt})`, `Nghiệm thu (${vt})`, '% hoàn thành', 'Đã quyết toán',
-    `DT dự kiến (${vt})`, 'Tiền về', 'Còn phải thu', 'Số HĐTP', 'HĐTP đã QT', `Giá trị TP HT/QT (${vt})`, 'Đã trả TP', 'Còn phải trả TP', `Lãi gộp dự kiến (${vt})`],
-  list.flatMap((d) => d.hds.map((x) => [d.ma_du_an, x.so_ma, x.ngay || '', x.vat, x.so_pl, x.hd[v], x.nt[v], Number(x.pct_ht.toFixed(4)), x.da_qt ? 'Có' : '',
-    x.dk[v], x.tien_ve, x.phai_thu, x.tp.n, x.tp.n_qt, v === 'gt' ? x.tp.qt_gt : x.tp.qt_sv, x.tp.da_tt, x.tp.con_lai, x.dk[v] - (v === 'gt' ? x.tp.qt_gt : x.tp.qt_sv)])),
-  [10, 22, 11, 7, 7, 18, 18, 11, 12, 18, 18, 18, 9, 10, 18, 18, 18, 18]);
-  table('Thau phu', ['Mã DA', 'Thuộc HĐ CĐT', 'Số HĐ thầu phụ', 'Nhà thầu phụ', 'Số PL', 'Giá trị HĐ+PL (sau VAT)', 'HT/QT (trước VAT)', 'HT/QT (sau VAT)', 'Đã thanh toán', 'Còn lại', 'Trạng thái', 'Ghi chú'],
+  xlTable(wb, logo, 'Du an', 'TỔNG HỢP THEO DỰ ÁN', sub(`Đơn vị: đồng, ${vt} (tiền về, phải thu, phải trả: sau VAT)`),
+    ['Mã DA', 'Tên dự án', 'Chủ đầu tư', 'Trạng thái', 'Tiến độ %', 'Số HĐ CĐT', 'HĐ đã QT', 'Số HĐTP', 'HĐTP đã QT',
+      'DT dự kiến', 'CP dự kiến', 'LN dự kiến', 'DT thực hiện', 'CP thực hiện', 'LN thực hiện',
+      'Tiền về', 'Còn phải thu', 'Đã trả TP', 'Còn phải trả TP', 'Trả nợ gốc vay', 'Số cảnh báo'],
+    list.map((d) => [d.ma_du_an, d.ten_du_an, d.chu_dau_tu, d.trang_thai, d.tien_do, d.so_hd, d.so_hd_qt, d.so_tp, d.so_tp_qt,
+      d.du_kien.doanh_thu[v], d.du_kien.chi_phi[v], d.du_kien.doanh_thu[v] - d.du_kien.chi_phi[v],
+      d.thuc_hien.doanh_thu[v], d.thuc_hien.chi_phi[v], d.thuc_hien.doanh_thu[v] - d.thuc_hien.chi_phi[v],
+      d.tien_ve, d.thuc_hien.con_lai, d.tp.da_tt, d.tp.con_lai, d.tra_goc.sv, d.canh_bao.length]),
+    [10, 32, 28, 14, 9, 9, 9, 9, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 16, 10]);
+  xlTable(wb, logo, 'HD chu dau tu', 'HỢP ĐỒNG CHỦ ĐẦU TƯ', sub(`Đơn vị: đồng, ${vt} (tiền về, phải thu, đã trả: sau VAT)`),
+    ['Mã DA', 'Số HĐ', 'Ngày HĐ', 'VAT %', 'Số PL', 'Giá trị HĐ+PL', 'Nghiệm thu', '% hoàn thành', 'Đã quyết toán',
+      'DT dự kiến', 'Tiền về', 'Còn phải thu', 'Số HĐTP', 'HĐTP đã QT', 'Giá trị TP HT/QT', 'Đã trả TP', 'Còn phải trả TP', 'Lãi gộp dự kiến'],
+    list.flatMap((d) => d.hds.map((x) => [d.ma_du_an, x.so_ma, x.ngay || '', x.vat, x.so_pl, x.hd[v], x.nt[v], x.pct_ht, x.da_qt ? 'Có' : '',
+      x.dk[v], x.tien_ve, x.phai_thu, x.tp.n, x.tp.n_qt, v === 'gt' ? x.tp.qt_gt : x.tp.qt_sv, x.tp.da_tt, x.tp.con_lai, x.dk[v] - (v === 'gt' ? x.tp.qt_gt : x.tp.qt_sv)])),
+    [10, 24, 12, 7, 7, 18, 18, 11, 11, 18, 18, 18, 9, 10, 18, 18, 18, 18]);
+  xlTable(wb, logo, 'Thau phu', 'HỢP ĐỒNG THẦU PHỤ', sub('Đơn vị: đồng'),
+    ['Mã DA', 'Thuộc HĐ CĐT', 'Số HĐ thầu phụ', 'Nhà thầu phụ', 'Số PL', 'Giá trị HĐ+PL (sau VAT)', 'HT/QT (trước VAT)', 'HT/QT (sau VAT)', 'Đã thanh toán', 'Còn lại', 'Trạng thái', 'Ghi chú'],
     list.flatMap((d) => d.chi_tiet.thau_phu.map((x) => [d.ma_du_an, x.hd_cdt, x.so_ma, x.doi_tac, x.so_pl, x.hd_sv, x.qt_gt, x.qt_sv, x.da_tt, x.con_lai, x.trang_thai, x.ghi_chu])),
-    [10, 24, 18, 28, 7, 18, 18, 18, 18, 18, 20, 40]);
-  table('Chi phi', ['Mã DA', 'Khối', 'Nhóm', 'Hạng mục', 'Nội dung', 'Đối tác', 'Số CT', 'Ngày', 'Trước VAT', 'VAT %', 'Tiền VAT', 'Sau VAT', 'Tính vào chi phí', 'Ghi chú'],
+    [10, 24, 18, 28, 7, 18, 18, 18, 18, 18, 20, 36]);
+  xlTable(wb, logo, 'Chi phi', 'CHI TIẾT CHI PHÍ', sub('Đơn vị: đồng'),
+    ['Mã DA', 'Khối', 'Nhóm', 'Hạng mục', 'Nội dung', 'Đối tác', 'Số CT', 'Ngày', 'Trước VAT', 'VAT %', 'Tiền VAT', 'Sau VAT', 'Tính vào chi phí', 'Ghi chú'],
     list.flatMap((d) => d.chi_tiet.chi_phi.map((x) => [d.ma_du_an, x.khoi, x.nhom, x.hang_muc, x.noi_dung, x.doi_tac, x.so_ct, x.ngay || '', x.gia_tri, x.vat, x.tien_vat, x.sau_vat, x.tinh_cp, x.ghi_chu])),
-    [10, 20, 28, 28, 34, 24, 18, 11, 16, 7, 14, 16, 18, 30]);
-  table('Doanh thu', ['Mã DA', 'Loại', 'Số HĐ/PL – Đợt', 'Thuộc HĐ', 'Ngày', 'Trước VAT', 'VAT %', 'Tiền VAT', 'Sau VAT', 'Ghi chú'],
+    [10, 18, 26, 26, 34, 24, 18, 12, 17, 7, 15, 17, 18, 28]);
+  xlTable(wb, logo, 'Doanh thu', 'CHI TIẾT DOANH THU (HĐ / PHỤ LỤC / NGHIỆM THU)', sub('Đơn vị: đồng'),
+    ['Mã DA', 'Loại', 'Số HĐ/PL – Đợt', 'Thuộc HĐ', 'Ngày', 'Trước VAT', 'VAT %', 'Tiền VAT', 'Sau VAT', 'Ghi chú'],
     list.flatMap((d) => d.chi_tiet.doanh_thu.map((x) => [d.ma_du_an, x.loai, x.so_hieu, x.thuoc_hd, x.ngay || '', x.gia_tri, x.vat, x.tien_vat, x.sau_vat, x.ghi_chu])),
-    [10, 8, 28, 26, 11, 18, 7, 16, 18, 30]);
-  table('Tien ve', ['Mã DA', 'HĐ', 'Loại', 'Ngày', 'Số tiền', 'Ghi chú'],
-    list.flatMap((d) => d.chi_tiet.tien_ve.map((x) => [d.ma_du_an, x.hd, x.loai, x.ngay || '', x.so_tien, x.ghi_chu])), [10, 26, 14, 11, 18, 30]);
-  table('Theo thang', ['Tháng', `DT thực hiện (${vt})`, `CP thực hiện (${vt})`, 'DT lũy kế', 'CP lũy kế', 'Thu (tiền về + vay)', 'Chi', 'Chênh lệch thu – chi'],
-    bMonths(list, v).map((p) => [p.k, p.dt, p.cp, p.luy_dt, p.luy_cp, p.thu, p.chi, p.thu - p.chi]), [10, 18, 18, 18, 18, 18, 18, 18]);
-  table('Canh bao', ['Mã DA', 'Mức', 'Nội dung'], list.flatMap((d) => d.canh_bao.map((w) => [d.ma_du_an, MUC[w.muc], w.noi_dung])), [10, 12, 90]);
-  XLSX.writeFile(wb, `BaoCao_${bFileScope()}_${bStamp()}.xlsx`);
+    [10, 9, 28, 26, 12, 18, 7, 16, 18, 30], { total: false }); // HĐ và nghiệm thu cùng bảng: cộng chung không có nghĩa
+  xlTable(wb, logo, 'Tien ve', 'CHI TIẾT TIỀN VỀ', sub('Đơn vị: đồng, sau VAT'),
+    ['Mã DA', 'HĐ', 'Loại', 'Ngày', 'Số tiền', 'Ghi chú'],
+    list.flatMap((d) => d.chi_tiet.tien_ve.map((x) => [d.ma_du_an, x.hd, x.loai, x.ngay || '', x.so_tien, x.ghi_chu])), [10, 28, 16, 12, 20, 34]);
+  xlTable(wb, logo, 'Theo thang', 'DOANH THU – CHI PHÍ – DÒNG TIỀN THEO THÁNG', sub(`Đơn vị: đồng, ${vt} (thu, chi: sau VAT)`),
+    ['Tháng', 'DT thực hiện', 'CP thực hiện', 'DT lũy kế', 'CP lũy kế', 'Thu (tiền về + vay)', 'Chi', 'Chênh lệch thu – chi'],
+    bMonths(list, v).map((p) => [p.k.split('-').reverse().join('/'), p.dt, p.cp, p.luy_dt, p.luy_cp, p.thu, p.chi, p.thu - p.chi]), [12, 20, 20, 20, 20, 20, 20, 20],
+    { total: false }); // cột lũy kế không cộng dồn được
+  xlTable(wb, logo, 'Canh bao', 'CẢNH BÁO & LƯU Ý', sub(''), ['Mã DA', 'Mức', 'Nội dung'],
+    list.flatMap((d) => d.canh_bao.map((w) => [d.ma_du_an, MUC[w.muc], w.noi_dung])), [12, 14, 90]);
+  await xlSave(wb, `BaoCao_${bFileScope()}_${bStamp()}.xlsx`);
 }));
 
 // ---------- PowerPoint ----------
