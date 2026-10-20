@@ -836,3 +836,7 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .pc-dates b.muted-b { font-weight: 600; opacity: .8; }
 .pc-dates i { font-style: normal; opacity: .7; }
 .pc-modal .pc-dates { font-size: 14px; }
+.pc-ngay { all: unset; cursor: pointer; display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 8px; border-radius: 8px; border: 1px dashed rgba(255,255,255,.45); color: inherit; }
+.pc-ngay:hover, .pc-ngay:focus-visible { background: rgba(255,255,255,.16); border-style: solid; }
+.pc-ngay-pen { opacity: .7; font-size: .9em; }
+.row-auto { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: -4px; }

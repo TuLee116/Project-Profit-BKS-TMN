@@ -361,6 +361,18 @@ api.put('/du-an/:id', canEdit, wrap(async (req, res) => {
   ok ? res.json({ id }) : bad(res, 'Không tìm thấy dự án', 404);
 }));
 
+// Sửa riêng ngày bắt đầu / kết thúc (từ khung công trình ở Báo cáo): để trống = hệ thống tự lấy theo ngày ký HĐ / ngày quyết toán
+api.put('/du-an/:id/ngay', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  const cur = id && (await store.listProjects()).find((p) => p.id === id);
+  if (!cur) return bad(res, 'Không tìm thấy dự án', 404);
+  const iso = (x) => (x === null || x === '' || x === undefined ? null : String(x));
+  const { data, errors } = validateProject({ ...cur, ngay_bat_dau: iso(req.body?.ngay_bat_dau), ngay_ket_thuc: iso(req.body?.ngay_ket_thuc) });
+  if (errors.length) return bad(res, errors);
+  await store.updateProject(id, data, req.user.id);
+  res.json({ id, ngay_bat_dau: data.ngay_bat_dau, ngay_ket_thuc: data.ngay_ket_thuc });
+}));
+
 api.delete('/du-an/:id', canEdit, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
