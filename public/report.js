@@ -1137,26 +1137,21 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pcOpenId
 // Ngày bắt đầu / kết thúc công trình: nhập tay (yêu cầu riêng) được ưu tiên; để trống thì tự lấy theo ngày ký HĐ / ngày quyết toán
 function bPcDates(d) {
   const bd = d.ngay_bat_dau ? [d.ngay_bat_dau, 'tự điền'] : d.ngay_ky_hd ? [d.ngay_ky_hd, 'ngày ký HĐ'] : null;
-  const kt = d.ngay_ket_thuc ? [d.ngay_ket_thuc, 'tự điền'] : d.ngay_qt ? [d.ngay_qt, 'ngày quyết toán'] : null;
-  const val = (x, none) => (x ? `<b>${dmy(x[0])}</b> <small>(${x[1]})</small>` : `<b class="muted-b">${none}</b>`);
-  // Quản trị / Nhập liệu: bấm vào ngày để sửa; Xem: chỉ đọc
-  const one = (label, x, none) => (canEditPc()
-    ? `<button type="button" class="pc-ngay" data-pcngay="${d.id}" title="Bấm để sửa ngày (để trống = tự lấy theo HĐ / quyết toán)"><em>${label}</em> ${val(x, none)} <span class="pc-ngay-pen">✎</span></button>`
-    : `<span><em>${label}</em> ${val(x, none)}</span>`);
-  return `${one('Bắt đầu', bd, 'Chưa có HĐ')}<i>→</i>${one('Kết thúc', kt, 'Chưa quyết toán')}`;
+  const kt = d.ngay_ket_thuc ? [d.ngay_ket_thuc, 'tự điền'] : d.ngay_qt ? [d.ngay_qt, d.ngay_qt_loai || 'ngày quyết toán'] : null;
+  const one = (label, x, none) => `<span><em>${label}</em> ${x ? `<b>${dmy(x[0])}</b> <small>(${x[1]})</small>` : `<b class="muted-b">${none}</b>`}</span>`;
+  const edit = canEditPc() ? `<button type="button" class="pc-ngay-edit no-print" data-pcngay="${d.id}" title="Sửa ngày bắt đầu / kết thúc">✎ Sửa ngày</button>` : '';
+  return `${one('Bắt đầu', bd, 'Chưa có HĐ')}<i>→</i>${one('Kết thúc', kt, 'Chưa quyết toán')}${edit}`;
 }
-// Hộp sửa ngày bắt đầu / kết thúc: lưu vào hồ sơ dự án (cùng dữ liệu tab Dự án), xóa trống = dùng ngày tự động
+// Hộp sửa ngày: lưu vào hồ sơ dự án (cùng dữ liệu tab Dự án). Ô để trống = hệ thống tự lấy (ngày ký HĐ / ngày quyết toán)
 function bNgayDialog(d) {
   const dlg = document.createElement('dialog');
   dlg.className = 'pass-dlg f-dlg';
-  const auto = (x, none) => (x ? dmy(x) : none);
+  const auto = (x, src, none) => (x ? `${dmy(x)} (${src})` : none);
   dlg.innerHTML = `<form method="dialog" class="stack">
     <h3>Ngày bắt đầu – kết thúc · ${esc(d.ma_du_an)}</h3>
-    <p class="muted small">Chỉ điền khi có yêu cầu riêng. Để trống thì hệ thống tự lấy: bắt đầu = ngày ký HĐ chủ đầu tư đầu tiên, kết thúc = ngày quyết toán (khi mọi HĐ đã quyết toán).</p>
-    <label>Ngày bắt đầu<input name="bd" type="date" value="${d.ngay_bat_dau || ''}"></label>
-    <div class="row-auto small muted">Tự động: <b>${auto(d.ngay_ky_hd, 'chưa có HĐ')}</b> (ngày ký HĐ) <button type="button" class="sm" data-auto="bd">Dùng tự động</button></div>
-    <label>Ngày kết thúc<input name="kt" type="date" value="${d.ngay_ket_thuc || ''}"></label>
-    <div class="row-auto small muted">Tự động: <b>${auto(d.ngay_qt, 'chưa quyết toán')}</b> (ngày quyết toán) <button type="button" class="sm" data-auto="kt">Dùng tự động</button></div>
+    <p class="muted small">Chỉ điền khi có yêu cầu riêng. <b>Để trống</b> thì hệ thống tự lấy theo hợp đồng / quyết toán.</p>
+    <label>Ngày bắt đầu <small class="muted">· để trống = ${auto(d.ngay_ky_hd, 'ngày ký HĐ', 'chưa có HĐ')}</small><input name="bd" type="date" value="${d.ngay_bat_dau || ''}"></label>
+    <label>Ngày kết thúc <small class="muted">· để trống = ${auto(d.ngay_qt, d.ngay_qt_loai || 'ngày quyết toán', 'chưa quyết toán')}</small><input name="kt" type="date" value="${d.ngay_ket_thuc || ''}"></label>
     <div class="msg" role="alert"></div>
     <div class="actions"><button type="submit" class="primary">Lưu</button><button type="button" data-x>Hủy</button></div>
   </form>`;
@@ -1164,7 +1159,6 @@ function bNgayDialog(d) {
   const f = $('form', dlg);
   const close = () => { dlg.close(); dlg.remove(); };
   $('[data-x]', f).addEventListener('click', close);
-  $$('[data-auto]', f).forEach((b) => b.addEventListener('click', () => { f.elements[b.dataset.auto].value = ''; }));
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
     const bd = f.elements.bd.value || null, kt = f.elements.kt.value || null;
