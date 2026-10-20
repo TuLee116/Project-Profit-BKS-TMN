@@ -211,17 +211,17 @@ function bThucHtml(list) {
     <div class="f-box tt-chart"><h3>Diễn biến tiền thật lũy kế <small class="muted">· thu, chi và còn lại theo tháng</small></h3><div id="tt-ch" class="chart"></div></div>
     <div class="table-wrap"><table class="b-table tt-table">
       <thead>
-        <tr><th rowspan="2">Công trình</th><th colspan="4" class="grp">THU (tiền về)</th><th colspan="4" class="grp f-sep">CHI (tiền ra)</th><th rowspan="2" class="num f-sep">Còn lại thực<br><small>thu − chi</small></th></tr>
-        <tr><th class="num">Kế hoạch</th><th class="num">Thực thu</th><th>% KH</th><th class="num">Còn phải thu</th>
+        <tr><th rowspan="2">Công trình</th><th colspan="4" class="grp g-thu f-sep">THU (tiền về)</th><th colspan="4" class="grp g-chi f-sep">CHI (tiền ra)</th><th rowspan="2" class="num f-sep g-con">Còn lại thực<br><small>thu − chi</small></th></tr>
+        <tr><th class="num f-sep">Kế hoạch</th><th class="num">Thực thu</th><th>% KH</th><th class="num">Còn phải thu</th>
           <th class="num f-sep">Kế hoạch</th><th class="num">Thực chi</th><th>% KH</th><th class="num">Còn phải chi</th></tr>
       </thead>
       <tbody>${rows.map((x) => `<tr><td title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="muted small">${esc(x.d.ten_du_an)}</span></td>
-        <td class="num">${bTy(x.kh_thu)}</td><td class="num strong">${bTy(x.thu)}</td><td class="f-pct">${meter(x.thu, x.kh_thu, BCOL.thu)}${bpct(x.thu, x.kh_thu)}</td><td class="num">${ty(x.phai_thu)}</td>
+        <td class="num f-sep">${bTy(x.kh_thu)}</td><td class="num strong">${bTy(x.thu)}</td><td class="f-pct">${meter(x.thu, x.kh_thu, BCOL.thu)}${bpct(x.thu, x.kh_thu)}</td><td class="num">${ty(x.phai_thu)}</td>
         <td class="num f-sep">${bTy(x.kh_chi)}</td><td class="num strong">${bTy(x.chi)}</td><td class="f-pct">${meter(x.chi, x.kh_chi, BCOL.chi)}${bpct(x.chi, x.kh_chi)}</td><td class="num">${ty(x.phai_chi)}</td>
-        <td class="num strong f-sep ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td>Tổng cộng</td><td class="num">${bTy(T.kh_thu)}</td><td class="num">${bTy(T.thu)}</td><td>${bpct(T.thu, T.kh_thu)}</td><td class="num">${ty(T.phai_thu)}</td>
+        <td class="num strong f-sep g-con ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Tổng cộng</td><td class="num f-sep">${bTy(T.kh_thu)}</td><td class="num">${bTy(T.thu)}</td><td>${bpct(T.thu, T.kh_thu)}</td><td class="num">${ty(T.phai_thu)}</td>
         <td class="num f-sep">${bTy(T.kh_chi)}</td><td class="num">${bTy(T.chi)}</td><td>${bpct(T.chi, T.kh_chi)}</td><td class="num">${ty(T.phai_chi)}</td>
-        <td class="num f-sep ${T.con < 0 ? 'neg' : ''}">${bTy(T.con)}</td></tr></tfoot>
+        <td class="num f-sep g-con ${T.con < 0 ? 'neg' : ''}">${bTy(T.con)}</td></tr></tfoot>
     </table></div>
     <p class="muted small f-note">Tỷ đồng, sau VAT · Thực chi = chi phí đã chi + thanh toán thầu phụ (gồm tạm ứng); không gồm tiền vay nhận về (${bTy(T.vay)} tỷ) và trả nợ gốc vay (${bTy(T.goc)} tỷ) vì đó là vay – trả nợ, không phải doanh thu / chi phí · Còn lại âm = đang bỏ tiền ra nhiều hơn tiền thu về · Kế hoạch theo hợp đồng chỉ để so sánh, không phải tiền thật.</p>
   </section>`;
