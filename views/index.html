@@ -50,8 +50,8 @@
           <label>Địa điểm<input name="dia_diem" maxlength="150" placeholder="Quận 1, TP.HCM"></label>
           <label>Tiến độ (%)<input name="tien_do" type="number" min="0" max="100" step="0.01" value="0"></label>
           <label>Trạng thái<select name="trang_thai"></select></label>
-          <label>Ngày bắt đầu<input name="ngay_bat_dau" type="date"></label>
-          <label>Ngày kết thúc<input name="ngay_ket_thuc" type="date"></label>
+          <label>Ngày bắt đầu <small class="muted">(trống = ngày ký HĐ đầu tiên)</small><input name="ngay_bat_dau" type="date"></label>
+          <label>Ngày kết thúc <small class="muted">(trống = ngày quyết toán)</small><input name="ngay_ket_thuc" type="date"></label>
           <div class="actions">
             <button type="submit" class="primary">Lưu</button>
             <button type="button" id="p-cancel">Hủy</button>
@@ -224,6 +224,7 @@
           <label>Từ ngày<input type="date" name="tu"></label>
           <label>Đến ngày<input type="date" name="den"></label>
           <label class="nk-q">Tìm<input type="search" name="q" placeholder="Mã dự án, nội dung, IP..."></label>
+          <label>Hiển thị<select name="limit"><option value="50">50 dòng</option><option value="100" selected>100 dòng</option><option value="150">150 dòng</option></select></label>
           <div class="nk-actions"><button type="button" id="nk-reset">Xóa lọc</button><button type="button" id="nk-csv">Xuất CSV</button></div>
         </form>
         <div class="table-wrap">
@@ -232,7 +233,7 @@
             <tbody id="nk-tbody"><tr><td colspan="7" class="empty">Đang tải...</td></tr></tbody>
           </table>
         </div>
-        <div class="nk-more"><button type="button" id="nk-more" hidden>Xem thêm</button><span id="nk-count" class="muted small"></span></div>
+        <div class="nk-more"><div id="nk-pager" class="nk-pager"></div><span id="nk-count" class="muted small"></span></div>
       </div>
     </section>
 
@@ -259,7 +260,7 @@
         </form>
         <hr>
         <h2>Dữ liệu mẫu (chạy thử hệ thống)</h2>
-        <p class="small">Tạo 12 dự án mẫu mã <b>DEMO-01…12</b>: mỗi dự án 5–10 HĐ chủ đầu tư ở các giai đoạn (mới ký / đang thi công / đã quyết toán), mỗi HĐ 5–10 HĐ thầu phụ và các khoản chi phí khác. Không ảnh hưởng dữ liệu thật; xóa được toàn bộ bằng Passcode.</p>
+        <p class="small">Tạo 12 dự án mẫu mã <b>DEMO-01…12</b>: mỗi dự án 5–10 HĐ chủ đầu tư ở các giai đoạn (mới ký / đang thi công / đã quyết toán), mỗi HĐ 5–10 HĐ thầu phụ và các khoản chi phí khác; khoản vay ngân hàng (giải ngân, trả gốc + lãi); kèm 3 thời điểm TĐ1 ban đầu · TĐ2 có phát sinh · TĐ3 quyết toán (công trình hoàn thành). Dữ liệu chuẩn: đủ ngày, VAT 10% (nhân công 8%), không cảnh báo. Không ảnh hưởng dữ liệu thật; xóa được toàn bộ bằng Passcode.</p>
         <p id="demo-status" class="small muted"></p>
         <div class="actions">
           <button type="button" class="primary" id="demo-seed">Tạo dữ liệu mẫu</button>
@@ -289,6 +290,7 @@
             <button type="button" id="b-reload" title="Lấy lại số liệu mới nhất">↻ Làm mới</button>
             <button type="button" id="b-print">In / PDF</button>
             <button type="button" id="b-xlsx">Excel</button>
+            <button type="button" id="b-xlsx-tmn" title="Bảng tổng hợp doanh thu – chi phí theo mẫu trình ký TMN (logo, font, bố cục chuẩn)">Excel mẫu TMN</button>
             <button type="button" id="b-pptx" class="primary">PowerPoint</button>
           </div>
         </div>

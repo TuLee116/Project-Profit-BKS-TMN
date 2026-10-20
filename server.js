@@ -11,6 +11,7 @@ const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = requir
 const { summarizeProject } = require('./lib/dashboard');
 const { projectReport } = require('./lib/report');
 const { DEMO_PREFIX, seedDemo } = require('./lib/demo');
+const { buildDtcp, costLinesFor, CONG_TY } = require('./lib/export-dtcp');
 const PHIEN_BAN = require('./lib/version').readVersion(); // đọc 1 lần khi khởi động
 const { LOAI_DOANH_THU, calcLine, summarize, sortRevenue, tienVeLabel, sortTienVe, summarizeTienVe } = require('./lib/revenue');
 
@@ -181,6 +182,7 @@ api.use(audit.middleware); // ghi nhật ký mọi thao tác thêm / sửa / xó
 
 // ---------- Nhật ký hoạt động ----------
 const SU_KIEN = { xuat_excel: 'Excel', xuat_pptx: 'PowerPoint', in_pdf: 'In / PDF', xuat_csv: 'CSV' };
+const LOG_PAGE_DEPTH = 10000; // xem theo trang tối đa 10.000 dòng mới nhất (sâu hơn: lọc theo ngày hoặc xuất CSV)
 api.post('/nhat-ky/su-kien', wrap(async (req, res) => {
   const loai = SU_KIEN[req.body?.loai];
   if (!loai) return bad(res, 'Sự kiện không hợp lệ');
@@ -191,11 +193,14 @@ api.get('/nhat-ky', auth.requireRole('admin'), wrap(async (req, res) => {
   const q = req.query;
   const date = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : '');
   const limit = Math.min(500, Math.max(1, Number(q.limit) || 100));
+  // Chuyển trang theo số: lấy page × limit dòng mới nhất rồi cắt trang; giới hạn độ sâu để không giải nén quá nhiều lưu trữ
+  const page = q.before ? 1 : Math.min(Math.max(1, parseInt(q.page, 10) || 1), Math.max(1, Math.floor(LOG_PAGE_DEPTH / limit)));
   const rows = await store.listLogs({
     user_id: parseId(q.user_id), hanh_dong: audit.HANH_DONG.includes(q.hanh_dong) ? q.hanh_dong : '',
-    q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit,
+    q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit: page * limit,
   });
-  res.json({ items: rows.slice(0, limit), more: rows.length > limit, hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats() }) });
+  res.json({ items: rows.slice((page - 1) * limit, page * limit), more: rows.length > page * limit, page, max_page: Math.max(1, Math.floor(LOG_PAGE_DEPTH / limit)),
+    hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats() }) });
 }));
 
 api.get('/auth/me', (req, res) => res.json(req.user));
@@ -360,6 +365,18 @@ api.put('/du-an/:id', canEdit, wrap(async (req, res) => {
   ok ? res.json({ id }) : bad(res, 'Không tìm thấy dự án', 404);
 }));
 
+// Sửa riêng ngày bắt đầu / kết thúc (từ khung công trình ở Báo cáo): để trống = hệ thống tự lấy theo ngày ký HĐ / ngày quyết toán
+api.put('/du-an/:id/ngay', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  const cur = id && (await store.listProjects()).find((p) => p.id === id);
+  if (!cur) return bad(res, 'Không tìm thấy dự án', 404);
+  const iso = (x) => (x === null || x === '' || x === undefined ? null : String(x));
+  const { data, errors } = validateProject({ ...cur, ngay_bat_dau: iso(req.body?.ngay_bat_dau), ngay_ket_thuc: iso(req.body?.ngay_ket_thuc) });
+  if (errors.length) return bad(res, errors);
+  await store.updateProject(id, data, req.user.id);
+  res.json({ id, ngay_bat_dau: data.ngay_bat_dau, ngay_ket_thuc: data.ngay_ket_thuc });
+}));
+
 api.delete('/du-an/:id', canEdit, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
@@ -404,20 +421,85 @@ api.get('/dashboard', wrap(async (_req, res) => {
 }));
 
 // ---------- Báo cáo tổng quan (tab Báo cáo): toàn bộ số liệu liên kết + dòng chi tiết để xuất ----------
-api.get('/bao-cao', wrap(async (req, res) => {
+// Số liệu báo cáo của các dự án (withCost: kèm dòng chi phí gốc cho bản xuất Excel mẫu TMN)
+async function reportProjects({ withCost = false } = {}) {
   const list = await store.listProjects();
   const du_an = await Promise.all(list.map(async (p) => {
     const [rev, tienVe, cost, tp] = await Promise.all([
       store.listRevenue(p.id), store.listTienVe(p.id), store.listCost(p.id), store.listTp(p.id)]);
-    return projectReport(p, { rev: sortRevenue(rev).map(calcLine), tienVe: sortTienVe(tienVe), cost: sortCost(cost).map(costLine), tp: buildContracts(tp) });
+    const lines = sortCost(cost).map(costLine);
+    const d = projectReport(p, { rev: sortRevenue(rev).map(calcLine), tienVe: sortTienVe(tienVe), cost: lines, tp: buildContracts(tp) });
+    if (withCost) d.chi_tiet_cp = costLinesFor(lines);
+    return d;
   }));
+  const tds = await store.listThoiDiem();
+  for (const d of du_an) d.thoi_diem = tds.filter((t) => t.du_an_id === d.id).map(({ du_an_id, ...t }) => t);
+  return du_an;
+}
+api.get('/bao-cao', wrap(async (req, res) => {
+  const du_an = await reportProjects();
   const s = await store.getSettings();
   res.json({
     lap_luc: new Date().toISOString(), nguoi_lap: req.user.full_name || req.user.username,
-    ten_cong_ty: s.ten_cong_ty, ten_he_thong: s.ten_he_thong, phien_ban: PHIEN_BAN.ma,
+    ten_cong_ty: s.ten_cong_ty, ten_he_thong: s.ten_he_thong, phien_ban: PHIEN_BAN.ma, cong_ty: CONG_TY,
     khoi: KHOI_CHI_PHI.map((k) => ({ code: k.code, ten: k.ten })), du_an,
     muc_tieu: await readTargets(), la_quan_tri: req.user.role === 'admin',
   });
+}));
+
+// Xuất Excel theo mẫu trình ký TMN (logo, font, bố cục) – ?ids=1,2,3 (bỏ trống = tất cả dự án)
+api.get('/bao-cao/dtcp.xlsx', wrap(async (req, res) => {
+  const ids = String(req.query.ids || '').split(',').map(Number).filter(Boolean);
+  const all = await reportProjects({ withCost: true });
+  const du_an = ids.length ? all.filter((d) => ids.includes(d.id)) : all;
+  if (!du_an.length) return bad(res, 'Không có dự án để xuất');
+  const ngay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+  const buf = await buildDtcp({ du_an, ngay, nguoi_lap: req.user.full_name || req.user.username });
+  audit.log(req, 'Xuất báo cáo', 'Báo cáo', `Excel mẫu TMN (DT–CP) · ${du_an.length} dự án`);
+  const ten = `BaoCao_DTCP_TMN_${ngay.replace(/-/g, '')}.xlsx`;
+  res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${ten}"` });
+  res.send(Buffer.from(buf));
+}));
+
+// ---------- Thời điểm chốt số thực tế của công trình (TĐ1–TĐ3) ----------
+const tdVal = (b) => {
+  const errors = [];
+  const td = Number(b.td), ngay = String(b.ngay || ''), dt = Number(b.dt), cp = Number(b.cp);
+  if (![1, 2, 3].includes(td)) errors.push('Thời điểm phải là TĐ1, TĐ2 hoặc TĐ3');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ngay) || Number.isNaN(Date.parse(ngay))) errors.push('Nhập ngày chốt số hợp lệ');
+  if (!Number.isInteger(dt) || dt < 0 || dt > 1e15) errors.push('Doanh thu phải là số nguyên không âm (đồng)');
+  if (!Number.isInteger(cp) || cp < 0 || cp > 1e15) errors.push('Chi phí phải là số nguyên không âm (đồng)');
+  return { data: { td, ngay, dt, cp, ghi_chu: String(b.ghi_chu || '').trim().slice(0, 200) }, errors };
+};
+const TD_TEN = { 1: 'Ban đầu', 2: 'Có phát sinh', 3: 'Quyết toán' };
+const tdTxt = (t) => (t ? `${TD_TEN[t.td] || ''} · ${t.ngay.split('-').reverse().join('/')} · DT ${new Intl.NumberFormat('vi-VN').format(t.dt)} đ · CP ${new Intl.NumberFormat('vi-VN').format(t.cp)} đ` : '—');
+api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  const p = id && (await store.getProject(id));
+  if (!p) return bad(res, 'Không tìm thấy công trình', 404);
+  const { data, errors } = tdVal({ ...(req.body || {}), td: req.params.td });
+  if (errors.length) return bad(res, errors);
+  const all = await store.listThoiDiem(id);
+  const old = all.find((t) => t.td === data.td);
+  const prev = all.find((t) => t.td === data.td - 1), next = all.find((t) => t.td === data.td + 1);
+  // Nhập theo thứ tự: có TĐ trước mới nhập TĐ sau; ngày không lùi so với TĐ trước, không vượt TĐ sau
+  if (data.td > 1 && !prev) return bad(res, `Cần nhập TĐ${data.td - 1} trước khi nhập TĐ${data.td}`);
+  if (prev && data.ngay < prev.ngay) return bad(res, `Ngày TĐ${data.td} không được trước ngày TĐ${data.td - 1} (${prev.ngay.split('-').reverse().join('/')})`);
+  if (next && data.ngay > next.ngay) return bad(res, `Ngày TĐ${data.td} không được sau ngày TĐ${data.td + 1} (${next.ngay.split('-').reverse().join('/')})`);
+  await store.setThoiDiem(id, data.td, data, req.user.id);
+  audit.log(req, old ? 'Sửa' : 'Thêm', 'Thời điểm', `TĐ${data.td} · ${tdTxt(data)}${old ? ` | Trước: ${tdTxt(old)}` : ''}`, { du_an: p.ma_du_an });
+  res.json(await store.listThoiDiem(id));
+}));
+api.delete('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id), td = Number(req.params.td);
+  const p = id && (await store.getProject(id));
+  if (!p) return bad(res, 'Không tìm thấy công trình', 404);
+  const all = await store.listThoiDiem(id);
+  const old = all.find((t) => t.td === td);
+  if (all.some((t) => t.td > td)) return bad(res, `Xóa TĐ${Math.max(...all.map((t) => t.td))} trước (xóa từ thời điểm sau cùng)`);
+  if (!old || !(await store.deleteThoiDiem(id, td))) return bad(res, 'Thời điểm chưa có số liệu', 404);
+  audit.log(req, 'Xóa', 'Thời điểm', `TĐ${td} · ${tdTxt(old)}`, { du_an: p.ma_du_an });
+  res.status(204).end();
 }));
 
 // ---------- Mục tiêu năm (Báo cáo) ----------
@@ -442,7 +524,7 @@ const demoProjects = async () => (await store.listProjects()).filter((p) => p.ma
 api.get('/demo', auth.requireRole('admin'), wrap(async (_req, res) => res.json({ count: (await demoProjects()).length })));
 api.post('/demo', auth.requireRole('admin'), wrap(async (req, res) => {
   if ((await demoProjects()).length) return bad(res, 'Đã có dữ liệu mẫu (DEMO-...). Hãy xóa dữ liệu mẫu trước khi tạo lại.', 409);
-  const seed = Number.isInteger(req.body?.seed) ? req.body.seed : 2026;
+  const seed = Number.isInteger(req.body?.seed) ? req.body.seed : 22; // bộ số mẫu đã chọn: mọi công trình có lãi, không cảnh báo
   const t0 = Date.now();
   try {
     const count = await seedDemo(store, req.user.id, seed);
