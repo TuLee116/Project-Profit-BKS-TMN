@@ -795,3 +795,18 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 /* Đơn vị tiền cạnh số trong khung tổng quan công trình */
 .pc-u { font-style: normal; font-size: .58em; font-weight: 600; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
 .pc-list .pc-u, .pc-td-ht .pc-u { font-size: .85em; margin-left: 3px; }
+/* TĐ: thanh bật/tắt "So với thực tế" + dòng thực tế mảnh, thẳng cột với 4 ô kế hoạch */
+.pc-td-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.pc-tt-sw { padding: 4px 12px; font-size: 12px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--navy); font-weight: 600; }
+.pc-tt-sw.on { background: #0f766e; border-color: #0f766e; color: #fff; }
+.pc-td-tt { display: grid; grid-template-columns: 96px repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: -4px; padding: 6px 0 6px; border-top: 1px dashed #9ad1c9; }
+.pc-tt-lab { padding: 0 10px; font-size: 11px; font-weight: 700; color: #0f766e; text-transform: uppercase; letter-spacing: .3px; line-height: 1.25; }
+.pc-tt-lab span { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.pc-tt-c { padding: 2px 10px; border-left: 3px solid #9ad1c9; background: #f3faf9; border-radius: 6px; min-width: 0; }
+.pc-tt-c span { display: block; font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-tt-c b { font-size: 14px; color: #0f4c47; font-variant-numeric: tabular-nums; }
+.pc-tt-c small { margin-left: 6px; font-size: 10.5px; color: var(--muted); }
+.pc-modal .pc-td-tt { grid-template-columns: 130px repeat(4, minmax(0, 1fr)); gap: 12px; }
+.pc-modal .pc-tt-c b { font-size: 17px; }
+.pc-modal .pc-tt-c span, .pc-modal .pc-tt-c small, .pc-modal .pc-td-bar { font-size: 12.5px; }
+@media (max-width: 640px) { .pc-td-tt { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pc-tt-lab { grid-column: 1 / -1; } }

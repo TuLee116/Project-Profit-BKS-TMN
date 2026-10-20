@@ -1233,12 +1233,23 @@ function bPcBody(d, tab) {
 // ---------------------------------------------------------------------
 const TD_TEN = { 1: 'Ban đầu', 2: 'Có phát sinh', 3: 'Quyết toán' };
 const TD_HT = { 1: 'HĐ gốc', 2: 'HĐ + phụ lục', 3: 'quyết toán' };
-// Số hệ thống theo mốc: TĐ1 = HĐ gốc · TĐ2 = HĐ + PL · TĐ3 = quyết toán (DT); CP = thầu phụ cùng mốc + chi phí khác đã ghi nhận
-function bSysMoc(d, td) {
+// Số hệ thống theo mốc (KẾ HOẠCH theo hợp đồng): TĐ1 = HĐ gốc · TĐ2 = HĐ + PL · TĐ3 = quyết toán (DT);
+// CP = thầu phụ cùng mốc + chi phí khác đã ghi nhận đến ngày chốt (ngày chứng từ ≤ ngày chốt)
+function bSysMoc(d, td, ngay) {
   const m = d.moc || {};
   const dt = td === 1 ? m.dt_goc : td === 2 ? m.dt_ps : m.dt_qt;
-  const cp = (td === 1 ? m.tp_goc : td === 2 ? m.tp_ps : m.tp_qt) + (m.cp_khac || 0);
+  const khac = ngay && m.cp_khac_ngay
+    ? Object.entries(m.cp_khac_ngay).reduce((a, [k, x]) => a + (k <= ngay ? x : 0), 0)
+    : m.cp_khac || 0;
+  const cp = (td === 1 ? m.tp_goc : td === 2 ? m.tp_ps : m.tp_qt) + khac;
   return { dt: dt || 0, cp: cp || 0, ln: (dt || 0) - (cp || 0) };
+}
+// Số THỰC TẾ thực hiện đến ngày chốt (trước VAT, cùng quy tắc Dashboard): DT = đã nghiệm thu; CP = chi phí đã ghi nhận
+// + thầu phụ thực hiện. Chỉ tính dòng có ngày ≤ ngày chốt.
+function bThucTe(d, ngay) {
+  let dt = 0, cp = 0;
+  for (const [k, x] of Object.entries(d.thuc_hien.ngay || {})) if (k <= ngay) { dt += x.dt_gt; cp += x.cp_gt; }
+  return { dt, cp, ln: dt - cp };
 }
 const bTodayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
 function bTdBox(label, cls, val, sys, isPct) {
@@ -1253,19 +1264,29 @@ function bTdBox(label, cls, val, sys, isPct) {
   }
   return `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${fmtV(val)}</b><small class="pc-td-ht">${note}</small></div>`;
 }
+// Dòng "Thực tế đến ngày chốt" (bật/tắt): cùng 4 chỉ tiêu, trước VAT, kèm % so với số kế hoạch của TĐ
+function bTdThucTe(d, t) {
+  const a = bThucTe(d, t.ngay), ln = t.dt - t.cp;
+  const pctTxt = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`;
+  const cell = (label, val, plan, isPct) => `<div class="pc-tt-c"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${isPct ? (val === null ? '—' : pctTxt(val)) : bTyU(val)}</b>${
+    !isPct && plan ? `<small>${pctTxt(val / plan)} KH</small>` : ''}</div>`;
+  return `<div class="pc-td-tt"><div class="pc-tt-lab">Thực tế<br><span>đến ${dmy(t.ngay)}</span></div>
+    ${cell('DT đã nghiệm thu', a.dt, t.dt)}${cell('CP đã thực hiện', a.cp, t.cp)}${cell('Lợi nhuận', a.ln, ln)}${cell('Tỷ suất LN', a.dt ? a.ln / a.dt : null, 0, true)}</div>`;
+}
 function bTdBlock(d) {
   const tds = [...(d.thoi_diem || [])].sort((a, b) => a.td - b.td);
   const edit = canEditPc();
   const pct = (a, b) => (b ? a / b : null);
+  const tt = Boolean(BST.td_tt) && tds.length;
   const rows = tds.map((t) => {
-    const s = bSysMoc(d, t.td), ln = t.dt - t.cp;
+    const s = bSysMoc(d, t.td, t.ngay), ln = t.dt - t.cp;
     return `<div class="pc-td" ${t.ghi_chu ? `title="${esc(t.ghi_chu)}"` : ''}>
       <div class="pc-td-lab"><b>TĐ${t.td}</b><em>${TD_TEN[t.td]}</em><span>${dmy(t.ngay)}</span>${edit ? `<button type="button" class="pc-td-edit no-print" data-tdedit="${t.td}">Sửa</button>` : ''}</div>
       <div class="pc-kpis">${bTdBox('Doanh thu', 'k-dt', t.dt, s.dt)}${bTdBox('Chi phí', 'k-cp', t.cp, s.cp)}${bTdBox('Lợi nhuận', 'k-ln', ln, s.ln)}${bTdBox('Tỷ suất LN', 'k-ts', pct(ln, t.dt), pct(s.ln, s.dt), true)}</div>
-    </div>`;
+    </div>${tt ? bTdThucTe(d, t) : ''}`;
   });
   if (!tds.length) {
-    const s = bSysMoc(d, 1);
+    const s = bSysMoc(d, 1, bTodayIso());
     rows.push(`<div class="pc-td pc-td-empty">
       <div class="pc-td-lab"><b>TĐ1</b><em>${TD_TEN[1]}</em><span>Chưa nhập</span></div>
       <div class="pc-td-none">${edit ? '<button type="button" class="primary sm no-print" data-tdedit="1">+ Nhập DT – CP ban đầu</button>' : '<span class="muted">Chưa nhập số liệu thời điểm</span>'}
@@ -1274,8 +1295,11 @@ function bTdBlock(d) {
   }
   const next = tds.length + 1;
   const add = edit && tds.length && next <= 3 ? `<button type="button" class="pc-td-add no-print" data-tdedit="${next}">+ Thêm TĐ${next} – ${TD_TEN[next]}</button>` : '';
-  return `<div class="pc-tds">${rows.join('')}${add}
-    <div class="pc-note">TĐ1 ban đầu · TĐ2 có phát sinh · TĐ3 quyết toán – số nhập tay (trước VAT, tỷ đồng) · dòng nhỏ <b>HT</b> = số hệ thống theo mốc tương ứng (HĐ gốc / HĐ + phụ lục / quyết toán; CP gồm thầu phụ cùng mốc + chi phí khác)</div></div>`;
+  const sw = tds.length ? `<div class="pc-td-bar no-print"><span>Số <b>kế hoạch</b> theo hợp đồng tại từng thời điểm</span>
+    <button type="button" class="pc-tt-sw ${tt ? 'on' : ''}" data-tdtt aria-pressed="${tt ? 'true' : 'false'}">${tt ? '✓ ' : ''}So với thực tế</button></div>` : '';
+  return `<div class="pc-tds">${sw}${rows.join('')}${add}
+    <div class="pc-note">TĐ1 ban đầu · TĐ2 có phát sinh · TĐ3 quyết toán – số <b>kế hoạch</b> nhập tay (trước VAT, tỷ đồng) · dòng nhỏ <b>HT</b> = số hệ thống: DT theo HĐ gốc / HĐ + phụ lục / quyết toán; CP = thầu phụ cùng mốc + chi phí khác có ngày ≤ ngày chốt${
+      tt ? ' · dòng <b>Thực tế</b> = đã nghiệm thu và chi phí đã thực hiện đến ngày chốt (KH = so với số kế hoạch của TĐ)' : ''}</div></div>`;
 }
 function bTdDialog(d, n) {
   const t = (d.thoi_diem || []).find((x) => x.td === n);
@@ -1299,11 +1323,12 @@ function bTdDialog(d, n) {
   const f = $('form', dlg);
   $$('input.money', f).forEach(attachMoneyInput);
   const sysNote = () => {
-    const s = bSysMoc(d, n);
+    const s = bSysMoc(d, n, f.elements.ngay.value || bTodayIso());
     $('.td-sys', f).innerHTML = `Hệ thống theo ${TD_HT[n]}: DT <b>${bn(s.dt)}</b> · CP <b>${bn(s.cp)}</b> · LN <b>${bn(s.ln)}</b> đ`;
     return s;
   };
   sysNote();
+  f.elements.ngay.addEventListener('change', sysNote);
   $('[data-fill]', f).addEventListener('click', () => { const s = sysNote(); f.elements.dt.value = bf.format(s.dt); f.elements.cp.value = bf.format(s.cp); });
   const close = () => { dlg.close(); dlg.remove(); };
   const done = (list) => { d.thoi_diem = list; close(); if (pcOpenId) bPcOpen(pcOpenId); else renderReport(); };
@@ -1386,6 +1411,11 @@ $('#b-report').addEventListener('click', async (e) => {
   const card = e.target.closest('.pc-card');
   if (!card) return;
   const id = Number(card.dataset.pc);
+  if (e.target.closest('[data-tdtt]')) { // bật/tắt dòng thực tế cho mọi TĐ, giữ nguyên tab đang xem
+    BST.td_tt = !BST.td_tt;
+    $('.pc-body', card).innerHTML = bPcBody(BC.du_an.find((x) => x.id === id), 'tong');
+    return bPcDraw(card);
+  }
   const te = e.target.closest('[data-tdedit]');
   if (te) return bTdDialog(BC.du_an.find((x) => x.id === id), Number(te.dataset.tdedit));
   const t = e.target.closest('[data-pt]');
