@@ -212,8 +212,8 @@ function bThucHtml(list) {
     <div class="table-wrap"><table class="b-table tt-table">
       <thead>
         <tr><th rowspan="2">Công trình</th><th colspan="4" class="grp g-thu f-sep">THU (tiền về)</th><th colspan="4" class="grp g-chi f-sep">CHI (tiền ra)</th><th rowspan="2" class="num f-sep g-con">Còn lại thực<br><small>thu − chi</small></th></tr>
-        <tr><th class="num f-sep">Kế hoạch</th><th class="num">Thực thu</th><th>% KH</th><th class="num">Còn phải thu</th>
-          <th class="num f-sep">Kế hoạch</th><th class="num">Thực chi</th><th>% KH</th><th class="num">Còn phải chi</th></tr>
+        <tr><th class="num f-sep g-thu">Kế hoạch</th><th class="num g-thu">Thực thu</th><th class="g-thu">% KH</th><th class="num g-thu">Còn phải thu</th>
+          <th class="num f-sep g-chi">Kế hoạch</th><th class="num g-chi">Thực chi</th><th class="g-chi">% KH</th><th class="num g-chi">Còn phải chi</th></tr>
       </thead>
       <tbody>${rows.map((x) => `<tr><td title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="muted small">${esc(x.d.ten_du_an)}</span></td>
         <td class="num f-sep">${bTy(x.kh_thu)}</td><td class="num strong">${bTy(x.thu)}</td><td class="f-pct">${meter(x.thu, x.kh_thu, BCOL.thu)}${bpct(x.thu, x.kh_thu)}</td><td class="num">${ty(x.phai_thu)}</td>
