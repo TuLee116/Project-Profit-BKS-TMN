@@ -810,3 +810,21 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .pc-modal .pc-tt-c b { font-size: 17px; }
 .pc-modal .pc-tt-c span, .pc-modal .pc-tt-c small, .pc-modal .pc-td-bar { font-size: 12.5px; }
 @media (max-width: 640px) { .pc-td-tt { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pc-tt-lab { grid-column: 1 / -1; } }
+/* Khung tổng quan: 2 lớp số Kế hoạch / Thực (tiền thật) */
+.pc-k.k-kh { border-top: 2px solid #1f3a6e; }
+.pc-k.k-thuc { border-top: 2px solid #0f766e; background: #f3faf9; }
+.pc-k.k-thuc b { color: #0f4c47; }
+.pc-tds .pc-td-bar, .pc-body > .pc-td-bar { margin: 2px 0 6px; }
+.pc-th-row { margin-top: 0; border-top: 1px dashed #c6cfdb; }
+.pc-th-row .pc-tt-lab { color: #5b6b7d; }
+.pc-th-row .pc-tt-c { border-left-color: #c6cfdb; background: #f6f8fb; }
+.pc-th-row .pc-tt-c b { color: var(--navy); }
+.pc-ln2 li, .pc-ln2 li:has(.pc-bar) { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 92px 92px; }
+.pc-ln2 b { text-align: right; }
+.pc-ln2 b.pc-th { color: #0f766e; }
+.pc-2bar { display: grid; gap: 3px; }
+.pc-2bar .pc-bar.kh i { background: #1f3a6e; }
+.pc-2bar .pc-bar.th i { background: #14b8a6; }
+.pc-modal .pc-ln2 li { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 130px 130px; }
+@media (max-width: 640px) { .pc-ln2 li, .pc-ln2 li:has(.pc-bar) { grid-template-columns: minmax(0, 1fr) 80px 80px; } .pc-ln2 .pc-2bar { display: none; } }
+.pc-2bar .pc-bar.neg-bar i { background: var(--danger); }

@@ -1161,6 +1161,23 @@ function bPcCard(d, idx) {
 const PC_U = '<em class="pc-u">tỷ đ</em>'; // đơn vị hiển thị cạnh số tiền trong khung tổng quan
 const bNat = (a, b) => String(a).localeCompare(String(b), 'vi', { numeric: true, sensitivity: 'base' }); // a→z, 1→9
 const bTyU = (n) => bTy(n) + PC_U;
+// Số THỰC HIỆN (theo nghiệm thu / chi phí thực hiện) – chỉ hiện khi bấm, để không lẫn với số kế hoạch và tiền thật
+function bPcThucHien(d, kind, cur, prv) {
+  const v = BST.vat, H = d.thuc_hien;
+  const on = Boolean(BST.th_on);
+  const btn = `<button type="button" class="pc-tt-sw pc-th-sw ${on ? 'on' : ''}" data-pcth aria-pressed="${on}">${on ? '✓ ' : '+ '}Thực hiện đến hiện tại</button>`;
+  if (!on) return `<div class="pc-td-bar no-print"><span>Kế hoạch theo hợp đồng · Thực = tiền thật (thực thu – thực chi)</span>${btn}</div>`;
+  const P = bPeriod(bScope().list);
+  const c = (label, val, sub) => `<div class="pc-tt-c"><span>${label}</span><b class="${typeof val === 'number' && val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTyU(val) : val}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const dtH = H.doanh_thu[v], cpH = H.chi_phi[v], lnH = dtH - cpH;
+  const cells = {
+    dt: [c('DT thực hiện (nghiệm thu)', dtH, 'lũy kế'), c(`DT trong kỳ ${P.label}`, cur.dt), c('% hoàn thành', bpct(H.doanh_thu.sv, d.du_kien.doanh_thu.sv)), c('Kỳ trước', prv ? prv.dt : '—')],
+    cp: [c('CP thực hiện', cpH, 'lũy kế'), c(`CP trong kỳ ${P.label}`, cur.cp), c('% CP / DT thực hiện', bpct(cpH, dtH)), c('Kỳ trước', prv ? prv.cp : '—')],
+    ln: [c('LN thực hiện', lnH, `tỷ suất ${bpct(lnH, dtH)}`), c(`LN trong kỳ ${P.label}`, cur.ln), c('Tỷ suất kỳ', bpct(cur.ln, cur.dt)), c('Kỳ trước', prv ? prv.ln : '—')],
+  }[kind];
+  return `<div class="pc-td-bar no-print"><span>Kế hoạch theo hợp đồng · Thực = tiền thật (thực thu – thực chi)</span>${btn}</div>
+    <div class="pc-td-tt pc-th-row"><div class="pc-tt-lab">Thực hiện<br><span>đến hiện tại · ${v === 'gt' ? 'trước VAT' : 'sau VAT'}</span></div>${cells.join('')}</div>`;
+}
 function bPcBody(d, tab) {
   const v = BST.vat;
   const P = bPeriod(bScope().list);
@@ -1172,32 +1189,45 @@ function bPcBody(d, tab) {
   const tpv = (x) => (v === 'gt' ? x.qt_gt : x.qt_sv);
   const kyNote = `<div class="pc-note">Kỳ ${esc(P.label)} · đơn vị tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'})</div>`;
   switch (tab) {
-    case 'dt': return `<div class="pc-kpis">${mini('DT dự kiến', K.doanh_thu[v])}${mini('DT thực thu', d.tien_ve, `<small>tiền về lũy kế, sau VAT · nghiệm thu ${bTy(H.doanh_thu[v])}</small>`)}${mini('DT trong kỳ', cur.dt, bDeltaS(cur.dt, prv?.dt))}${mini('% hoàn thành', bpct(H.doanh_thu.sv, K.doanh_thu.sv))}</div>
-      <table class="pc-tbl"><thead><tr><th>HĐ chủ đầu tư</th><th class="num">HĐ + PL (tỷ đ)</th><th class="num">Nghiệm thu (tỷ đ)</th><th>% HT</th></tr></thead>
-      <tbody>${[...d.hds].sort((a, b) => bNat(a.so_ma, b.so_ma)).map((x) => `<tr><td>${esc(x.so_ma)}${x.da_qt ? ' <span class="st st-hoan-thanh">QT</span>' : ''}</td><td class="num">${bTy(x.hd[v])}</td><td class="num">${bTy(x.nt[v])}</td>
-        <td><span class="pc-bar"><i style="width:${Math.min(100, x.pct_ht * 100)}%"></i></span>${(x.pct_ht * 100).toFixed(0)}%</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có HĐ</td></tr>'}</tbody></table>
-      <div class="pc-note">Đơn vị: tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'})</div>`;
+    // Doanh thu / Chi phí / Lợi nhuận: 2 lớp số – KẾ HOẠCH (theo HĐ) và THỰC (tiền thật); cùng tính sau VAT để so trực tiếp.
+    // Số "thực hiện" (nghiệm thu, chi phí thực hiện) và "trong kỳ" chỉ hiện khi bấm "Thực hiện đến hiện tại".
+    case 'dt': {
+      const t = bThuc(d, bNowYm());
+      const rows = [...d.hds].sort((a, b) => bNat(a.so_ma, b.so_ma));
+      return `<div class="pc-kpis">${mini('DT kế hoạch', t.kh_thu, '<small>HĐ + PL (đã QT theo QT)</small>', 'k-kh')}${mini('DT thực thu', t.thu, '<small>tiền đã về</small>', 'k-thuc')}${mini('% đã thu', bpct(t.thu, t.kh_thu))}${mini('Còn phải thu', t.phai_thu)}</div>
+      ${bPcThucHien(d, 'dt', cur, prv)}
+      <table class="pc-tbl"><thead><tr><th>HĐ chủ đầu tư</th><th class="num">Kế hoạch (tỷ đ)</th><th class="num">Thực thu (tỷ đ)</th><th>% đã thu</th></tr></thead>
+      <tbody>${rows.map((x) => `<tr><td>${esc(x.so_ma)}${x.da_qt ? ' <span class="st st-hoan-thanh">QT</span>' : ''}</td><td class="num">${bTy(x.dk.sv)}</td><td class="num">${bTy(x.tien_ve)}</td>
+        <td><span class="pc-bar"><i style="width:${x.dk.sv ? Math.min(100, (x.tien_ve / x.dk.sv) * 100) : 0}%"></i></span>${bpct(x.tien_ve, x.dk.sv)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có HĐ</td></tr>'}</tbody></table>
+      <div class="pc-note">Đơn vị: tỷ đồng, sau VAT · Kế hoạch = giá trị HĐ + phụ lục (HĐ đã quyết toán lấy theo quyết toán) · Thực thu = tiền đã về tài khoản, lũy kế đến hiện tại</div>`;
+    }
     case 'cp': {
-      const tong = K.chi_phi[v];
+      const t = bThuc(d, bNowYm());
+      const tong = K.chi_phi.sv;
       const pct = (x) => (tong ? Math.max(0, (x / tong) * 100) : 0);
       const blocks = d.khoi.map((k) => {
-        const ns = d.nhom.filter((n) => n.khoi === k.code && n[v]).sort((a, b) => b[v] - a[v]);
-        return `<li class="pc-khoi"><span>${esc(k.ten)}</span><span class="pc-bar wide"><i style="width:${pct(k[v])}%"></i></span><b>${bTyU(k[v])} · ${bpct(k[v], tong)}</b></li>` +
-          ns.map((n) => `<li class="pc-nhom"><span>${esc(n.code === 'tc_tra_no' ? 'Lãi vay ngân hàng' : n.ten)}${n.code === 'thau_phu' ? ` <small class="muted">(${d.so_tp} HĐTP · ${d.so_tp_qt} QT)</small>` : ''}</span><span class="pc-bar wide"><i style="width:${pct(n[v])}%"></i></span><b>${bTyU(n[v])} · ${bpct(n[v], tong)}</b></li>`).join('');
+        const ns = d.nhom.filter((n) => n.khoi === k.code && n.sv).sort((a, b) => b.sv - a.sv);
+        return `<li class="pc-khoi"><span>${esc(k.ten)}</span><span class="pc-bar wide"><i style="width:${pct(k.sv)}%"></i></span><b>${bTyU(k.sv)} · ${bpct(k.sv, tong)}</b></li>` +
+          ns.map((n) => `<li class="pc-nhom"><span>${esc(n.code === 'tc_tra_no' ? 'Lãi vay ngân hàng' : n.ten)}${n.code === 'thau_phu' ? ` <small class="muted">(${d.so_tp} HĐTP · ${d.so_tp_qt} QT)</small>` : ''}</span><span class="pc-bar wide"><i style="width:${pct(n.sv)}%"></i></span><b>${bTyU(n.sv)} · ${bpct(n.sv, tong)}</b></li>`).join('');
       }).join('');
-      return `<div class="pc-kpis">${mini('CP dự kiến', tong)}${mini('CP thực hiện', H.chi_phi[v], '<small>lũy kế</small>')}${mini('CP trong kỳ', cur.cp, bDeltaS(cur.cp, prv?.cp, false))}${mini('% DT dự kiến', bpct(tong, K.doanh_thu[v]))}</div>
-        <div class="pc-sub-h">Cơ cấu chi phí dự kiến: khối → nhóm chi phí</div>
+      return `<div class="pc-kpis">${mini('CP kế hoạch', t.kh_chi, '<small>thầu phụ theo HĐ/QT + chi phí khác</small>', 'k-kh')}${mini('CP thực chi', t.chi, `<small>chi phí ${bTy(t.cp)} · trả thầu phụ ${bTy(t.tp)}</small>`, 'k-thuc')}${mini('% đã chi', bpct(t.chi, t.kh_chi))}${mini('Còn phải chi', t.phai_chi)}</div>
+        ${bPcThucHien(d, 'cp', cur, prv)}
+        <div class="pc-sub-h">Cơ cấu chi phí kế hoạch: khối → nhóm chi phí</div>
         <ul class="pc-list pc-cp">${blocks}</ul>
-        <div class="pc-note">Đơn vị: tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'}) · tỷ trọng trên tổng chi phí dự kiến · nhận tiền vay ${bTy(d.vay_nhan?.sv || 0)} tỷ, trả nợ gốc ${bTy(d.tra_goc.sv)} tỷ không tính vào chi phí</div>`;
+        <div class="pc-note">Đơn vị: tỷ đồng, sau VAT · Thực chi = chi phí đã chi + tiền đã trả thầu phụ (gồm tạm ứng), lũy kế đến hiện tại · nhận tiền vay ${bTy(d.vay_nhan?.sv || 0)} tỷ, trả nợ gốc ${bTy(d.tra_goc.sv)} tỷ không tính vào chi phí</div>`;
     }
     case 'ln': {
-      const a = K.doanh_thu[v] - K.chi_phi[v], b = H.doanh_thu[v] - H.chi_phi[v];
-      const items = d.hds.map((x) => ({ l: x.so_ma, val: x.dk[v] - tpv(x.tp) })).sort((a, b) => bNat(a.l, b.l));
-      const mx = Math.max(1, ...items.map((x) => Math.abs(x.val)));
-      return `<div class="pc-kpis">${mini('LN dự kiến', a, `<small>${bpct(a, K.doanh_thu[v])}</small>`)}${mini('LN thực hiện', b, `<small>lũy kế · ${bpct(b, H.doanh_thu[v])}</small>`)}${mini('LN trong kỳ', cur.ln, bDeltaS(cur.ln, prv?.ln))}${mini('Tỷ suất kỳ', bpct(cur.ln, cur.dt))}</div>
-        <div class="pc-sub-h">Lãi gộp dự kiến theo HĐ (DT − thầu phụ)</div>
-        <ul class="pc-list">${items.map((x) => `<li><span>${esc(x.l)}</span><span class="pc-bar wide ${x.val < 0 ? 'neg-bar' : ''}"><i style="width:${(Math.abs(x.val) / mx) * 100}%"></i></span><b class="${x.val < 0 ? 'neg' : ''}">${bTyU(x.val)}</b></li>`).join('') || '<li class="muted">Chưa có HĐ</li>'}</ul>
-        <div class="pc-note">Đơn vị: tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'}) · HĐ xếp theo số hiệu</div>`;
+      const t = bThuc(d, bNowYm());
+      const kh = t.kh_thu - t.kh_chi;
+      const items = [...d.hds].sort((a, b) => bNat(a.so_ma, b.so_ma)).map((x) => ({ l: x.so_ma, kh: x.dk.sv - x.tp.qt_sv, th: x.tien_ve - x.tp.da_tt }));
+      const mx = Math.max(1, ...items.flatMap((x) => [Math.abs(x.kh), Math.abs(x.th)]));
+      const bar = (val, cls) => `<span class="pc-bar wide ${cls} ${val < 0 ? 'neg-bar' : ''}"><i style="width:${(Math.abs(val) / mx) * 100}%"></i></span>`;
+      return `<div class="pc-kpis">${mini('LN kế hoạch', kh, '<small>DT kế hoạch − CP kế hoạch</small>', 'k-kh')}${mini('LN thực', t.con, '<small>thực thu − thực chi</small>', 'k-thuc')}${mini('Tỷ suất kế hoạch', bpct(kh, t.kh_thu))}${mini('Tỷ suất thực', bpct(t.con, t.thu))}</div>
+        ${bPcThucHien(d, 'ln', cur, prv)}
+        <div class="pc-sub-h">Lãi gộp theo HĐ chủ đầu tư (doanh thu − thầu phụ): kế hoạch / thực</div>
+        <ul class="pc-list pc-ln2">${items.map((x) => `<li><span>${esc(x.l)}</span><div class="pc-2bar">${bar(x.kh, 'kh')}${bar(x.th, 'th')}</div>
+          <b class="${x.kh < 0 ? 'neg' : ''}">${bTyU(x.kh)}</b><b class="pc-th ${x.th < 0 ? 'neg' : ''}">${bTyU(x.th)}</b></li>`).join('') || '<li class="muted">Chưa có HĐ</li>'}</ul>
+        <div class="pc-note">Đơn vị: tỷ đồng, sau VAT · thanh xanh đậm = kế hoạch (DT HĐ − giá trị thầu phụ HT/QT); thanh xanh ngọc = thực (tiền về − đã trả thầu phụ) · HĐ xếp theo số hiệu</div>`;
     }
     case 'dong': return `<div class="pc-kpis">${mini('Thu (tiền về + vay)', cur.thu, bDeltaS(cur.thu, prv?.thu))}${mini('Chi', cur.chi, bDeltaS(cur.chi, prv?.chi, false))}${mini('Dòng tiền', cur.dong_tien)}${mini('Số dư cuối kỳ', bBalance([d], P.to))}</div>
       <div class="chart pc-chart" data-pcchart="dong"></div>${kyNote.replace('trước VAT', 'sau VAT')}`;
@@ -1411,6 +1441,12 @@ $('#b-report').addEventListener('click', async (e) => {
   const card = e.target.closest('.pc-card');
   if (!card) return;
   const id = Number(card.dataset.pc);
+  if (e.target.closest('[data-pcth]')) { // bật/tắt số thực hiện, giữ tab đang xem
+    BST.th_on = !BST.th_on;
+    const tab = $('.pc-tabs button.on', card)?.dataset.pt || 'dt';
+    $('.pc-body', card).innerHTML = bPcBody(BC.du_an.find((x) => x.id === id), tab);
+    return bPcDraw(card);
+  }
   if (e.target.closest('[data-tdtt]')) { // bật/tắt dòng thực tế cho mọi TĐ, giữ nguyên tab đang xem
     BST.td_tt = !BST.td_tt;
     $('.pc-body', card).innerHTML = bPcBody(BC.du_an.find((x) => x.id === id), 'tong');
