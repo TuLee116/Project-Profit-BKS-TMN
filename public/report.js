@@ -183,6 +183,7 @@ function bThuc(d, to) {
   if (to >= bNowYm()) for (const k in o) o[k] += T.chua_ngay[k] || 0; // dòng chưa nhập ngày: tính khi xem đến hiện tại
   o.chi = o.cp + o.tp; o.con = o.thu - o.chi; o.sau_goc = o.con + o.vay - o.goc; o.du_no = o.vay - o.goc;
   o.kh_thu = d.du_kien.doanh_thu.sv; o.kh_chi = d.du_kien.chi_phi.sv;
+  o.kh_tp = d.nhom.find((n) => n.code === 'thau_phu')?.sv || 0; o.kh_cp = o.kh_chi - o.kh_tp; // CP kế hoạch = thầu phụ HT/QT + chi phí khác
   o.phai_thu = o.kh_thu - o.thu; o.phai_chi = o.kh_chi - o.chi;
   return o;
 }
@@ -229,7 +230,8 @@ function bThucHtml(list) {
 const TTD = {
   thu: { t: 'Thực thu (tiền về)', f: 'Tổng tiền đã thực về tài khoản: tạm ứng + thanh toán đợt + quyết toán (sau VAT)', cols: [['thu', 'Thực thu']], go: 'revenue', lines: 'tv' },
   kh_thu: { t: 'Kế hoạch thu', f: 'Giá trị HĐ + phụ lục (sau VAT); HĐ đã quyết toán lấy theo giá trị quyết toán', cols: [['kh_thu', 'Kế hoạch thu']], go: 'revenue' },
-  chi: { t: 'Thực chi (tiền ra)', f: 'Chi phí đã chi (không gồm trả nợ gốc vay) + tiền đã trả thầu phụ (gồm tạm ứng), sau VAT', cols: [['cp', 'Chi phí đã chi'], ['tp', 'Đã trả thầu phụ'], ['chi', 'Thực chi']], go: 'cost' },
+  chi: { t: 'CP thực chi (tiền ra)', f: 'CP thực chi = Chi phí đã chi + Tiền đã trả thầu phụ (tạm ứng + các đợt + quyết toán), sau VAT, lũy kế. Là tiền thật đã ra khỏi tài khoản; không gồm trả nợ gốc vay và tiền vay nhận về.', cols: [['cp', 'Chi phí đã chi'], ['tp', 'Đã trả thầu phụ'], ['chi', 'Thực chi']], go: 'cost', lines: 'chi' },
+  kh_chi: { t: 'CP kế hoạch (kế hoạch chi)', f: 'CP kế hoạch = Thầu phụ theo HĐ/QT + Chi phí khác đã ghi nhận (sau VAT). Thầu phụ: HĐTP chưa quyết toán lấy giá trị HĐ + PL (dòng đã nhập HT/QT lấy HT/QT); đã quyết toán lấy giá trị chốt. Chi phí khác: vật tư, nhân công, máy, gián tiếp, lãi vay... đã nhập ở tab Chi phí; không gồm trả nợ gốc và tiền vay nhận về.', cols: [['kh_cp', 'Chi phí khác'], ['kh_tp', 'Thầu phụ theo HĐ/QT'], ['kh_chi', 'CP kế hoạch']], go: 'cost', lines: 'kh' },
   cp: { t: 'Chi phí đã chi', f: 'Tổng các dòng chi phí (sau VAT), không gồm trả nợ gốc vay', cols: [['cp', 'Chi phí đã chi']], go: 'cost' },
   tp: { t: 'Đã trả thầu phụ', f: 'Tổng thanh toán cho thầu phụ: tạm ứng + thanh toán đợt + quyết toán (sau VAT)', cols: [['tp', 'Đã trả thầu phụ']], go: 'cost' },
   con: { t: 'Còn lại thực', f: 'Còn lại thực = Thực thu − Thực chi', cols: [['thu', 'Thực thu'], ['chi', 'Thực chi'], ['con', 'Còn lại thực']], go: 'revenue' },
@@ -241,12 +243,14 @@ const TTD = {
   phai_chi: { t: 'Còn phải chi', f: 'Còn phải chi = Kế hoạch chi − Thực chi. Kế hoạch chi = chi phí đã ghi nhận + giá trị HT/QT thầu phụ (sau VAT), nên phần lớn là thầu phụ còn phải trả.', cols: [['kh_chi', 'Kế hoạch chi'], ['chi', 'Thực chi'], ['phai_chi', 'Còn phải chi']], go: 'cost' },
   kh_con: { t: 'Còn lại khi hoàn tất theo kế hoạch', f: 'Còn lại khi hoàn tất = Kế hoạch thu − Kế hoạch chi (nếu thu, chi đúng kế hoạch theo HĐ)', cols: [['kh_thu', 'Kế hoạch thu'], ['kh_chi', 'Kế hoạch chi'], ['kh_con', 'Còn lại khi hoàn tất']], go: 'revenue' },
 };
-function bThucDrill(key) {
+// pid: chỉ 1 công trình (bấm từ thẻ công trình, lũy kế đến hiện tại – giống số trên thẻ)
+function bThucDrill(key, pid = 0) {
   const cfg = TTD[key];
   if (!cfg) return;
-  const { list } = bScope();
+  const list = pid ? BC.du_an.filter((d) => d.id === pid) : bScope().list;
+  if (!list.length) return;
   const P = bPeriod(list);
-  const to = P.to < bNowYm() ? P.to : bNowYm();
+  const to = pid || P.to >= bNowYm() ? bNowYm() : P.to;
   const rows = list.map((d) => { const x = bThuc(d, to); return { d, ...x, kh_con: x.kh_thu - x.kh_chi }; });
   const main = cfg.cols[cfg.cols.length - 1][0];
   rows.sort((a, b) => Math.abs(b[main]) - Math.abs(a[main]));
@@ -254,7 +258,8 @@ function bThucDrill(key) {
   const cell = (v) => `<td class="num ${v < 0 ? 'neg' : ''}">${bn(v)}</td>`;
   const inRange = (ngay) => (!ngay ? to >= bNowYm() : String(ngay).slice(0, 7) <= to);
   let lines = '';
-  if (cfg.lines) {
+  if (cfg.lines === 'kh' || cfg.lines === 'chi') lines = bDrillCost(cfg.lines, list, inRange, to >= bNowYm());
+  else if (cfg.lines) {
     const loai = cfg.lines === 'vay' ? 'Không (tiền vay nhận về)' : 'Không (trả nợ gốc)';
     const L = list.flatMap((d) => (cfg.lines !== 'tv' ? d.chi_tiet.chi_phi.filter((r) => r.tinh_cp === loai).map((r) => ({ d, ngay: r.ngay, a: r.doi_tac, b: r.noi_dung, v: r.sau_vat }))
       : d.chi_tiet.tien_ve.map((r) => ({ d, ngay: r.ngay, a: r.hd, b: r.loai, v: r.so_tien }))).filter((x) => inRange(x.ngay)))
@@ -268,7 +273,7 @@ function bThucDrill(key) {
   dlg.innerHTML = `<div class="stack">
     <div class="tt-dlg-h"><h3>${cfg.t}</h3><button type="button" class="pc-x" data-x title="Đóng">×</button></div>
     <div class="tt-formula">${cfg.f}</div>
-    <p class="muted small">Lũy kế đến hết ${ymTxt(to)} · đồng, sau VAT · ${list.length} công trình · bấm <b>Mở</b> để tới tab ${cfg.go === 'cost' ? 'Chi phí' : 'Doanh thu'} của công trình</p>
+    <p class="muted small">${cfg.lines === 'kh' ? 'Theo hợp đồng' : `Lũy kế đến hết ${ymTxt(to)}`} · đồng, sau VAT · ${pid ? `<b>${esc(list[0].ma_du_an)}</b> ${esc(list[0].ten_du_an)}` : `${list.length} công trình`} · bấm <b>Mở</b> để tới tab ${cfg.go === 'cost' ? 'Chi phí' : 'Doanh thu'} của công trình</p>
     <div class="table-wrap"><table class="b-table"><thead><tr><th>Công trình</th>${cfg.cols.map(([, h]) => `<th class="num">${h}</th>`).join('')}<th></th></tr></thead>
       <tbody>${rows.map((x) => `<tr><td><b>${esc(x.d.ma_du_an)}</b> <span class="muted small">${esc(x.d.ten_du_an)}</span></td>${cfg.cols.map(([k]) => cell(x[k])).join('')}
         <td><button type="button" class="sm" data-tgo="${cfg.go}" data-id="${x.d.id}">Mở</button></td></tr>`).join('')}</tbody>
@@ -280,10 +285,42 @@ function bThucDrill(key) {
   dlg.addEventListener('click', (e) => {
     if (e.target === dlg || e.target.closest('[data-x]')) return close();
     const g = e.target.closest('[data-tgo]');
-    if (g) { close(); revProjectId = Number(g.dataset.id); showTab(g.dataset.tgo); }
+    if (g) { close(); bPcClose(); revProjectId = Number(g.dataset.id); showTab(g.dataset.tgo); }
   });
   dlg.addEventListener('close', () => dlg.remove());
   dlg.showModal();
+}
+
+// Chi tiết cấu thành CP kế hoạch ('kh') / CP thực chi ('chi'): chi phí theo nhóm + từng HĐ thầu phụ
+function bDrillCost(kind, list, inRange, toNow) {
+  const many = list.length > 1;
+  const grp = new Map(); // khối › nhóm -> số tiền
+  const addG = (khoi, nhom, v) => { const k = khoi + '|' + nhom; grp.set(k, (grp.get(k) || 0) + v); };
+  for (const d of list) {
+    if (kind === 'kh') d.nhom.filter((n) => n.code !== 'thau_phu' && n.sv).forEach((n) => addG(d.khoi.find((k) => k.code === n.khoi)?.ten || '', n.code === 'tc_tra_no' ? 'Lãi vay ngân hàng' : n.ten, n.sv));
+    else d.chi_tiet.chi_phi.filter((r) => r.tinh_cp === 'Có' && inRange(r.ngay)).forEach((r) => addG(r.khoi, r.nhom === 'Vay và trả nợ ngân hàng' ? 'Lãi vay ngân hàng' : r.nhom, r.sau_vat));
+  }
+  const kOrd = (ten) => list[0].khoi.findIndex((k) => k.ten === ten) >>> 0; // B1 → B2 → B3 (không rõ khối: cuối)
+  const gRows = [...grp].map(([k, v]) => ({ k: k.split('|'), v }))
+    .sort((a, b) => kOrd(a.k[0]) - kOrd(b.k[0]) || b.v - a.v);
+  const gTot = gRows.reduce((s2, x) => s2 + x.v, 0);
+  const tps = list.flatMap((d) => d.chi_tiet.thau_phu.map((c) => ({ d, ...c })))
+    .sort((a, b) => (kind === 'kh' ? b.qt_sv - a.qt_sv : b.da_tt - a.da_tt));
+  const tTot = (f) => tps.reduce((s2, c) => s2 + c[f], 0);
+  const head = (t, n) => `<h4>${t}${n !== undefined ? ` (${n})` : ''}</h4>`;
+  const cpTbl = `${head(kind === 'kh' ? 'Chi phí khác đã ghi nhận – theo nhóm' : 'Chi phí đã chi – theo nhóm')}
+    <div class="table-wrap tt-dl"><table class="b-table"><thead><tr><th>Khối</th><th>Nhóm chi phí</th><th class="num">Số tiền</th></tr></thead>
+    <tbody>${gRows.map((x) => `<tr><td class="muted small">${esc(x.k[0])}</td><td>${esc(x.k[1])}</td><td class="num">${bn(x.v)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">Chưa có chi phí</td></tr>'}</tbody>
+    <tfoot><tr><td colspan="2">Cộng</td><td class="num">${bn(gTot)}</td></tr></tfoot></table></div>`;
+  if (kind === 'chi' && !toNow) return cpTbl + '<p class="muted small">Chi tiết đã trả từng HĐ thầu phụ chỉ có khi xem lũy kế đến hiện tại.</p>';
+  const tpTbl = `${head(kind === 'kh' ? 'Thầu phụ theo HĐ/QT' : 'Đã trả thầu phụ – từng hợp đồng', tps.length)}
+    <div class="table-wrap tt-dl"><table class="b-table"><thead><tr>${many ? '<th>Công trình</th>' : ''}<th>HĐ chủ đầu tư</th><th>Số HĐTP</th><th>Nhà thầu phụ</th>
+      <th class="num">HT/QT${kind === 'kh' ? ' (kế hoạch)' : ''}</th>${kind === 'chi' ? '<th class="num">Đã trả</th><th class="num">Còn phải trả</th>' : ''}<th>Trạng thái</th></tr></thead>
+    <tbody>${tps.slice(0, 300).map((c) => `<tr>${many ? `<td><b>${esc(c.d.ma_du_an)}</b></td>` : ''}<td class="muted small">${esc(c.hd_cdt)}</td><td><b>${esc(c.so_ma)}</b></td><td>${esc(c.doi_tac || '')}</td>
+      <td class="num">${bn(c.qt_sv)}</td>${kind === 'chi' ? `<td class="num strong">${bn(c.da_tt)}</td><td class="num ${c.con_lai < 0 ? 'neg' : ''}">${bn(c.con_lai)}</td>` : ''}<td class="small">${esc(c.trang_thai)}</td></tr>`).join('')
+      || `<tr><td colspan="${many ? 8 : 7}" class="empty">Chưa có HĐ thầu phụ</td></tr>`}</tbody>
+    <tfoot><tr><td colspan="${many ? 4 : 3}">Cộng</td><td class="num">${bn(tTot('qt_sv'))}</td>${kind === 'chi' ? `<td class="num">${bn(tTot('da_tt'))}</td><td class="num">${bn(tTot('con_lai'))}</td>` : ''}<td></td></tr></tfoot></table></div>`;
+  return kind === 'kh' ? tpTbl + cpTbl : cpTbl + tpTbl;
 }
 
 function bThucDraw(list) {
@@ -1223,7 +1260,11 @@ function bPcBody(d, tab) {
   const cur = bSumRange([d], v, P.from, P.to);
   const prv = P.prev ? bSumRange([d], v, P.prev.from, P.prev.to) : null;
   const K = d.du_kien, H = d.thuc_hien;
-  const mini = (label, val, extra = '', cls = '') => `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTyU(val) : val}</b>${extra}</div>`;
+  // ttd: bấm số -> bảng cách tính và chi tiết của riêng công trình này
+  const mini = (label, val, extra = '', cls = '', ttd = '') => {
+    const b = `<b class="${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTyU(val) : val}</b>`;
+    return `<div class="pc-k ${cls}"><span>${label}</span>${ttd ? `<button type="button" class="pc-k-link" data-ttd="${ttd}" data-ttp="${d.id}" title="Bấm để xem cách tính và chi tiết">${b}</button>` : b}${extra}</div>`;
+  };
   const row = (l, val, cls = '') => `<li><span>${l}</span><b class="${cls} ${val < 0 ? 'neg' : ''}">${typeof val === 'number' ? bTyU(val) : val}</b></li>`;
   const tpv = (x) => (v === 'gt' ? x.qt_gt : x.qt_sv);
   const kyNote = `<div class="pc-note">Kỳ ${esc(P.label)} · đơn vị tỷ đồng (${v === 'gt' ? 'trước VAT' : 'sau VAT'})</div>`;
@@ -1233,7 +1274,7 @@ function bPcBody(d, tab) {
     case 'dt': {
       const t = bThuc(d, bNowYm());
       const rows = [...d.hds].sort((a, b) => bNat(a.so_ma, b.so_ma));
-      return `<div class="pc-kpis">${mini('DT kế hoạch', t.kh_thu, '<small>HĐ + PL (đã QT theo QT)</small>', 'k-kh')}${mini('DT thực thu', t.thu, '<small>tiền đã về</small>', 'k-thuc')}${mini('% đã thu', bpct(t.thu, t.kh_thu))}${mini('Còn phải thu', t.phai_thu)}</div>
+      return `<div class="pc-kpis">${mini('DT kế hoạch', t.kh_thu, '<small>HĐ + PL (đã QT theo QT)</small>', 'k-kh', 'kh_thu')}${mini('DT thực thu', t.thu, '<small>tiền đã về</small>', 'k-thuc', 'thu')}${mini('% đã thu', bpct(t.thu, t.kh_thu))}${mini('Còn phải thu', t.phai_thu, '', '', 'phai_thu')}</div>
       ${bPcThucHien(d, 'dt', cur, prv)}
       <table class="pc-tbl"><thead><tr><th>HĐ chủ đầu tư</th><th class="num">Kế hoạch (tỷ đ)</th><th class="num">Thực thu (tỷ đ)</th><th>% đã thu</th></tr></thead>
       <tbody>${rows.map((x) => `<tr><td>${esc(x.so_ma)}${x.da_qt ? ' <span class="st st-hoan-thanh">QT</span>' : ''}</td><td class="num">${bTy(x.dk.sv)}</td><td class="num">${bTy(x.tien_ve)}</td>
@@ -1249,7 +1290,7 @@ function bPcBody(d, tab) {
         return `<li class="pc-khoi"><span>${esc(k.ten)}</span><span class="pc-bar wide"><i style="width:${pct(k.sv)}%"></i></span><b>${bTyU(k.sv)} · ${bpct(k.sv, tong)}</b></li>` +
           ns.map((n) => `<li class="pc-nhom"><span>${esc(n.code === 'tc_tra_no' ? 'Lãi vay ngân hàng' : n.ten)}${n.code === 'thau_phu' ? ` <small class="muted">(${d.so_tp} HĐTP · ${d.so_tp_qt} QT)</small>` : ''}</span><span class="pc-bar wide"><i style="width:${pct(n.sv)}%"></i></span><b>${bTyU(n.sv)} · ${bpct(n.sv, tong)}</b></li>`).join('');
       }).join('');
-      return `<div class="pc-kpis">${mini('CP kế hoạch', t.kh_chi, '<small>thầu phụ theo HĐ/QT + chi phí khác</small>', 'k-kh')}${mini('CP thực chi', t.chi, `<small>chi phí ${bTy(t.cp)} · trả thầu phụ ${bTy(t.tp)}</small>`, 'k-thuc')}${mini('% đã chi', bpct(t.chi, t.kh_chi))}${mini('Còn phải chi', t.phai_chi)}</div>
+      return `<div class="pc-kpis">${mini('CP kế hoạch', t.kh_chi, `<small>thầu phụ ${bTy(t.kh_tp)} · chi phí khác ${bTy(t.kh_cp)}</small>`, 'k-kh', 'kh_chi')}${mini('CP thực chi', t.chi, `<small>chi phí ${bTy(t.cp)} · trả thầu phụ ${bTy(t.tp)}</small>`, 'k-thuc', 'chi')}${mini('% đã chi', bpct(t.chi, t.kh_chi))}${mini('Còn phải chi', t.phai_chi, '', '', 'phai_chi')}</div>
         ${bPcThucHien(d, 'cp', cur, prv)}
         <div class="pc-sub-h">Cơ cấu chi phí kế hoạch: khối → nhóm chi phí</div>
         <ul class="pc-list pc-cp">${blocks}</ul>
@@ -1546,7 +1587,7 @@ $('#b-report').addEventListener('click', (e) => {
   const go = e.target.dataset.bgo;
   if (go) { e.preventDefault(); revProjectId = Number(e.target.dataset.id); showTab(go); }
   const ttd = e.target.closest('[data-ttd]');
-  if (ttd) return bThucDrill(ttd.dataset.ttd);
+  if (ttd) return bThucDrill(ttd.dataset.ttd, Number(ttd.dataset.ttp) || 0);
 });
 let bResize;
 window.addEventListener('resize', () => { clearTimeout(bResize); bResize = setTimeout(() => { if (BC && !$('#tab-report').hidden) bDrawCharts(bScope().list, BST.vat, bScope().one); }, 200); });
