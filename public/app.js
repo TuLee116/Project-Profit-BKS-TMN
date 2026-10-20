@@ -27,6 +27,7 @@ let users = [];
   $$('[data-role]').forEach((el) => {
     if (!el.dataset.role.split(' ').includes(ME.role)) el.remove();
   });
+  document.body.classList.add('roles-ready'); // đến đây mới hiện các mục theo quyền (tránh nhấp nháy tab quản trị)
 
   const stSel = $('#p-form [name=trang_thai]');
   if (stSel) stSel.innerHTML = META.trang_thai.map((t) => `<option>${esc(t)}</option>`).join('');

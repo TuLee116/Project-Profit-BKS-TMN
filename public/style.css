@@ -23,6 +23,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+body:not(.roles-ready) [data-role] { display: none !important; } /* chờ xác định quyền rồi mới hiện */
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; min-height: 100vh;

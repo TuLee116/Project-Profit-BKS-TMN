@@ -834,6 +834,7 @@ function bBarH(el, items, series, { pctOf } = {}) {
 // Dựng báo cáo
 // ---------------------------------------------------------------------
 function renderReport() {
+  if (!BC) return; // đang tải: lựa chọn (kỳ, VAT, phạm vi) đã lưu, tự áp dụng khi tải xong
   const sel = $('#b-project');
   if (!BC.du_an.some((d) => d.id === Number(BST.project))) BST.project = '';
   sel.innerHTML = `<option value="">Tất cả dự án (${BC.du_an.length})</option>` + BC.du_an.map((d) => `<option value="${d.id}">${esc(d.ma_du_an)} – ${esc(d.ten_du_an)}</option>`).join('');
