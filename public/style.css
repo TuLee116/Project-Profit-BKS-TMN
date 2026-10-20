@@ -774,6 +774,7 @@ body.pc-modal-on { overflow: hidden; }
 .tt-table td.f-pct { white-space: nowrap; font-size: 12px; }
 .tt-table td.f-pct .f-meter { width: 52px; display: inline-block; vertical-align: middle; margin-right: 5px; }
 .tt-table td.pos { color: #0f8a5f; }
+.tt-table .f-sep { border-left: 1px dashed rgba(31, 58, 110, .18); } /* phân tách nhóm THU | CHI | CÒN LẠI: mờ, mảnh */
 @media (max-width: 1100px) { .tt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .tt-grid { grid-template-columns: 1fr; } }
 @media print { .tt-sec { break-before: page; } }
