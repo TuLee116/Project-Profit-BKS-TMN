@@ -1813,7 +1813,7 @@ const NK_CLS = { 'Đăng nhập': 'in', 'Đăng xuất': 'out', 'Hết phiên': 
 function nkParams(extra = {}) {
   const f = $('#nk-filter');
   const p = new URLSearchParams();
-  for (const k of ['user_id', 'hanh_dong', 'tu', 'den', 'q']) { const v = f.elements[k].value.trim(); if (v) p.set(k, v); }
+  for (const k of ['user_id', 'hanh_dong', 'tu', 'den', 'q', 'limit']) { const v = f.elements[k].value.trim(); if (v) p.set(k, v); }
   for (const [k, v] of Object.entries(extra)) if (v) p.set(k, v);
   return p;
 }
@@ -1827,7 +1827,7 @@ function nkFillSelects() {
 }
 async function loadLogs(auto = false, more = false) {
   if (!$('#nk-card')) return;
-  if (auto && NK.items.length > 100) return; // đang xem các trang sau -> không tự làm mới để khỏi mất chỗ đang đọc
+  if (auto && NK.items.length > Number($('#nk-filter').elements.limit.value)) return; // đang xem các trang sau -> không tự làm mới để khỏi mất chỗ đang đọc
   const r = await api('/api/nhat-ky?' + nkParams({ before: more ? NK.items.at(-1)?.id : 0 }), auto ? AUTO : {});
   if (!NK.hd.length || !auto) { NK.hd = r.hanh_dong; nkFillSelects(); }
   NK.items = more ? [...NK.items, ...r.items] : r.items;
@@ -1855,7 +1855,11 @@ async function loadLogs(auto = false, more = false) {
 let nkTimer;
 $('#nk-filter')?.addEventListener('input', () => { clearTimeout(nkTimer); nkTimer = setTimeout(() => loadLogs().catch((e) => alert(e.message)), 300); });
 $('#nk-filter')?.addEventListener('submit', (e) => e.preventDefault());
-$('#nk-reset')?.addEventListener('click', () => { $('#nk-filter').reset(); loadLogs().catch((e) => alert(e.message)); });
+$('#nk-reset')?.addEventListener('click', () => {
+  const f = $('#nk-filter'), lim = f.elements.limit.value; // xóa lọc nhưng giữ số dòng hiển thị đã chọn
+  f.reset(); f.elements.limit.value = lim;
+  loadLogs().catch((e) => alert(e.message));
+});
 $('#nk-more')?.addEventListener('click', () => loadLogs(false, true).catch((e) => alert(e.message)));
 $('#nk-csv')?.addEventListener('click', async (e) => {
   const btn = e.target; btn.disabled = true; btn.textContent = 'Đang xuất...';
