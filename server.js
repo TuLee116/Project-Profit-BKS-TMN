@@ -508,7 +508,7 @@ const demoProjects = async () => (await store.listProjects()).filter((p) => p.ma
 api.get('/demo', auth.requireRole('admin'), wrap(async (_req, res) => res.json({ count: (await demoProjects()).length })));
 api.post('/demo', auth.requireRole('admin'), wrap(async (req, res) => {
   if ((await demoProjects()).length) return bad(res, 'Đã có dữ liệu mẫu (DEMO-...). Hãy xóa dữ liệu mẫu trước khi tạo lại.', 409);
-  const seed = Number.isInteger(req.body?.seed) ? req.body.seed : 3; // bộ số mẫu đã chọn: mọi công trình có lãi, không cảnh báo
+  const seed = Number.isInteger(req.body?.seed) ? req.body.seed : 22; // bộ số mẫu đã chọn: mọi công trình có lãi, không cảnh báo
   const t0 = Date.now();
   try {
     const count = await seedDemo(store, req.user.id, seed);

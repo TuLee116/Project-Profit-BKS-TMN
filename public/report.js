@@ -1134,6 +1134,13 @@ function bPcClose() {
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pcOpenId) bPcClose(); });
 
+// Ngày bắt đầu / kết thúc công trình: nhập tay (yêu cầu riêng) được ưu tiên; để trống thì tự lấy theo ngày ký HĐ / ngày quyết toán
+function bPcDates(d) {
+  const bd = d.ngay_bat_dau ? [d.ngay_bat_dau, 'tự điền'] : d.ngay_ky_hd ? [d.ngay_ky_hd, 'ngày ký HĐ'] : null;
+  const kt = d.ngay_ket_thuc ? [d.ngay_ket_thuc, 'tự điền'] : d.ngay_qt ? [d.ngay_qt, 'ngày quyết toán'] : null;
+  const one = (label, x, none) => `<span><em>${label}</em> ${x ? `<b>${dmy(x[0])}</b> <small>(${x[1]})</small>` : `<b class="muted-b">${none}</b>`}</span>`;
+  return `${one('Bắt đầu', bd, 'Chưa có HĐ')}<i>→</i>${one('Kết thúc', kt, 'Chưa quyết toán')}`;
+}
 function bPcCard(d, idx) {
   const color = PROJ_COLORS[idx % PROJ_COLORS.length];
   const tab = PC_TABS.some(([k]) => k === pcTab[d.id]) ? pcTab[d.id] : 'tong';
@@ -1149,6 +1156,7 @@ function bPcCard(d, idx) {
       <div class="pc-title">
         <h3>${esc(d.ma_du_an)} – ${esc(d.ten_du_an)}</h3>
         <div class="pc-sub">${esc(sub)}</div>
+        <div class="pc-dates">${bPcDates(d)}</div>
         <div class="pc-meta"><span class="pc-st">${esc(d.trang_thai)}</span><span class="pc-prog">Tiến độ: <b>${d.tien_do}%</b><i><b style="width:${Math.min(100, d.tien_do)}%"></b></i></span></div>
       </div>
     </header>
