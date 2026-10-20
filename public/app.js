@@ -1808,7 +1808,8 @@ const uForm = $('#u-form');
 attachPwChecklist(uForm?.elements.password);
 
 // ---------- Nhật ký hoạt động (quản trị) ----------
-const NK = { items: [], more: false, hd: [] };
+// Chuyển trang theo số (1, 2, 3...); total = tổng số dòng (chỉ biết khi không lọc), max_page = giới hạn độ sâu của máy chủ
+const NK = { items: [], more: false, hd: [], page: 1, total: null, maxPage: 1 };
 const NK_CLS = { 'Đăng nhập': 'in', 'Đăng xuất': 'out', 'Hết phiên': 'out', 'Đăng nhập sai': 'bad', 'Thêm': 'add', 'Sửa': 'edit', 'Cập nhật': 'edit', 'Xóa': 'del', 'Xuất báo cáo': 'exp' };
 function nkParams(extra = {}) {
   const f = $('#nk-filter');
@@ -1825,13 +1826,21 @@ function nkFillSelects() {
   sh.innerHTML = '<option value="">Tất cả</option>' + NK.hd.map((h) => `<option>${esc(h)}</option>`).join('');
   su.value = keepU; sh.value = keepH;
 }
-async function loadLogs(auto = false, more = false) {
+// page: trang cần xem (đổi lọc / tự làm mới -> trang 1)
+async function loadLogs(auto = false, page = 1) {
   if (!$('#nk-card')) return;
-  if (auto && NK.items.length > Number($('#nk-filter').elements.limit.value)) return; // đang xem các trang sau -> không tự làm mới để khỏi mất chỗ đang đọc
-  const r = await api('/api/nhat-ky?' + nkParams({ before: more ? NK.items.at(-1)?.id : 0 }), auto ? AUTO : {});
+  if (auto && NK.page > 1) return; // đang xem các trang sau -> không tự làm mới để khỏi mất chỗ đang đọc
+  const r = await api('/api/nhat-ky?' + nkParams({ page: page > 1 ? page : 0 }), auto ? AUTO : {});
   if (!NK.hd.length || !auto) { NK.hd = r.hanh_dong; nkFillSelects(); }
-  NK.items = more ? [...NK.items, ...r.items] : r.items;
+  NK.items = r.items;
   NK.more = r.more;
+  NK.page = r.page;
+  NK.maxPage = r.max_page;
+  if (r.thong_ke) {
+    // Tổng số dòng chỉ biết chắc khi không lọc (đếm khi lọc phải giải nén toàn bộ lưu trữ)
+    const noFilter = [...nkParams().keys()].every((k) => k === 'limit');
+    NK.total = noFilter ? r.thong_ke.hot.n + r.thong_ke.arch.n : null;
+  }
   $('#nk-tbody').innerHTML = NK.items.length ? NK.items.map((l) => {
     const [main, change] = String(l.noi_dung).split(' | ');
     return `<tr>
@@ -1843,8 +1852,21 @@ async function loadLogs(auto = false, more = false) {
       <td class="nk-nd">${esc(main)}${change ? `<div class="nk-diff">${esc(String(l.noi_dung).split(' | ').slice(1).join(' · '))}</div>` : ''}</td>
       <td class="muted small">${esc(l.ip)}</td></tr>`;
   }).join('') : '<tr><td colspan="7" class="empty">Chưa có hoạt động phù hợp</td></tr>';
-  $('#nk-more').hidden = !NK.more;
-  $('#nk-count').textContent = NK.items.length ? `Đang hiển thị ${NK.items.length} dòng mới nhất${NK.more ? '' : ' (hết)'}` : '';
+  const lim = Number($('#nk-filter').elements.limit.value), p = NK.page, from = (p - 1) * lim + 1;
+  // Trang cuối: biết tổng -> chính xác; đang lọc -> chỉ biết còn trang sau hay không
+  const last = Math.min(NK.maxPage, NK.total ? Math.max(1, Math.ceil(NK.total / lim)) : NK.more ? p + 1 : p);
+  const nums = [...new Set([1, p - 2, p - 1, p, p + 1, p + 2, last])].filter((n) => n >= 1 && n <= last).sort((a, b) => a - b);
+  const btn = (n, label, on = true) => `<button type="button" class="sm${n === p && label === n ? ' primary' : ''}" data-nkpage="${n}" ${on ? '' : 'disabled'}${n === p && label === n ? ' aria-current="page"' : ''}>${label}</button>`;
+  $('#nk-pager').innerHTML = btn(p - 1, '‹', p > 1)
+    + nums.map((n, i) => (i && n - nums[i - 1] > 1 ? '<span class="nk-gap">…</span>' : '') + btn(n, n)).join('')
+    + (!NK.total && NK.more ? '<span class="nk-gap">…</span>' : '')
+    + btn(p + 1, '›', p < last);
+  $('#nk-pager').hidden = last <= 1;
+  $('#nk-count').textContent = NK.items.length
+    ? `Trang ${fmt.format(p)}${NK.total ? ' / ' + fmt.format(last) : ''} · dòng ${fmt.format(from)}–${fmt.format(from + NK.items.length - 1)}`
+      + (NK.total ? ` trong ${fmt.format(NK.total)} dòng` : NK.more ? '' : ' (hết)')
+      + (NK.more && p >= NK.maxPage ? ` · xem sâu hơn: lọc theo ngày hoặc Xuất CSV` : '')
+    : '';
   if (r.thong_ke) {
     const s = r.thong_ke, kb = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
     const giam = s.arch.goc ? Math.round((1 - s.arch.nen / s.arch.goc) * 100) : 0;
@@ -1860,7 +1882,13 @@ $('#nk-reset')?.addEventListener('click', () => {
   f.reset(); f.elements.limit.value = lim;
   loadLogs().catch((e) => alert(e.message));
 });
-$('#nk-more')?.addEventListener('click', () => loadLogs(false, true).catch((e) => alert(e.message)));
+$('#nk-pager')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-nkpage]');
+  if (!b || b.disabled) return;
+  loadLogs(false, Number(b.dataset.nkpage))
+    .then(() => $('#nk-card').scrollIntoView({ block: 'start', behavior: 'smooth' }))
+    .catch((err) => alert(err.message));
+});
 $('#nk-csv')?.addEventListener('click', async (e) => {
   const btn = e.target; btn.disabled = true; btn.textContent = 'Đang xuất...';
   try {

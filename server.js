@@ -182,6 +182,7 @@ api.use(audit.middleware); // ghi nhật ký mọi thao tác thêm / sửa / xó
 
 // ---------- Nhật ký hoạt động ----------
 const SU_KIEN = { xuat_excel: 'Excel', xuat_pptx: 'PowerPoint', in_pdf: 'In / PDF', xuat_csv: 'CSV' };
+const LOG_PAGE_DEPTH = 10000; // xem theo trang tối đa 10.000 dòng mới nhất (sâu hơn: lọc theo ngày hoặc xuất CSV)
 api.post('/nhat-ky/su-kien', wrap(async (req, res) => {
   const loai = SU_KIEN[req.body?.loai];
   if (!loai) return bad(res, 'Sự kiện không hợp lệ');
@@ -192,11 +193,14 @@ api.get('/nhat-ky', auth.requireRole('admin'), wrap(async (req, res) => {
   const q = req.query;
   const date = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : '');
   const limit = Math.min(500, Math.max(1, Number(q.limit) || 100));
+  // Chuyển trang theo số: lấy page × limit dòng mới nhất rồi cắt trang; giới hạn độ sâu để không giải nén quá nhiều lưu trữ
+  const page = q.before ? 1 : Math.min(Math.max(1, parseInt(q.page, 10) || 1), Math.max(1, Math.floor(LOG_PAGE_DEPTH / limit)));
   const rows = await store.listLogs({
     user_id: parseId(q.user_id), hanh_dong: audit.HANH_DONG.includes(q.hanh_dong) ? q.hanh_dong : '',
-    q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit,
+    q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit: page * limit,
   });
-  res.json({ items: rows.slice(0, limit), more: rows.length > limit, hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats() }) });
+  res.json({ items: rows.slice((page - 1) * limit, page * limit), more: rows.length > page * limit, page, max_page: Math.max(1, Math.floor(LOG_PAGE_DEPTH / limit)),
+    hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats() }) });
 }));
 
 api.get('/auth/me', (req, res) => res.json(req.user));
