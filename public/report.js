@@ -694,14 +694,20 @@ function bTargetDialog() {
 // Biểu đồ SVG dùng chung (tooltip: showTip/hideTip của app.js)
 // ---------------------------------------------------------------------
 function bAxis(min, max) { return niceTicks(Math.min(0, min), Math.max(0, max)); }
+// Chú thích biểu đồ: màn hẹp (điện thoại) không đủ chỗ thì dời về mép trái và tự xuống hàng, không tràn khỏi khung
 function bLegend(svg, items, x0) {
-  let x = x0;
+  const W = svg.viewBox?.baseVal?.width || 9999;
+  const wOf = (t) => 30 + t.length * 6.6;
+  const total = items.reduce((a, [t]) => a + wOf(t), 0);
+  let x = x0 + total > W - 8 ? 8 : x0, dy = 0;
   items.forEach(([t, c, isLine]) => {
-    if (isLine) { svgEl('line', { x1: x - 2, x2: x + 14, y1: 10, y2: 10, stroke: c, 'stroke-width': 2.5 }, svg); svgEl('circle', { cx: x + 6, cy: 10, r: 3.5, fill: c, stroke: '#fff', 'stroke-width': 1.5 }, svg); }
-    else svgEl('rect', { x, y: 4, width: 12, height: 12, rx: 3, fill: c }, svg);
-    svgEl('text', { x: x + 18, y: 14, class: 'ax-lbl strong' }, svg).textContent = t;
-    x += 30 + t.length * 6.6;
+    if (x > 8 && x + wOf(t) - 12 > W - 4) { x = 8; dy += 16; }
+    if (isLine) { svgEl('line', { x1: x - 2, x2: x + 14, y1: 10 + dy, y2: 10 + dy, stroke: c, 'stroke-width': 2.5 }, svg); svgEl('circle', { cx: x + 6, cy: 10 + dy, r: 3.5, fill: c, stroke: '#fff', 'stroke-width': 1.5 }, svg); }
+    else svgEl('rect', { x, y: 4 + dy, width: 12, height: 12, rx: 3, fill: c }, svg);
+    svgEl('text', { x: x + 18, y: 14 + dy, class: 'ax-lbl strong' }, svg).textContent = t;
+    x += wOf(t);
   });
+  return dy / 16 + 1;
 }
 function bEmpty(el, text) { el.innerHTML = `<div class="chart-empty">${text}</div>`; }
 
@@ -709,7 +715,7 @@ function bEmpty(el, text) { el.innerHTML = `<div class="chart-empty">${text}</di
 function bLineChart(el, pts, series) {
   if (!pts.length) return bEmpty(el, 'Chưa có số liệu có ngày');
   el.innerHTML = '';
-  const W = Math.max(320, el.clientWidth || 600), H = 260, pad = { l: 62, r: 70, t: 28, b: 30 };
+  const W = Math.max(320, el.clientWidth || 600), H = 260, pad = { l: 62, r: 70, t: W < 520 ? 44 : 28, b: 30 }; // màn hẹp: chừa chỗ chú thích 2 hàng
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const ticks = bAxis(Math.min(...pts.flatMap((p) => series.map((s) => p[s.key]))), Math.max(...pts.flatMap((p) => series.map((s) => p[s.key]))));
   const y0 = ticks[0], y1 = ticks[ticks.length - 1];

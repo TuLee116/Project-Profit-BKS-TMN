@@ -857,3 +857,102 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .pc-k-link { display: block; padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; max-width: 100%; }
 .pc-k-link b { text-decoration: underline dotted rgba(0, 0, 0, .3); text-underline-offset: 4px; }
 .pc-k-link:hover b, .pc-k-link:focus-visible b { color: var(--teal); text-decoration-style: solid; }
+
+/* =====================================================================
+   ĐIỆN THOẠI (≤ 640px): không mất thông tin
+   – Menu 8 tab xếp lưới 4 × 2, thấy đủ
+   – Bảng số liệu thành thẻ: mỗi dòng 1 thẻ "nhãn : giá trị", không cuộn ngang
+   – Chữ xuống dòng thay vì bị cắt "…"; danh sách số liệu hiện trước form nhập
+   ===================================================================== */
+@media screen and (max-width: 640px) {
+  /* Đầu trang gọn */
+  .topbar { padding: 10px 12px 8px; gap: 8px; }
+  .brand .company { font-size: 10.5px; }
+  .user-box { gap: 6px; font-size: 12.5px; }
+  .user-box #btn-logout { padding: 6px 12px; font-size: 12.5px; }
+  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; overflow: visible; }
+  .tabs button { padding: 7px 2px; font-size: 12.5px; text-align: center; white-space: normal; line-height: 1.2; min-height: 34px; }
+  main { padding: 12px 10px; }
+  .card { padding: 14px 12px; }
+
+  /* Danh sách trước, form nhập sau */
+  #tab-projects, #tab-users, #c-body, .rev-card { display: flex; flex-direction: column; }
+  #tab-projects > .card[data-role], #tab-users > .card:has(#u-form) { order: 5; }
+  #c-body > .card:has(#c-form) { order: 5; }
+  .rev-card > .table-wrap { order: 2; } .rev-card > form { order: 3; margin-top: 12px; }
+
+  /* Chữ không bị cắt */
+  .pc-tile-sub, .pc-k span, .pc-td .pc-k small.pc-td-ht, .pc-list li span:first-child, .pc-tt-c span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  .pc-list li:has(.pc-bar) { grid-template-columns: minmax(0, 1fr) auto; }
+  .pc-list li:has(.pc-bar) .pc-bar.wide { grid-column: 1 / -1; grid-row: 2; }
+  .pc-cp li .pc-bar.wide { grid-column: 1 / -1; }
+
+  /* Khung tổng quan công trình: đầu khung xếp dọc, không tràn */
+  .pc-modal-box { max-width: 100%; }
+  .pc-head { flex-wrap: wrap; }
+  .pc-modal .pc-img { flex-basis: 100%; height: 150px; }
+  .pc-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 6px 6px 0; }
+  .pc-tabs button { padding: 7px 2px; font-size: 12.5px; text-align: center; }
+  .pc-modal { padding: 16px 6px; }
+  .pc-modal-box { width: 100%; }
+  .pc-dates { font-size: 12.5px; }
+  /* TĐ1–TĐ3 trong khung tổng quan: nhãn TĐ thành 1 hàng ngang, 4 ô xếp 2 × 2 */
+  .pc-modal .pc-td, .pc-td { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .pc-modal .pc-td-lab, .pc-td-lab { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 6px 10px; }
+  .pc-modal .pc-td-lab b { font-size: 16px; } .pc-modal .pc-td-lab span, .pc-modal .pc-td-lab em { font-size: 12.5px; }
+  .pc-td-edit { margin: 0 0 0 auto; }
+  .pc-modal .pc-td .pc-kpis, .pc-td .pc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .pc-modal .pc-k { padding: 9px 10px; }
+  .pc-modal .pc-k b { font-size: 18px; }
+  .pc-modal .pc-k span { font-size: 11.5px; }
+  .pc-modal .pc-td .pc-k small.pc-td-ht { font-size: 11px; }
+  .pc-modal .pc-td-tt, .pc-td-tt { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .pc-modal .pc-tt-c b { font-size: 15px; }
+  .pc-td-bar { flex-wrap: wrap; }
+  .pc-modal .pc-ln2 li, .pc-ln2 li { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .pc-ngay-edit { margin-left: 0; }
+}
+
+/* Bảng → thẻ: điện thoại và máy tính bảng dọc (≤ 900px) */
+@media screen and (max-width: 900px) {
+  /* Bảng → thẻ */
+  .table-wrap:has(> table.m-card) { overflow: visible; border: 0; background: transparent; box-shadow: none; }
+  table.m-card, table.m-card > tbody, table.m-card > tfoot { display: block; width: 100%; min-width: 0 !important; }
+  table.m-card > thead { display: none; }
+  table.m-card tr { display: block; margin: 0 0 8px; padding: 8px 12px 6px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .05); }
+  table.m-card > tfoot tr { background: #eef4fb; border-color: #c9d6e8; }
+  /* Mỗi ô: nhãn cố định bên trái (40%), nội dung giữ nguyên bố cục ở phần còn lại, căn phải */
+  /* Nhãn trôi bên trái (40%), nội dung căn phải; nhãn dài thì ô tự cao theo – không đè dòng dưới */
+  table.m-card td, table.m-card th { display: flow-root; width: auto !important; min-width: 0 !important; max-width: none !important;
+    padding: 4px 0 !important; border: 0 !important; border-bottom: 1px dashed #e6ebf2 !important; text-align: right; white-space: normal !important; font-size: 13px; line-height: 1.35; }
+  table.m-card td:last-child, table.m-card th:last-child { border-bottom: 0 !important; }
+  table.m-card td::before, table.m-card th::before { content: attr(data-label); float: left; width: 40%; margin-right: 8px; text-align: left; color: var(--muted); font-size: 11.5px; font-weight: 600; line-height: 1.3; white-space: normal; }
+  table.m-card td[data-label=""]::before, table.m-card th[data-label=""]::before { content: none; }
+  table.m-card td[data-label=""], table.m-card th[data-label=""] { text-align: left; }
+  table.m-card td > *, table.m-card th > * { max-width: 100%; }
+  table.m-card td:empty { display: none; }
+  /* Ô tiêu đề thẻ: tên / mã, chữ to, không nhãn */
+  table.m-card td.m-title { display: block; padding: 2px 0 7px !important; text-align: left; font-size: 14.5px; font-weight: 600; border-bottom: 1px solid #dfe6ef !important; }
+  table.m-card td.m-title::before { content: none; }
+  table.m-card td.m-title .muted, table.m-card td.m-title small { display: block; font-weight: 500; }
+  /* Số thứ tự: nhãn nhỏ góc trên */
+  table.m-card td.m-no { display: inline-flex; float: right; padding: 2px 8px !important; margin-left: 8px; border: 0 !important; border-radius: 99px; background: #eef2f7; font-size: 11px; color: var(--muted); }
+  table.m-card td.m-no::before { content: none; }
+  /* Ô nút thao tác: dồn phải, không nhãn */
+  table.m-card td.m-act, table.m-card td.row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: 8px 0 2px !important; }
+  table.m-card td.m-act::before, table.m-card td.row-actions::before { content: none; }
+  /* Dòng nhóm / cộng (gộp cột) */
+  table.m-card td.m-span { text-align: left; font-weight: 600; }
+  table.m-card tr:has(> td.m-span:only-child) { padding: 6px 12px; background: #f3f7fb; }
+  /* Dòng con trong cây (phụ lục, hạng mục): thụt nhẹ */
+  table.m-card tr[class*="c-g2"], table.m-card tr[class*="sub"], table.m-card tr.c-row { margin-left: 10px; }
+  table.m-card .tree { display: none; }
+
+  .pc-modal-box { width: 100%; max-width: 100%; }
+  .pc-modal .pc-x { top: 6px; right: 6px; } /* nút đóng nằm trong khung, không đẩy tràn ngang */
+}
+/* Máy tính bảng / điện thoại xoay ngang: thẻ xếp 2 cột cho gọn */
+@media screen and (min-width: 641px) and (max-width: 900px) {
+  table.m-card > tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; align-items: start; }
+  table.m-card > tbody > tr:has(> td.m-span:only-child) { grid-column: 1 / -1; }
+}

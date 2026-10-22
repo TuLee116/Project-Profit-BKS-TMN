@@ -264,3 +264,61 @@ function askPasscode(title, detail = '') {
     input.focus();
   });
 }
+
+// ---------------------------------------------------------------------
+// Điện thoại: bảng số liệu hiện thành thẻ (mỗi dòng = 1 thẻ "nhãn cột : giá trị"), không phải cuộn ngang.
+// Gắn nhãn từ tiêu đề bảng (hỗ trợ tiêu đề nhiều tầng có colspan/rowspan: "THU · Kế hoạch").
+// Áp cho bảng trong .table-wrap và .pc-tbl; bỏ qua bảng có class no-mcard. Giao diện máy tính giữ nguyên.
+// ---------------------------------------------------------------------
+function mcardLabels(table) {
+  const head = table.tHead;
+  if (!head) return;
+  const grid = []; // grid[r][c] = ô tiêu đề
+  [...head.rows].forEach((tr, r) => {
+    grid[r] ||= [];
+    let c = 0;
+    for (const th of tr.cells) {
+      while (grid[r][c]) c++;
+      for (let i = 0; i < th.rowSpan; i++) for (let j = 0; j < th.colSpan; j++) (grid[r + i] ||= [])[c + j] = th;
+      c += th.colSpan;
+    }
+  });
+  const ncol = Math.max(0, ...grid.map((row) => row.length));
+  const txt = (th) => (th ? th.textContent.replace(/\s+/g, ' ').trim() : '');
+  const labels = [];
+  for (let c = 0; c < ncol; c++) {
+    const parts = [];
+    for (const row of grid) { const t = txt(row[c]); if (t && !parts.includes(t)) parts.push(t); }
+    labels.push(parts.join(' · '));
+  }
+  const key = labels.join('|');
+  for (const body of [...table.tBodies, table.tFoot].filter(Boolean)) {
+    for (const tr of body.rows) {
+      if (tr.dataset.mc === key && tr.cells.length === Number(tr.dataset.mcn)) continue; // đã gắn
+      let c = 0, title = false;
+      for (const td of tr.cells) {
+        const lab = td.colSpan > 1 && td.colSpan >= ncol - 1 ? '' : labels[c] || '';
+        td.dataset.label = lab;
+        td.classList.toggle('m-no', /^(#|STT)$/i.test(lab));
+        td.classList.toggle('m-act', !td.textContent.trim() && !!td.querySelector('button, a'));
+        td.classList.toggle('m-span', td.colSpan > 1 && !lab);
+        const isTitle = !title && lab && !/^(#|STT)$/i.test(lab) && td.textContent.trim();
+        td.classList.toggle('m-title', Boolean(isTitle));
+        if (isTitle) title = true;
+        c += td.colSpan;
+      }
+      tr.dataset.mc = key; tr.dataset.mcn = tr.cells.length;
+    }
+  }
+}
+(function mcardInit() {
+  const SEL = '.table-wrap > table:not(.no-mcard), table.pc-tbl:not(.no-mcard)';
+  let queued = false;
+  const run = () => {
+    queued = false;
+    document.querySelectorAll(SEL).forEach((t) => { t.classList.add('m-card'); mcardLabels(t); });
+  };
+  const queue = () => { if (!queued) { queued = true; requestAnimationFrame(run); } };
+  const start = () => { run(); new MutationObserver(queue).observe(document.body, { childList: true, subtree: true }); };
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+})();
