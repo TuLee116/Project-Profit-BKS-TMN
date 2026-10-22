@@ -1,5 +1,5 @@
 ---
-name: bks-reviewer
+name: revi
 description: Review độc lập code BKS trước khi merge staging vào main. Chỉ gọi cho thay đổi quan trọng (tiền, phân quyền, dữ liệu).
 tools: Read, Grep, Glob, Bash
 model: sonnet
