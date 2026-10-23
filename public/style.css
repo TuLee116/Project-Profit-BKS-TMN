@@ -976,8 +976,6 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .th-table .f-pct .f-meter { display: inline-block; width: 80px; vertical-align: middle; margin-right: 8px; }
 .th-table tbody tr:nth-child(even) td { background: #fafbfd; }
 .th-table tfoot td { font-weight: 800; color: var(--navy); background: #eef3fa; border-top: 2px solid var(--navy); }
-.th-divider { display: flex; align-items: center; gap: 12px; margin: 30px 0 4px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
-.th-divider::before, .th-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 @media (max-width: 1200px) { .th-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
 @media (max-width: 640px) { .th-grid3 { grid-template-columns: minmax(0, 1fr) !important; } }
 @media print { .th-table { font-size: 10px; } .th-table .th-prj { min-width: 0; } .th-tier { break-after: avoid; } .th-table { break-inside: avoid; } }

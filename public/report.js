@@ -396,43 +396,8 @@ function bFinHtml(list, v) {
       <h2>Tổng quan tài chính · ${esc(P.label)}</h2>
       <button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range}${P.prev ? ` <span class="muted">· so với ${ymTxt(P.prev.from)}${P.prev.from !== P.prev.to ? ' – ' + ymTxt(P.prev.to) : ''}</span>` : ''} <span class="f-caret">▾</span></button>
     </div>
-
     ${bTongHopHtml(list, v, P)}
 
-    <div class="th-divider"><span>Phân tích theo kỳ · ${esc(P.label)}</span></div>
-    <div class="f-tier"><span>1</span>Tiến độ so với hợp đồng &amp; mục tiêu năm ${year}
-      <small>tỷ đồng, ${vt}</small>${BC.la_quan_tri ? `<button type="button" class="sm no-print f-tier-btn" id="f-set-target">${anyTarget ? 'Sửa mục tiêu' : '+ Đặt mục tiêu năm'}</button>` : ''}</div>
-    <div class="table-wrap"><table class="b-table f-prog">
-      <thead>
-        <tr><th rowspan="2">Chỉ tiêu</th><th colspan="3" class="grp">So với hợp đồng (toàn bộ thời gian)</th><th colspan="3" class="grp f-sep">Mục tiêu năm ${year}</th></tr>
-        <tr><th class="num">Dự kiến theo HĐ</th><th class="num">Thực hiện lũy kế</th><th>% đạt</th><th class="num f-sep">Mục tiêu</th><th class="num">Thực hiện 01–${ymTxt(P.to < bNowYm() ? P.to : bNowYm()).slice(0, 2)}/${year}</th><th>% mục tiêu</th></tr>
-      </thead>
-      <tbody>
-        ${tRow('Doanh thu', BCOL.dt, money(K.dt), money(LK.dt), pctCell(LK.dt, K.dt, BCOL.dt), money(tg.dt), money(ytd.dt), pctCell(ytd.dt, tg.dt, BCOL.dt))}
-        ${tRow('Chi phí', BCOL.cp, money(K.cp), money(LK.cp), pctCell(LK.cp, K.cp, BCOL.cp), money(tg.cp), money(ytd.cp), pctCell(ytd.cp, tg.cp, BCOL.cp))}
-        ${tRow('Lợi nhuận', BCOL.dk, money(K.ln), money(LK.ln), pctCell(LK.ln, K.ln > 0 ? K.ln : 0, BCOL.dk), money(tg.ln), money(ytd.ln), pctCell(ytd.ln, tg.ln, BCOL.dk))}
-        ${tRow('Tỷ suất lợi nhuận', BCOL.ts, tyS(tsK), `<span class="${tsL < 0 ? 'neg' : ''}">${tyS(tsL)}</span>`, '<td class="num muted">—</td>',
-          tg.ty_suat === null || tg.ty_suat === undefined ? '<span class="muted">—</span>' : `${Number(tg.ty_suat).toFixed(1).replace('.', ',')}%`, `<span class="${tsY < 0 ? 'neg' : ''}">${tyS(tsY)}</span>`, '<td class="num muted">—</td>')}
-      </tbody>
-    </table></div>
-    <p class="muted small f-foot-note">Thực hiện lũy kế gồm cả các dòng chưa nhập ngày · Trả nợ gốc vay ${tyN(traGoc)} không tính vào chi phí${anyTarget ? '' : ' · Chưa đặt mục tiêu năm'}.</p>
-
-    <div class="f-tier"><span>2</span>Biểu đồ doanh thu – chi phí <small>doanh thu, chi phí (cột) · lợi nhuận (đường) · rê chuột để xem số</small></div>
-    <div class="f-box f-big" id="fz-box"><div id="fz-bar" class="fz-bar"></div><div id="f-ch-col" class="chart"></div>
-      <p class="muted small fz-hint">Bấm vào cột hoặc lăn chuột lên trên biểu đồ để xem chi tiết hơn (Năm → Quý → Tháng → Ngày) · lăn xuống để thu gọn.</p></div>
-
-    <div class="f-tier"><span>3</span>Cơ cấu theo công trình <small>trong kỳ · tỷ đồng</small></div>
-    <div class="f-row2">
-      <div class="f-box"><h3>Tỷ trọng doanh thu</h3><div id="f-ch-donut" class="chart"></div></div>
-      <div class="f-box"><h3>Hiệu quả từng công trình</h3>
-        <div class="table-wrap"><table class="b-table f-eff">
-          <thead><tr><th>Công trình</th><th class="num">Doanh thu</th><th class="num">Chi phí</th><th class="num">Lợi nhuận</th><th class="num">Tỷ suất</th></tr></thead>
-          <tbody>${prjRows.map((x, k) => `<tr><td title="${esc(x.d.ten_du_an)}"><span class="f-dot" style="background:${prjCol.get(x.d.id)}"></span><b>${esc(x.d.ma_du_an)}</b> <span class="muted small">${esc(x.d.ten_du_an)}</span></td>
-            <td class="num">${bTy(x.dt)}</td><td class="num">${bTy(x.cp)}</td><td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="num">${x.dt ? tyS(x.ln / x.dt) : '—'}</td></tr>`).join('')}</tbody>
-          <tfoot><tr><td>Tổng cộng</td><td class="num">${bTy(tot.dt)}</td><td class="num">${bTy(tot.cp)}</td><td class="num ${tot.ln < 0 ? 'neg' : ''}">${bTy(tot.ln)}</td><td class="num">${tot.dt ? tyS(tot.ln / tot.dt) : '—'}</td></tr></tfoot>
-        </table></div></div>
-    </div>
-    <p class="muted small f-note">Số theo kỳ tính theo ngày phát sinh: doanh thu theo ngày nghiệm thu, chi phí theo ngày chứng từ / thanh toán thầu phụ, dòng tiền = tiền về − tiền chi.${undated ? ` <b class="warn-text">${undated} dòng chưa nhập ngày</b> không thuộc kỳ nào (xem Cảnh báo).` : ''}</p>
   </section>`;
 }
 
