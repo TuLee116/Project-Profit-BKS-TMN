@@ -915,8 +915,6 @@ function renderReport() {
 
   ${bFinHtml(list, v)}
 
-  ${bThucHtml(list)}
-
   ${bPcSection(list, v)}
 
   <div class="card b-detail-bar">
