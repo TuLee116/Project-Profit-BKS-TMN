@@ -1043,5 +1043,9 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .iv-table .iv-gc { min-width: 160px; font-size: 12px; color: #334155; }
 .td-ghost-t { color: #94a3b8; }
 .iv-ghost { color: #94a3b8 !important; }
-.iv-btn { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; border: 1px solid var(--navy); background: var(--navy); color: #fff; cursor: pointer; white-space: nowrap; }
-.iv-btn.on { background: #fff; color: var(--navy); }
+.iv-ct { display: block; margin-top: 8px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--pc-ac, var(--navy)); background: #fff; color: var(--navy); cursor: pointer; white-space: nowrap; text-transform: none; letter-spacing: 0; }
+.iv-ct.on, .iv-ct:hover { background: var(--pc-ac, var(--navy)); color: #fff; }
+.iv-sum tr.iv-row-on td, .iv-sum tr.iv-row-on th { background: #f4f8fd; }
+.iv-det-t { margin-bottom: 8px; font-size: 13px; font-weight: 800; color: var(--navy); text-transform: uppercase; letter-spacing: .4px; }
+.iv-table .iv-ts { color: #475569; }
+.iv-table td .td-dl { display: inline; margin: 0; }
