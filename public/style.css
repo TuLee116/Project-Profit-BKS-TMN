@@ -1054,3 +1054,5 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .th-ns-edit { padding: 0 5px; font-size: 11px; line-height: 16px; border-radius: 4px; color: var(--muted); }
 .th-vuot { color: #c81e1e !important; font-weight: 800 !important; }
 .th-table .th-act { width: 34px; padding-left: 0; padding-right: 8px; text-align: center; }
+.td-mx tr.td-r-gop th { --pc-ac: #b45309; }
+.iv-sum tr.iv-gop-1 th, .iv-sum tr.iv-gop-1 td { border-top: 2px solid #dbe4f0; }

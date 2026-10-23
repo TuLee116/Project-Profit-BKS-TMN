@@ -519,14 +519,16 @@ function bMuc4Data(list, v) {
     const nhanSv = dt.da_nhan, chiSv = bThuc(d, to).chi;
     const nhan = v === 'sv' || !rDt.sv ? nhanSv : Math.round(nhanSv * (rDt.gt / rDt.sv));
     const chi = v === 'sv' || !cSv ? chiSv : Math.round(chiSv * (cGt / cSv));
-    return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3,
+    const b1 = (cp.khac_b1 || { gt: 0, sv: 0 })[v]; // giá vốn = thầu phụ cùng mốc + chi phí trực tiếp khác (B1)
+    const g1 = t1 - cp.tp_goc[v] - b1, g2 = t2 - cp.tp_ps[v] - b1, g3 = t3 - cp.tp_qt[v] - b1;
+    return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3, g1, g2, g3,
       pl: Object.fromEntries(dt.pl.map((x) => [x.ma, x[v]])), cpl: Object.fromEntries((cp.tp_pl || []).map((x) => [x.ma, x[v]])),
       nhan, con: t3 - nhan, chi, con_chi: c3 - chi, thuc: nhan - chi, bh: d.bh_khac || 0, gc: d.ghi_chu_bh || '' };
   }).filter(Boolean);
   const keys = (f) => [...new Set(rows.flatMap((x) => Object.keys(x[f])))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
   const pls = keys('pl'), cpls = keys('cpl');
   const S = (k) => rows.reduce((a, x) => a + x[k], 0);
-  const T = Object.fromEntries(['t1', 't2', 't3', 'c1', 'c2', 'c3', 'l1', 'l2', 'l3', 'nhan', 'con', 'chi', 'con_chi', 'thuc', 'bh'].map((k) => [k, S(k)]));
+  const T = Object.fromEntries(['t1', 't2', 't3', 'c1', 'c2', 'c3', 'l1', 'l2', 'l3', 'g1', 'g2', 'g3', 'nhan', 'con', 'chi', 'con_chi', 'thuc', 'bh'].map((k) => [k, S(k)]));
   T.pl = Object.fromEntries(pls.map((k) => [k, rows.reduce((a, x) => a + (x.pl[k] || 0), 0)]));
   T.cpl = Object.fromEntries(cpls.map((k) => [k, rows.reduce((a, x) => a + (x.cpl[k] || 0), 0)]));
   T.n_qt = rows.filter((x) => x.qt).length;
@@ -546,6 +548,9 @@ function bMuc4Html(list, v) {
     ['cp', 'Chi phí', [T.c1, T.c2, T.c3], false, false, 'td-r-cp'],
     ['ln', 'Lợi nhuận', [T.l1, T.l2, T.l3], true, false, 'td-r-ln'],
     [null, 'Tỷ suất LN', [tsF(T.l1, T.t1), tsF(T.l2, T.t2), tsF(T.l3, T.t3)], true, true, 'td-r-ts'],
+    // LN gộp = Doanh thu − Giá vốn (thầu phụ + chi phí trực tiếp B1); chưa trừ chi phí gián tiếp B2, tài chính B3
+    [null, 'LN gộp', [T.g1, T.g2, T.g3], true, false, 'td-r-gop iv-gop-1'],
+    [null, 'Tỷ suất LN gộp', [tsF(T.g1, T.t1), tsF(T.g2, T.t2), tsF(T.g3, T.t3)], true, true, 'td-r-gop'],
   ];
   const lab = (key, label) => `<th>${label}${key ? `<button type="button" class="iv-ct no-print ${ct === key ? 'on' : ''}" data-ivct="${key}" aria-expanded="${ct === key}">${ct === key ? '▴ Ẩn chi tiết' : '▾ Chi tiết'}</button>` : ''}</th>`;
   const cell = (vals, i, good, isPct) => `<td class="td-c">${num(vals[i], isPct, i === 2 && allGhost)}${i ? bTdDelta(vals[i], vals[i - 1], good, isPct, `TĐ${i}`) : ''}</td>`;
@@ -599,7 +604,7 @@ function bMuc4Html(list, v) {
       'Lợi nhuận = Doanh thu − Chi phí tại từng thời điểm · Số mờ = chưa quyết toán, lấy theo TĐ2 · Thực tế = tiền đã nhận − tiền đã chi (không gồm vay, trả gốc)');
   }
   return `${thHead('IV', 'Doanh thu hoàn thành – quyết toán', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · tự tính theo dữ liệu hệ thống', ['Theo dữ liệu hệ thống', vt])}
-    ${sum}${det}`;
+    ${sum}<p class="muted small f-note">LN gộp = Doanh thu − Giá vốn (thầu phụ + chi phí trực tiếp: vật tư, nhân công, máy, tổ chức thi công, khác); Lợi nhuận = LN gộp − chi phí gián tiếp (lương, tiện ích, ngoại giao) − chi phí tài chính (lãi vay, phí, phạt).</p>${det}`;
 }
 // Sửa BH/Khác + ghi chú (nhập tay) của 1 dự án
 function bBhDialog(d) {
