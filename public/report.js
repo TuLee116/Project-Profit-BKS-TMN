@@ -444,17 +444,16 @@ function bTongHopHtml(list, v, P) {
       ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
       ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
-      ${(() => { // Chênh lệch LN = Σ (LN quyết toán TĐ3 − LN kế hoạch TĐ1) – CHỈ các dự án đã quyết toán; dự án QT thêm thì cộng tiếp
-        const all = bMuc4Data(list, v).rows, qt = all.filter((x) => x.qt);
-        const sumK = (k) => qt.reduce((a, x) => a + x[k], 0);
-        const kh = sumK('l1'), th = sumK('l3'), cl = th - kh;
-        const ts1 = sumK('t1') ? kh / sumK('t1') : 0, ts3 = sumK('t3') ? th / sumK('t3') : 0;
-        const pctS = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`;
-        return card('ts', 'Chênh lệch LN quyết toán', cl, qt.length ? [
-          `${qt.length}/${all.length} dự án đã quyết toán`,
-          `LN QT (TĐ3) <b>${bTy(th)}</b> − LN KH (TĐ1) <b>${bTy(kh)}</b> tỷ`,
-          `<b class="${cl < 0 ? 'neg' : 'pos'}">${Math.abs(cl) < 1000 ? '● Đạt đúng kế hoạch' : cl > 0 ? '▲ Vượt kế hoạch' : '▼ Hụt kế hoạch'}</b> · Tỷ suất ${pctS(ts1)} → ${pctS(ts3)}`,
-        ] : [`0/${all.length} dự án đã quyết toán`, 'Chưa có dự án quyết toán để so sánh']);
+      ${(() => { // LN còn lại = LN kế hoạch (đã QT: TĐ3 · chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi); cùng sau VAT vì tiền thật đã gồm VAT
+        const now = bNowYm();
+        const kh = list.reduce((a, d) => a + d.du_kien.doanh_thu.sv - d.du_kien.chi_phi.sv, 0);
+        const tt = list.reduce((a, d) => a + bThuc(d, now).con, 0);
+        const nQt = list.filter((d) => d.moc?.da_qt).length;
+        return card('ts', 'LN kế hoạch còn lại', kh - tt, [
+          `LN kế hoạch <b>${bTy(kh)}</b> − LN thực tế <b class="${tt < 0 ? 'neg' : ''}">${bTy(tt)}</b> tỷ`,
+          'LN thực tế = tiền về − tiền chi (không gồm vay, trả gốc)',
+          `<span class="muted">Sau VAT · KH: ${nQt}/${list.length} dự án theo QT (TĐ3), còn lại theo TĐ2</span>`,
+        ]);
       })()}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
