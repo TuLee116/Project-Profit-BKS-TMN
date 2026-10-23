@@ -1049,3 +1049,5 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .iv-det-t { margin-bottom: 8px; font-size: 13px; font-weight: 800; color: var(--navy); text-transform: uppercase; letter-spacing: .4px; }
 .iv-table .iv-ts { color: #475569; }
 .iv-table td .td-dl { display: inline; margin: 0; }
+.f-lines b.pos { color: #0f8a5f; } .f-lines b.neg { color: #d92d35; }
+.f-lines .f-meter { display: block; }

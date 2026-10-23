@@ -435,7 +435,6 @@ function bTongHopHtml(list, v, P) {
         <div class="f-val ${val < 0 ? 'neg' : ''}">${unit === '%' ? bpct(val, 1) : `${bTy(val)} <small>tỷ</small>`}</div>
         <div class="f-lines">${lines.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div></div></div>`;
   const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-prj" title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="th-name">${esc(x.d.ten_du_an)}</span> <span class="st st-${slug(x.d.trang_thai)} th-st">${esc(x.d.trang_thai)}</span></td>`;
-  const tsT = T.dt ? T.ln / T.dt : 0;
   const dTo = to === bNowYm() ? new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : `${lastDay(to)}/${to.slice(5)}/${to.slice(0, 4)}`;
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
@@ -445,7 +444,17 @@ function bTongHopHtml(list, v, P) {
       ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
       ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
-      ${card('ts', 'Tỷ suất lợi nhuận', tsT, [`${meter(tsT, 0.3, BCOL.dk)}`, 'Lợi nhuận / Doanh thu'], '%')}
+      ${(() => { // Hoàn thành kế hoạch lợi nhuận: LN quyết toán (TĐ3; chưa QT tạm tính theo TĐ2) so với LN kế hoạch (TĐ1 – HĐ ký)
+        const K = bMuc4Data(list, v).T, kh = K.l1, th = T.ln, cl = th - kh;
+        const ts1 = K.t1 ? kh / K.t1 : 0, ts3 = T.dt ? th / T.dt : 0, dts = (ts3 - ts1) * 100;
+        const vh = Math.abs(cl) < 1000 ? '● Đạt đúng kế hoạch' : `<b class="${cl > 0 ? 'pos' : 'neg'}">${cl > 0 ? '▲ Vượt' : '▼ Hụt'} ${cl > 0 ? '+' : '−'}${bTy(Math.abs(cl))}</b> tỷ`;
+        return card('ts', 'Hoàn thành KH lợi nhuận', kh ? th / kh : 0, [
+          `${meter(th, kh, cl < 0 ? '#d92d35' : BCOL.dk)}`,
+          `KH (HĐ ký) <b>${bTy(kh)}</b> tỷ · ${vh}`,
+          `Tỷ suất ${(ts1 * 100).toFixed(1).replace('.', ',')}% → <b>${(ts3 * 100).toFixed(1).replace('.', ',')}%</b> (${dts >= 0 ? '+' : '−'}${Math.abs(dts).toFixed(1).replace('.', ',')} điểm %)`,
+          K.n_qt < rows.length ? `<span class="muted">${rows.length - K.n_qt} dự án chưa QT: tạm tính theo TĐ2</span>` : '',
+        ], '%');
+      })()}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
@@ -497,11 +506,12 @@ function bMuc4Data(list, v) {
     const dt = d.moc?.dt, cp = d.moc?.cp;
     if (!dt || !cp) return null;
     const qt = Boolean(d.moc.da_qt);
-    const t1 = dt.goc[v], t2 = dt.ps[v], t3 = qt ? dt.qt[v] : t2;
-    const c1 = cp.tp_goc[v] + cp.khac[v], c2 = cp.tp_ps[v] + cp.khac[v], c3 = (qt ? cp.tp_qt[v] : cp.tp_ps[v]) + cp.khac[v];
+    // TĐ3: HĐ / HĐTP đã quyết toán lấy giá trị QT, phần chưa QT giữ theo TĐ2 (khớp số Doanh thu – Chi phí mục I)
+    const t1 = dt.goc[v], t2 = dt.ps[v], t3 = dt.qt[v];
+    const c1 = cp.tp_goc[v] + cp.khac[v], c2 = cp.tp_ps[v] + cp.khac[v], c3 = cp.tp_qt[v] + cp.khac[v];
     // Tiền thật (sau VAT); xem trước VAT thì quy đổi theo tỷ lệ trước/sau VAT của giá trị đối chiếu
-    const rDt = qt ? dt.qt : dt.ps;
-    const cSv = (qt ? cp.tp_qt.sv : cp.tp_ps.sv) + cp.khac.sv, cGt = (qt ? cp.tp_qt.gt : cp.tp_ps.gt) + cp.khac.gt;
+    const rDt = dt.qt;
+    const cSv = cp.tp_qt.sv + cp.khac.sv, cGt = cp.tp_qt.gt + cp.khac.gt;
     const nhanSv = dt.da_nhan, chiSv = bThuc(d, to).chi;
     const nhan = v === 'sv' || !rDt.sv ? nhanSv : Math.round(nhanSv * (rDt.gt / rDt.sv));
     const chi = v === 'sv' || !cSv ? chiSv : Math.round(chiSv * (cGt / cSv));
