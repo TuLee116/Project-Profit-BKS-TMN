@@ -1112,3 +1112,41 @@ body { overflow-anchor: none; } /* vị trí cuộn do renderKeepPos tự giữ,
 .td-swipe { display: none; margin: 10px 0 -4px; }
 @media (max-width: 640px) { .td-swipe { display: block; } }
 @media print { .td-swipe { display: none !important; } }
+
+/* ---------- Menu gộp: Báo cáo · Nhập liệu ▾ · Quản trị ▾ · tên người dùng ▾ ---------- */
+.tabs { align-items: center; }
+.tab-grp { position: relative; flex-shrink: 0; }
+.tab-grp-btn { color: rgba(255,255,255,.85); background: transparent; border: 0; padding: 9px 16px; border-radius: 999px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.tab-grp-btn:hover, .tab-grp.open > .tab-grp-btn { color: #fff; background: rgba(255,255,255,.14); }
+.tab-grp.active > .tab-grp-btn { color: var(--navy); background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.tab-grp-btn .caret { font-size: 10px; margin-left: 2px; display: inline-block; transition: transform .15s; }
+.tab-grp.open .caret { transform: rotate(180deg); }
+.tab-menu { display: none; position: absolute; top: calc(100% + 8px); left: 0; z-index: 120; min-width: 200px; padding: 6px; border-radius: 14px;
+  background: #fff; box-shadow: 0 16px 40px rgba(15,23,42,.22); border: 1px solid var(--border); }
+.tab-menu.right { left: auto; right: 0; }
+.tab-grp.open > .tab-menu { display: grid; gap: 2px; animation: tapTip .14s ease; }
+.tab-menu button { text-align: left; padding: 10px 14px; border: 0; border-radius: 10px; background: transparent; color: #1e293b; font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: none; }
+.tab-menu button:hover { background: #f1f5fb; }
+.tab-menu button.active { background: #eaf1fb; color: var(--navy); }
+.tab-menu .menu-out { color: #c81e1e; border-top: 1px solid var(--border); border-radius: 0 0 10px 10px; margin-top: 4px; }
+.user-grp > .tab-grp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid rgba(255,255,255,.35); }
+.user-grp.active > .tab-grp-btn { border-color: #fff; }
+/* Thanh chuyển nhanh trong Nhập liệu */
+.subnav { display: flex; gap: 6px; margin: 0 0 14px; padding: 5px; width: fit-content; max-width: 100%; border-radius: 999px; background: #fff; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(15,23,42,.05); overflow-x: auto; }
+.subnav[hidden] { display: none; }
+.subnav button { border: 0; background: transparent; padding: 8px 18px; border-radius: 999px; font-weight: 700; color: #475569; white-space: nowrap; cursor: pointer; box-shadow: none; }
+.subnav button.active { background: var(--navy); color: #fff; }
+@media (max-width: 900px) {
+  .tabs { display: flex !important; flex-wrap: nowrap; overflow: visible; gap: 6px; }
+  .tabs > button, .tab-grp-btn { padding: 8px 12px; font-size: 13px; min-height: 0; white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  .tabs > button, .tab-grp { flex: 1 1 0; }
+  .tabs > button, .tabs .tab-grp-btn { width: 100%; text-align: center; padding: 9px 6px; }
+  .tabs .tab-grp:first-of-type .tab-menu, .tabs .tab-grp .tab-menu { left: 50%; transform: translateX(-50%); min-width: min(260px, calc(100vw - 24px)); }
+  .tabs .tab-grp:last-child .tab-menu { left: auto; right: 0; transform: none; }
+  .tab-menu button { padding: 13px 16px; font-size: 15px; } /* to, dễ chạm */
+  .user-grp > .tab-grp-btn { padding: 6px 10px; font-size: 12.5px; }
+  .subnav { width: 100%; justify-content: space-between; }
+  .subnav button { flex: 1; padding: 9px 6px; font-size: 13.5px; }
+}

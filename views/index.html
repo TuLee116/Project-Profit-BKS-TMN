@@ -19,24 +19,42 @@
         <div id="company" class="company"></div>
       </div>
     </div>
+    <!-- Menu: Báo cáo (mặc định) · Nhập liệu ▾ (Dự án, Doanh thu, Chi phí) · Quản trị ▾ (Tài khoản, Cài đặt) · tên người dùng ▾ (Cá nhân, Liên hệ, Đăng xuất) -->
     <nav id="tabs" class="tabs">
-      <button data-tab="projects" class="active">Dự án</button>
-      <button data-tab="revenue">Doanh thu</button>
-      <button data-tab="cost">Chi phí</button>
       <button data-tab="report">Báo cáo</button>
-      <button data-tab="users" data-role="admin">Tài khoản</button>
-      <button data-tab="settings" data-role="admin">Cài đặt</button>
-      <button data-tab="profile">Cá nhân</button>
-      <button data-tab="contact">Liên hệ</button>
+      <div class="tab-grp" data-role="admin editor" data-grp="nhap">
+        <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true">Nhập liệu <span class="caret">▾</span></button>
+        <div class="tab-menu" role="menu">
+          <button data-tab="projects" role="menuitem">Dự án</button>
+          <button data-tab="revenue" role="menuitem">Doanh thu</button>
+          <button data-tab="cost" role="menuitem">Chi phí</button>
+        </div>
+      </div>
+      <div class="tab-grp" data-role="admin" data-grp="qt">
+        <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true">Quản trị <span class="caret">▾</span></button>
+        <div class="tab-menu" role="menu">
+          <button data-tab="users" role="menuitem">Tài khoản</button>
+          <button data-tab="settings" role="menuitem">Cài đặt</button>
+        </div>
+      </div>
     </nav>
     <div class="user-box">
-      <span id="me-name"></span>
-      <span id="me-role" class="badge"></span>
-      <button id="btn-logout" class="ghost">Đăng xuất</button>
+      <div class="tab-grp user-grp" data-grp="me">
+        <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true"><span id="me-name"></span> <span id="me-role" class="badge"></span> <span class="caret">▾</span></button>
+        <div class="tab-menu right" role="menu">
+          <button data-tab="profile" role="menuitem">Cá nhân</button>
+          <button data-tab="contact" role="menuitem">Liên hệ</button>
+          <button id="btn-logout" class="menu-out" role="menuitem">Đăng xuất</button>
+        </div>
+      </div>
     </div>
   </header>
 
   <main>
+    <!-- Thanh chuyển nhanh trong nhóm Nhập liệu: 1 chạm giữa Dự án / Doanh thu / Chi phí -->
+    <div id="subnav" class="subnav no-print" hidden>
+      <button data-tab="projects">Dự án</button><button data-tab="revenue">Doanh thu</button><button data-tab="cost">Chi phí</button>
+    </div>
     <!-- ================= DỰ ÁN ================= -->
     <section id="tab-projects" class="tab-panel">
       <div class="card" data-role="admin editor">

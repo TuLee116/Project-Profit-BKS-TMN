@@ -34,9 +34,10 @@ let users = [];
   const roleSel = $('#u-form [name=role]');
   if (roleSel) roleSel.innerHTML = Object.entries(META.roles).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
 
-  let start = 'projects';
+  // Mặc định vào Báo cáo; người nhập liệu mở lại đúng mục đang làm dở (mục không thuộc quyền -> Báo cáo)
+  let start = 'report';
   try { start = localStorage.getItem('tab') || start; } catch {}
-  showTab($(`#tabs [data-tab="${start}"]`) ? start : 'projects');
+  showTab($(`.topbar [data-tab="${start}"]`) ? start : 'report');
 })();
 
 function applyBranding(s) {
@@ -50,13 +51,31 @@ function applyBranding(s) {
 // =====================================================================
 const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => loadUsers().then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
 
+const NHAP_LIEU = ['projects', 'revenue', 'cost'];
+const closeMenus = () => $$('.tab-grp.open').forEach((g) => { g.classList.remove('open'); $('[data-grp-toggle]', g).setAttribute('aria-expanded', 'false'); });
 function showTab(name) {
-  $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  closeMenus();
+  $$('.topbar [data-tab], #subnav [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.tab-grp').forEach((g) => g.classList.toggle('active', Boolean($(`[data-tab="${name}"]`, g))));
+  $('#subnav').hidden = !NHAP_LIEU.includes(name);
   $$('main > .tab-panel').forEach((p) => (p.hidden = p.id !== 'tab-' + name));
   try { localStorage.setItem('tab', name); } catch {}
   return Promise.resolve(loaders[name]()).catch((err) => alert(err.message));
 }
-$('#tabs').addEventListener('click', (e) => e.target.dataset.tab && showTab(e.target.dataset.tab));
+// Menu nhóm: bấm để mở / đóng; bấm mục con -> chuyển trang; bấm ra ngoài hoặc Esc -> đóng
+document.addEventListener('click', (e) => {
+  const tg = e.target.closest('[data-grp-toggle]');
+  if (tg) {
+    const g = tg.closest('.tab-grp'), open = !g.classList.contains('open');
+    closeMenus();
+    g.classList.toggle('open', open); tg.setAttribute('aria-expanded', String(open));
+    return;
+  }
+  const t = e.target.closest('.topbar [data-tab], #subnav [data-tab]');
+  if (t) return showTab(t.dataset.tab);
+  if (!e.target.closest('.tab-menu')) closeMenus();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenus(); });
 
 // Tín hiệu trực tuyến: trang đang mở báo máy chủ mỗi 20 giây; đóng / tải lại trang báo ngoại tuyến ngay.
 // Tab Tài khoản tự làm mới danh sách mỗi 10 giây (trạng thái do máy chủ tính, không phụ thuộc giờ máy người xem)
