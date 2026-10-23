@@ -268,9 +268,14 @@ $('#p-tbody').addEventListener('click', async (e) => {
     $('#p-form-title').textContent = 'Sửa dự án ' + r.ma_du_an;
     pForm.scrollIntoView({ behavior: 'smooth' });
   }
-  if (del && confirm('Xóa dự án này?')) {
+  if (del) { // xóa dự án = xóa toàn bộ dữ liệu liên quan -> hiện số dòng bị xóa và bắt buộc Passcode
+    const r = projects.find((x) => x.id === Number(del));
     try {
-      await api(`/api/du-an/${del}`, { method: 'DELETE' });
+      const x = await api(`/api/du-an/${del}/impact`);
+      const pc = await askPasscode(`Xóa dự án ${r ? r.ma_du_an + ' – ' + r.ten_du_an : ''}?`,
+        `Sẽ xóa vĩnh viễn kèm toàn bộ dữ liệu: ${x.hd_pl} dòng HĐ/PL, ${x.nt_qt} nghiệm thu/QT, ${x.tien_ve} tiền về, ${x.thau_phu} HĐ thầu phụ (${x.tp_thanh_toan} thanh toán), ${x.chi_phi} chi phí, ${x.thoi_diem} thời điểm TĐ. Không hoàn tác được.`);
+      if (pc === null) return;
+      await api(`/api/du-an/${del}`, { method: 'DELETE', body: JSON.stringify({ passcode: pc }) });
       await loadProjects();
     } catch (err) {
       alert(err.message);

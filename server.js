@@ -255,7 +255,7 @@ function passcodeLocked(uid) {
 // Kiểm tra Passcode xóa (gửi lỗi và trả false nếu không hợp lệ)
 async function requirePasscode(req, res) {
   const stored = (await store.getSettings())[PASSCODE_KEY];
-  if (!stored) { bad(res, 'Quản trị chưa đặt Passcode xóa HĐ/PL (tab Cài đặt). Chưa thể xóa.', 403); return false; }
+  if (!stored) { bad(res, 'Quản trị chưa đặt Passcode xóa (tab Cài đặt). Chưa thể xóa.', 403); return false; }
   const wait = passcodeLocked(req.user.id);
   if (wait) { bad(res, `Nhập sai Passcode quá nhiều lần. Thử lại sau ${wait} phút`, 429); return false; }
   if (!(await auth.verifyPassword(String(req.body?.passcode ?? ''), stored))) {
@@ -441,11 +441,32 @@ api.put('/du-an/:id/bh', canAny, wrap(async (req, res) => {
   res.json({ id, bh_khac: bh, ghi_chu_bh: ghi, ns_cp: ns });
 }));
 
+// Dữ liệu sẽ bị xóa theo dự án (hiện trước khi xác nhận, ghi vào nhật ký)
+async function projectImpact(id) {
+  const [rev, tv, cost, tp, td] = await Promise.all([store.listRevenue(id), store.listTienVe(id), store.listCost(id), store.listTp(id), store.listThoiDiem(id)]);
+  const c = tp.contracts || tp;
+  return { hd_pl: rev.filter((r) => r.loai === 'hd').length, nt_qt: rev.filter((r) => r.loai === 'qt').length, tien_ve: tv.length,
+    chi_phi: cost.length, thau_phu: c.length, tp_thanh_toan: (tp.pays || c.flatMap((x) => x.pays || [])).length, thoi_diem: td.length };
+}
+const impactTxt = (x) => `${x.hd_pl} dòng HĐ/PL, ${x.nt_qt} nghiệm thu/QT, ${x.tien_ve} tiền về, ${x.thau_phu} HĐ thầu phụ (${x.tp_thanh_toan} thanh toán), ${x.chi_phi} chi phí, ${x.thoi_diem} thời điểm TĐ`;
+api.get('/du-an/:id/impact', canXoaDa, wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id || !(await store.getProject(id))) return bad(res, 'Không tìm thấy dự án', 404);
+  res.json(await projectImpact(id));
+}));
+// Xóa dự án: xóa luôn toàn bộ dữ liệu liên quan -> bắt buộc Passcode xóa (như xóa HĐ/PL, HĐ thầu phụ)
 api.delete('/du-an/:id', canXoaDa, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
+  const p = await store.getProject(id);
+  if (!p) return bad(res, 'Không tìm thấy dự án', 404);
+  if (!(await requirePasscode(req, res))) return;
+  const x = await projectImpact(id);
   const ok = await store.deleteProject(id);
-  ok ? res.status(204).end() : bad(res, 'Không tìm thấy dự án', 404);
+  if (!ok) return bad(res, 'Không tìm thấy dự án', 404);
+  console.log(`[NHẬT KÝ] ${new Date().toISOString()} ${req.user.username} đã XÓA DỰ ÁN ${p.ma_du_an} – ${p.ten_du_an}: ${impactTxt(x)}`);
+  audit.log(req, 'Xóa', 'Dự án', `Xóa dự án ${p.ma_du_an} – ${p.ten_du_an} (có Passcode) · kèm ${impactTxt(x)}`, { du_an: p.ma_du_an });
+  res.status(204).end();
 }));
 
 // Nâng cấp dữ liệu (1 lần): HĐ thầu phụ chưa gắn HĐ CĐT mà ghi chú / số HĐTP chứa đúng 1 số HĐ CĐT -> tự gắn
