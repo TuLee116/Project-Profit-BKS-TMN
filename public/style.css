@@ -962,7 +962,7 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .th-tier > span { width: auto; min-width: 22px; padding: 0 6px; border-radius: 11px; }
 .th-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
 .f-card .f-lines .f-meter { margin-top: 4px; }
-.th-table { margin-top: 12px; }
+.f-grid + .table-wrap { margin-top: 18px; }
 .th-table th { white-space: nowrap; }
 .th-table .th-stt { width: 44px; text-align: center; color: var(--muted); }
 .th-table .th-prj { min-width: 260px; }
