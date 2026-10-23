@@ -464,10 +464,10 @@ function bTongHopHtml(list, v, P) {
       })()}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN']).replace('</tr></thead>', `${canEditPc() ? '<th class="no-print th-act" title="Nhập DT-CP dự kiến"></th>' : ''}</tr></thead>`)}
+      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN']).replace('</tr></thead>', `${can('ns') ? '<th class="no-print th-act" title="Nhập DT-CP dự kiến"></th>' : ''}</tr></thead>`)}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt)}</td><td class="num ${x.vuot ? 'th-vuot' : ''}"${x.ns ? ` title="DT-CP dự kiến ${bTy(x.ns_v)} tỷ · Đã ghi nhận ${bTy(x.cp_ghi)} tỷ${x.vuot ? ` · VƯỢT DT-CP dự kiến ${bTy(x.cp_ghi - x.ns_v)} tỷ` : ''}"` : ''}>${bTy(x.cp)}</td>
-        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td>${canEditPc() ? `<td class="no-print th-act">${x.d.trang_thai !== 'Hoàn thành' ? `<button type="button" class="th-ns-edit" data-ivbh="${x.d.id}" title="Nhập DT-CP dự kiến">✎</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
-      ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)]).replace('</tr></tfoot>', `${canEditPc() ? '<td class="no-print th-act"></td>' : ''}</tr></tfoot>`)}
+        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td>${can('ns') ? `<td class="no-print th-act">${x.d.trang_thai !== 'Hoàn thành' ? `<button type="button" class="th-ns-edit" data-ivbh="${x.d.id}" title="Nhập DT-CP dự kiến">✎</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
+      ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)]).replace('</tr></tfoot>', `${can('ns') ? '<td class="no-print th-act"></td>' : ''}</tr></tfoot>`)}
     </table></div>
     <p class="muted small f-note">LN kế hoạch còn lại = LN kế hoạch (đã QT: TĐ3, chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi, không gồm vay, trả gốc), luôn tính sau VAT. Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
@@ -541,7 +541,7 @@ function bMuc4Html(list, v) {
   const { rows, pls, cpls, T } = bMuc4Data(list, v);
   const vt = v === 'gt' ? 'Trước VAT' : 'Sau VAT';
   const ct = ['dt', 'cp', 'ln'].includes(BST.iv_ct) ? BST.iv_ct : null;
-  const edit = canEditPc();
+  const edit = (can('tien') || can('ns'));
   const tsF = (l, d) => (d ? l / d : null);
   const pctT = (x) => (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`);
   const num = (x, isPct, ghost) => `<b class="${x < 0 ? 'neg' : ''} ${ghost ? 'iv-ghost' : ''}">${isPct ? pctT(x) : bTyU(x)}</b>`;
@@ -627,9 +627,9 @@ function bBhDialog(d) {
   dlg.innerHTML = `<form method="dialog" class="stack">
     <h3>Số liệu nhập tay · ${esc(d.ma_du_an)}</h3>
     <p class="muted small">${esc(d.ten_du_an)}</p>
-    <label>DT-CP dự kiến – chi phí (trước VAT, đồng)<input name="ns" class="money" value="${d.ns_cp ? bf.format(d.ns_cp) : ''}" placeholder="VD: 8.700.000.000 – để trống nếu chưa có"></label>
-    <label>BH/Khác (đồng)<input name="bh" class="money" value="${d.bh_khac ? bf.format(d.bh_khac) : ''}" placeholder="VD: 70.000.000"></label>
-    <label>Ghi chú<input name="gc" maxlength="300" value="${esc(d.ghi_chu_bh || '')}" placeholder="VD: giữ lại bảo hành 5%, hết hạn 01/2027"></label>
+    <label ${can('ns') ? '' : 'hidden'}>DT-CP dự kiến – chi phí (trước VAT, đồng)<input name="ns" class="money" value="${d.ns_cp ? bf.format(d.ns_cp) : ''}" placeholder="VD: 8.700.000.000 – để trống nếu chưa có"></label>
+    <label ${can('tien') ? '' : 'hidden'}>BH/Khác (đồng)<input name="bh" class="money" value="${d.bh_khac ? bf.format(d.bh_khac) : ''}" placeholder="VD: 70.000.000"></label>
+    <label ${can('tien') ? '' : 'hidden'}>Ghi chú<input name="gc" maxlength="300" value="${esc(d.ghi_chu_bh || '')}" placeholder="VD: giữ lại bảo hành 5%, hết hạn 01/2027"></label>
     <div class="msg" role="alert"></div>
     <div class="actions"><button type="submit" class="primary">Lưu</button><button type="button" data-x>Hủy</button></div>
   </form>`;
@@ -1319,7 +1319,7 @@ const NHOM_NGAN = { thau_phu: 'Thầu phụ', vat_tu: 'Vật tư', nhan_cong: 'N
   gt_tien_ich: 'Tiện ích/phục vụ', gt_luong: 'Lương, thưởng', gt_ngoai_giao: 'Ngoại giao', tc_chi_phi: 'CP tài chính', tc_tra_no: 'Lãi vay', tc_phat: 'Phạt CĐT' };
 let pcScrollTo = null;       // mở báo cáo từ tab Dự án -> cuộn tới thẻ
 const BUILDING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V5l8-3v19M13 8h6v13M8 7h2M8 11h2M8 15h2M16 12h1M16 16h1"/></svg>';
-const canEditPc = () => ['admin', 'editor'].includes(ME.role);
+const canEditPc = () => can('hd') || can('tien'); // quyền chi tiết: can(k) – app.js
 
 function openProjectReport(id) {
   BST.project = String(id);
@@ -1401,7 +1401,7 @@ function bPcDates(d) {
   const bd = d.ngay_bat_dau ? [d.ngay_bat_dau, 'tự điền'] : d.ngay_ky_hd ? [d.ngay_ky_hd, 'ngày ký HĐ'] : null;
   const kt = d.ngay_ket_thuc ? [d.ngay_ket_thuc, 'tự điền'] : d.ngay_qt ? [d.ngay_qt, d.ngay_qt_loai || 'ngày quyết toán'] : null;
   const one = (label, x, none) => `<span><em>${label}</em> ${x ? `<b>${dmy(x[0])}</b> <small>(${x[1]})</small>` : `<b class="muted-b">${none}</b>`}</span>`;
-  const edit = canEditPc() ? `<button type="button" class="pc-ngay-edit no-print" data-pcngay="${d.id}" title="Sửa ngày bắt đầu / kết thúc">✎ Sửa ngày</button>` : '';
+  const edit = can('hd') ? `<button type="button" class="pc-ngay-edit no-print" data-pcngay="${d.id}" title="Sửa ngày bắt đầu / kết thúc">✎ Sửa ngày</button>` : '';
   return `${one('Bắt đầu', bd, 'Chưa có HĐ')}<i>→</i>${one('Kết thúc', kt, 'Chưa quyết toán')}${edit}`;
 }
 // Hộp sửa ngày: lưu vào hồ sơ dự án (cùng dữ liệu tab Dự án). Ô để trống = hệ thống tự lấy (ngày ký HĐ / ngày quyết toán)
@@ -1440,12 +1440,12 @@ function bPcCard(d, idx) {
   const sub = [d.loai_cong_trinh, d.dia_diem].filter(Boolean).join(' – ') || d.chu_dau_tu || '';
   const img = d.co_anh
     ? `<img src="/api/du-an/${d.id}/anh?v=${d.anh_v}" alt="Ảnh ${esc(d.ten_du_an)}" loading="lazy">`
-    : `<span class="pc-noimg">${BUILDING}${canEditPc() ? '<small>Thêm ảnh</small>' : ''}</span>`;
+    : `<span class="pc-noimg">${BUILDING}${can('hd') ? '<small>Thêm ảnh</small>' : ''}</span>`;
   return `<article class="pc-card" id="pc-${d.id}" data-pc="${d.id}" style="--pc:${color}">
     <header class="pc-head">
       <span class="pc-no">${idx + 1}</span>
-      <div class="pc-img ${canEditPc() ? 'editable' : ''}" ${canEditPc() ? `data-pcimg="${d.id}" title="Bấm để ${d.co_anh ? 'đổi' : 'thêm'} ảnh công trình"` : ''}>${img}
-        ${canEditPc() && d.co_anh ? `<button type="button" class="pc-img-del no-print" data-pcimgdel="${d.id}" title="Xóa ảnh">×</button>` : ''}</div>
+      <div class="pc-img ${can('hd') ? 'editable' : ''}" ${can('hd') ? `data-pcimg="${d.id}" title="Bấm để ${d.co_anh ? 'đổi' : 'thêm'} ảnh công trình"` : ''}>${img}
+        ${can('hd') && d.co_anh ? `<button type="button" class="pc-img-del no-print" data-pcimgdel="${d.id}" title="Xóa ảnh">×</button>` : ''}</div>
       <div class="pc-title">
         <h3>${esc(d.ma_du_an)} – ${esc(d.ten_du_an)}</h3>
         <div class="pc-sub">${esc(sub)}</div>
@@ -1602,7 +1602,7 @@ function bTdDelta(cur, base, good, isPct, vs) {
 }
 function bTdBlock(d) {
   const tds = Object.fromEntries((d.thoi_diem || []).map((t) => [t.td, t]));
-  const edit = canEditPc();
+  const edit = can('td');
   const done = d.trang_thai === 'Hoàn thành';
   const m = d.moc || {};
   const coPL = (m.dt_ps || 0) !== (m.dt_goc || 0) || (m.tp_ps || 0) !== (m.tp_goc || 0);

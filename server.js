@@ -5,7 +5,7 @@ const store = require('./lib/db');
 const auth = require('./lib/auth');
 const security = require('./lib/security');
 const audit = require('./lib/audit');
-const { TRANG_THAI, ROLES, validateProject, validateUser, validateSettings, validateContact, validateTarget, validateRevenue, validateTienVe, validateCost, validateTp, validateTpLine, validateTpPay, passwordErrors, passcodeErrors } = require('./lib/validate');
+const { TRANG_THAI, ROLES, QUYEN, validateProject, validateUser, validateSettings, validateContact, validateTarget, validateRevenue, validateTienVe, validateCost, validateTp, validateTpLine, validateTpPay, passwordErrors, passcodeErrors } = require('./lib/validate');
 const { buildContracts, summarizeContracts } = require('./lib/subcontract');
 const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = require('./lib/cost');
 const { summarizeProject } = require('./lib/dashboard');
@@ -92,6 +92,10 @@ app.get('/setup', wrap(async (_req, res) => {
 // API
 // =====================================================================
 const api = express.Router();
+// Quyền theo nhóm thao tác (lib/validate.js QUYEN)
+const quyen = (k) => auth.requireRole(...QUYEN[k]);
+const canHd = quyen('hd'), canTien = quyen('tien'), canTd = quyen('td'), canXoaDa = quyen('xoa_da');
+const canAny = auth.requireRole(...new Set([...QUYEN.hd, ...QUYEN.tien, ...QUYEN.ns]));
 api.use(security.sameOrigin);
 api.use(auth.csrfGuard);
 
@@ -102,7 +106,7 @@ api.get('/meta', wrap(async (_req, res) => {
     loai_doanh_thu: LOAI_DOANH_THU,
     nhom_chi_phi: NHOM_CHI_PHI,
     khoi_chi_phi: KHOI_CHI_PHI,
-    roles: ROLES,
+    roles: ROLES, quyen: QUYEN,
     db: store.kind,
     ten_cong_ty: s.ten_cong_ty,
     ten_he_thong: s.ten_he_thong,
@@ -189,7 +193,7 @@ api.post('/nhat-ky/su-kien', wrap(async (req, res) => {
   audit.log(req, 'Xuất báo cáo', 'Báo cáo', `${loai} · ${String(req.body?.pham_vi || '').replace(/[<>]/g, '').slice(0, 200)}`);
   res.json({ ok: true });
 }));
-api.get('/nhat-ky', auth.requireRole('admin'), wrap(async (req, res) => {
+api.get('/nhat-ky', quyen('nhat_ky'), wrap(async (req, res) => {
   const q = req.query;
   const date = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : '');
   const limit = Math.min(500, Math.max(1, Number(q.limit) || 100));
@@ -200,7 +204,7 @@ api.get('/nhat-ky', auth.requireRole('admin'), wrap(async (req, res) => {
     q: String(q.q || '').trim().slice(0, 100), tu: date(q.tu), den: date(q.den), before: parseId(q.before), limit: page * limit,
   });
   res.json({ items: rows.slice((page - 1) * limit, page * limit), more: rows.length > page * limit, page, max_page: Math.max(1, Math.floor(LOG_PAGE_DEPTH / limit)),
-    hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats() }) });
+    hanh_dong: audit.HANH_DONG, ...(q.before ? {} : { thong_ke: await store.logStats(), tai_khoan: (await store.listUsers()).map((u) => ({ id: u.id, username: u.username, full_name: u.full_name })) }) });
 }));
 
 api.get('/auth/me', (req, res) => res.json(req.user));
@@ -375,17 +379,16 @@ users.delete('/:id', wrap(async (req, res) => {
 api.use('/users', users);
 
 // ---------- Dự án ----------
-const canEdit = auth.requireRole('admin', 'editor');
 
 api.get('/du-an', wrap(async (_req, res) => res.json(await store.listProjects())));
 
-api.post('/du-an', canEdit, wrap(async (req, res) => {
+api.post('/du-an', canHd, wrap(async (req, res) => {
   const { data, errors } = validateProject(req.body || {});
   if (errors.length) return bad(res, errors);
   res.status(201).json(await store.createProject(data, req.user.id));
 }));
 
-api.put('/du-an/:id', canEdit, wrap(async (req, res) => {
+api.put('/du-an/:id', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const { data, errors } = validateProject(req.body || {});
@@ -395,7 +398,7 @@ api.put('/du-an/:id', canEdit, wrap(async (req, res) => {
 }));
 
 // Sửa riêng ngày bắt đầu / kết thúc (từ khung công trình ở Báo cáo): để trống = hệ thống tự lấy theo ngày ký HĐ / ngày quyết toán
-api.put('/du-an/:id/ngay', canEdit, wrap(async (req, res) => {
+api.put('/du-an/:id/ngay', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.listProjects()).find((p) => p.id === id);
   if (!cur) return bad(res, 'Không tìm thấy dự án', 404);
@@ -407,7 +410,7 @@ api.put('/du-an/:id/ngay', canEdit, wrap(async (req, res) => {
 }));
 
 // Số liệu nhập tay của công trình: DT-CP dự kiến (mục I) · BH/Khác + ghi chú (mục IV)
-api.put('/du-an/:id/bh', canEdit, wrap(async (req, res) => {
+api.put('/du-an/:id/bh', canAny, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.listProjects()).find((p) => p.id === id);
   if (!cur) return bad(res, 'Không tìm thấy dự án', 404);
@@ -419,13 +422,17 @@ api.put('/du-an/:id/bh', canEdit, wrap(async (req, res) => {
   const rawNs = req.body?.ns_cp === undefined ? null : String(req.body.ns_cp).replace(/[.,\s]/g, '');
   const ns = rawNs === null ? Number(cur.ns_cp) || 0 : rawNs === '' ? 0 : Number(rawNs);
   if (!Number.isInteger(ns) || ns < 0 || ns > 1e15) return bad(res, 'DT-CP dự kiến phải là số nguyên không âm (đồng)');
+  // DT-CP dự kiến: Lãnh đạo (QUYEN.ns) · BH/Khác + ghi chú: Kế toán (QUYEN.tien); đổi trường không thuộc quyền -> từ chối
+  const doi = (a, b) => (Number(a) || 0) !== (Number(b) || 0);
+  if (doi(ns, cur.ns_cp) && !QUYEN.ns.includes(req.user.role)) return bad(res, 'Bạn không có quyền sửa DT-CP dự kiến', 403);
+  if ((doi(bh, cur.bh_khac) || ghi !== (cur.ghi_chu_bh || '')) && !QUYEN.tien.includes(req.user.role)) return bad(res, 'Bạn không có quyền sửa BH/Khác, ghi chú', 403);
   await store.setProjectBh(id, { bh_khac: bh, ghi_chu_bh: ghi, ns_cp: ns }, req.user.id);
   const f = (x) => new Intl.NumberFormat('vi-VN').format(Number(x) || 0);
   audit.log(req, 'Sửa', 'Dự án', `DT-CP dự kiến ${f(ns)} đ · BH/Khác ${f(bh)} đ · Ghi chú: ${ghi || '—'} | Trước: DT-CP dự kiến ${f(cur.ns_cp)} đ · BH ${f(cur.bh_khac)} đ · ${cur.ghi_chu_bh || '—'}`, { du_an: cur.ma_du_an });
   res.json({ id, bh_khac: bh, ghi_chu_bh: ghi, ns_cp: ns });
 }));
 
-api.delete('/du-an/:id', canEdit, wrap(async (req, res) => {
+api.delete('/du-an/:id', canXoaDa, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const ok = await store.deleteProject(id);
@@ -521,7 +528,7 @@ const tdVal = (b) => {
 };
 const TD_TEN = { 1: 'Ký hợp đồng', 2: 'Có phát sinh', 3: 'Quyết toán' };
 const tdTxt = (t) => (t ? `${TD_TEN[t.td] || ''} · ${t.ngay.split('-').reverse().join('/')} · DT ${new Intl.NumberFormat('vi-VN').format(t.dt)} đ · CP ${new Intl.NumberFormat('vi-VN').format(t.cp)} đ` : '—');
-api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
+api.put('/du-an/:id/thoi-diem/:td', canTd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const p = id && (await store.getProject(id));
   if (!p) return bad(res, 'Không tìm thấy công trình', 404);
@@ -538,7 +545,7 @@ api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
   audit.log(req, old ? 'Sửa' : 'Thêm', 'Thời điểm', `TĐ${data.td} · ${tdTxt(data)}${old ? ` | Trước: ${tdTxt(old)}` : ''}`, { du_an: p.ma_du_an });
   res.json(await store.listThoiDiem(id));
 }));
-api.delete('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
+api.delete('/du-an/:id/thoi-diem/:td', canTd, wrap(async (req, res) => {
   const id = parseId(req.params.id), td = Number(req.params.td);
   const p = id && (await store.getProject(id));
   if (!p) return bad(res, 'Không tìm thấy công trình', 404);
@@ -608,7 +615,7 @@ api.get('/du-an/:id/anh', wrap(async (req, res) => {
   if (req.headers['if-none-match'] === etag) return res.status(304).end();
   res.type(img.mime).send(img.data);
 }));
-api.put('/du-an/:id/anh', canEdit, express.raw({ type: () => true, limit: IMG_MAX }), wrap(async (req, res) => {
+api.put('/du-an/:id/anh', canHd, express.raw({ type: () => true, limit: IMG_MAX }), wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id || !(await store.getProject(id))) return bad(res, 'Không tìm thấy công trình', 404);
   const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
@@ -618,7 +625,7 @@ api.put('/du-an/:id/anh', canEdit, express.raw({ type: () => true, limit: IMG_MA
   console.log(`[NHẬT KÝ] ${req.user.username} cập nhật ảnh công trình #${id} (${Math.round(buf.length / 1024)} KB)`);
   res.json({ ok: true });
 }));
-api.delete('/du-an/:id/anh', canEdit, wrap(async (req, res) => {
+api.delete('/du-an/:id/anh', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   await store.deleteProjectImage(id);
@@ -637,7 +644,7 @@ api.get('/du-an/:id/doanh-thu', wrap(async (req, res) => {
 }));
 
 // ---------- Giá trị tiền về ----------
-api.post('/du-an/:id/tien-ve', canEdit, wrap(async (req, res) => {
+api.post('/du-an/:id/tien-ve', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   if (!(await store.getProject(id))) return bad(res, 'Không tìm thấy công trình', 404);
@@ -648,7 +655,7 @@ api.post('/du-an/:id/tien-ve', canEdit, wrap(async (req, res) => {
   res.status(201).json(await store.createTienVe(id, data, req.user.id));
 }));
 
-api.put('/tien-ve/:id', canEdit, wrap(async (req, res) => {
+api.put('/tien-ve/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const cur = await store.getTienVe(id);
@@ -661,14 +668,14 @@ api.put('/tien-ve/:id', canEdit, wrap(async (req, res) => {
   ok ? res.json({ id }) : bad(res, 'Không tìm thấy dòng tiền về', 404);
 }));
 
-api.delete('/tien-ve/:id', canEdit, wrap(async (req, res) => {
+api.delete('/tien-ve/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const ok = await store.deleteTienVe(id);
   ok ? res.status(204).end() : bad(res, 'Không tìm thấy dòng tiền về', 404);
 }));
 
-api.post('/du-an/:id/doanh-thu', canEdit, wrap(async (req, res) => {
+api.post('/du-an/:id/doanh-thu', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   if (!(await store.getProject(id))) return bad(res, 'Không tìm thấy công trình', 404);
@@ -705,7 +712,7 @@ async function checkHdRef(data, duAnId, selfId = 0) {
   return checkHeadRef(data.hd_id, duAnId);
 }
 
-api.put('/doanh-thu/:id', canEdit, wrap(async (req, res) => {
+api.put('/doanh-thu/:id', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const cur = await store.getRevenue(id);
@@ -739,7 +746,7 @@ async function contractImpact(cur) {
   return out;
 }
 
-api.get('/doanh-thu/:id/impact', canEdit, wrap(async (req, res) => {
+api.get('/doanh-thu/:id/impact', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.getRevenue(id));
   if (!cur) return bad(res, 'Không tìm thấy dòng doanh thu', 404);
@@ -749,7 +756,7 @@ api.get('/doanh-thu/:id/impact', canEdit, wrap(async (req, res) => {
   res.json(im);
 }));
 
-api.delete('/doanh-thu/:id', canEdit, wrap(async (req, res) => {
+api.delete('/doanh-thu/:id', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const cur = await store.getRevenue(id);
@@ -794,7 +801,7 @@ api.get('/du-an/:id/chi-phi', wrap(async (req, res) => {
   res.json({ du_an, items, thau_phu, hd_cdt, tong_tp: summarizeContracts(thau_phu), tong: summarizeCost([...items, ...tpAsCost]) });
 }));
 
-api.post('/du-an/:id/chi-phi', canEdit, wrap(async (req, res) => {
+api.post('/du-an/:id/chi-phi', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   if (!(await store.getProject(id))) return bad(res, 'Không tìm thấy công trình', 404);
@@ -803,7 +810,7 @@ api.post('/du-an/:id/chi-phi', canEdit, wrap(async (req, res) => {
   res.status(201).json(await store.createCost(id, data, req.user.id));
 }));
 
-api.put('/chi-phi/:id', canEdit, wrap(async (req, res) => {
+api.put('/chi-phi/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const { data, errors } = validateCost(req.body || {});
@@ -812,7 +819,7 @@ api.put('/chi-phi/:id', canEdit, wrap(async (req, res) => {
   ok ? res.json({ id }) : bad(res, 'Không tìm thấy dòng chi phí', 404);
 }));
 
-api.delete('/chi-phi/:id', canEdit, wrap(async (req, res) => {
+api.delete('/chi-phi/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   const ok = await store.deleteCost(id);
@@ -832,7 +839,7 @@ async function tpOf(req, res) {
   return tp;
 }
 
-api.post('/du-an/:id/thau-phu', canEdit, wrap(async (req, res) => {
+api.post('/du-an/:id/thau-phu', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id || !(await store.getProject(id))) return bad(res, 'Không tìm thấy công trình', 404);
   const t = validateTp(req.body || {});
@@ -843,7 +850,7 @@ api.post('/du-an/:id/thau-phu', canEdit, wrap(async (req, res) => {
   res.status(201).json(await store.createTp(id, t.data, l.data, req.user.id));
 }));
 
-api.put('/thau-phu/:id', canEdit, wrap(async (req, res) => {
+api.put('/thau-phu/:id', canHd, wrap(async (req, res) => {
   const tp = await tpOf(req, res); if (!tp) return;
   const body = req.body || {};
   const { data, errors } = validateTp(body);
@@ -854,7 +861,7 @@ api.put('/thau-phu/:id', canEdit, wrap(async (req, res) => {
   res.json({ id: tp.id });
 }));
 
-api.delete('/thau-phu/:id', canEdit, wrap(async (req, res) => {
+api.delete('/thau-phu/:id', canHd, wrap(async (req, res) => {
   const tp = await tpOf(req, res); if (!tp) return;
   if (!(await requirePasscode(req, res))) return;
   const c = buildContracts(await store.listTp(tp.du_an_id)).find((x) => x.id === tp.id);
@@ -864,7 +871,7 @@ api.delete('/thau-phu/:id', canEdit, wrap(async (req, res) => {
   res.status(204).end();
 }));
 
-api.post('/thau-phu/:id/hd-pl', canEdit, wrap(async (req, res) => {
+api.post('/thau-phu/:id/hd-pl', canHd, wrap(async (req, res) => {
   const tp = await tpOf(req, res); if (!tp) return;
   if (await lockedErr(res, tp.id)) return;
   const { data, errors } = validateTpLine(req.body || {});
@@ -872,7 +879,7 @@ api.post('/thau-phu/:id/hd-pl', canEdit, wrap(async (req, res) => {
   res.status(201).json(await store.createTpLine(tp.id, data, req.user.id));
 }));
 
-api.put('/tp-hd-pl/:id', canEdit, wrap(async (req, res) => {
+api.put('/tp-hd-pl/:id', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.getTpLine(id));
   if (!cur) return bad(res, 'Không tìm thấy dòng HĐ/PL', 404);
@@ -884,7 +891,7 @@ api.put('/tp-hd-pl/:id', canEdit, wrap(async (req, res) => {
   res.json({ id });
 }));
 
-api.delete('/tp-hd-pl/:id', canEdit, wrap(async (req, res) => {
+api.delete('/tp-hd-pl/:id', canHd, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.getTpLine(id));
   if (!cur) return bad(res, 'Không tìm thấy dòng HĐ/PL', 404);
@@ -897,7 +904,7 @@ api.delete('/tp-hd-pl/:id', canEdit, wrap(async (req, res) => {
   res.status(204).end();
 }));
 
-api.post('/thau-phu/:id/thanh-toan', canEdit, wrap(async (req, res) => {
+api.post('/thau-phu/:id/thanh-toan', canTien, wrap(async (req, res) => {
   const tp = await tpOf(req, res); if (!tp) return;
   if (await lockedErr(res, tp.id)) return;
   const { data, errors } = validateTpPay(req.body || {});
@@ -907,7 +914,7 @@ api.post('/thau-phu/:id/thanh-toan', canEdit, wrap(async (req, res) => {
   res.status(201).json(r);
 }));
 
-api.put('/tp-thanh-toan/:id', canEdit, wrap(async (req, res) => {
+api.put('/tp-thanh-toan/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.getTpPay(id));
   if (!cur) return bad(res, 'Không tìm thấy dòng thanh toán', 404);
@@ -918,7 +925,7 @@ api.put('/tp-thanh-toan/:id', canEdit, wrap(async (req, res) => {
   res.json({ id });
 }));
 
-api.delete('/tp-thanh-toan/:id', canEdit, wrap(async (req, res) => {
+api.delete('/tp-thanh-toan/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.getTpPay(id));
   if (!cur) return bad(res, 'Không tìm thấy dòng thanh toán', 404);

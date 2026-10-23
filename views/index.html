@@ -22,7 +22,7 @@
     <!-- Menu: Báo cáo (mặc định) · Nhập liệu ▾ (Dự án, Doanh thu, Chi phí) · Quản trị ▾ (Tài khoản, Cài đặt) · tên người dùng ▾ (Cá nhân, Liên hệ, Đăng xuất) -->
     <nav id="tabs" class="tabs">
       <button data-tab="report">Báo cáo</button>
-      <div class="tab-grp" data-role="admin editor" data-grp="nhap">
+      <div class="tab-grp" data-role="admin editor qs ke_toan" data-grp="nhap">
         <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true">Nhập liệu <span class="caret">▾</span></button>
         <div class="tab-menu" role="menu">
           <button data-tab="projects" role="menuitem">Dự án</button>
@@ -30,11 +30,12 @@
           <button data-tab="cost" role="menuitem">Chi phí</button>
         </div>
       </div>
-      <div class="tab-grp" data-role="admin" data-grp="qt">
+      <div class="tab-grp" data-role="admin bks" data-grp="qt">
         <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true">Quản trị <span class="caret">▾</span></button>
         <div class="tab-menu" role="menu">
-          <button data-tab="users" role="menuitem">Tài khoản</button>
-          <button data-tab="settings" role="menuitem">Cài đặt</button>
+          <button data-tab="users" role="menuitem" data-role="admin">Tài khoản &amp; nhật ký</button>
+          <button data-tab="users" role="menuitem" data-role="bks">Nhật ký hoạt động</button>
+          <button data-tab="settings" role="menuitem" data-role="admin">Cài đặt</button>
         </div>
       </div>
     </nav>
@@ -57,7 +58,7 @@
     </div>
     <!-- ================= DỰ ÁN ================= -->
     <section id="tab-projects" class="tab-panel">
-      <div class="card" data-role="admin editor">
+      <div class="card" data-role="admin editor qs">
         <h2 id="p-form-title">Thêm dự án</h2>
         <form id="p-form" class="grid-form">
           <input type="hidden" name="id">
@@ -139,7 +140,7 @@
           <div class="kpi"><div class="label">Tổng chi phí sau VAT</div><div class="value" id="c-k-sau">0</div><div class="sub" id="c-k-sub"></div></div>
         </div>
 
-        <div class="card" data-role="admin editor">
+        <div class="card" data-role="admin editor qs ke_toan">
           <h2 id="c-form-title">Thêm chi phí</h2>
           <form id="c-form" class="grid-form" novalidate>
             <input type="hidden" name="id">
@@ -221,7 +222,7 @@
           Khi sửa, để trống mật khẩu nếu không muốn đổi.
         </p>
       </div>
-      <div class="card">
+      <div class="card" data-role="admin">
         <h2>Danh sách tài khoản</h2>
         <div class="table-wrap">
           <table>

@@ -27,6 +27,7 @@ let users = [];
   $$('[data-role]').forEach((el) => {
     if (!el.dataset.role.split(' ').includes(ME.role)) el.remove();
   });
+  if (ME.role === 'bks') { const g = $('[data-grp="qt"] [data-grp-toggle]'); if (g) g.innerHTML = 'Kiểm soát <span class="caret">▾</span>'; } // BKS: chỉ có nhật ký
   document.body.classList.add('roles-ready'); // đến đây mới hiện các mục theo quyền (tránh nhấp nháy tab quản trị)
 
   const stSel = $('#p-form [name=trang_thai]');
@@ -49,7 +50,7 @@ function applyBranding(s) {
 // =====================================================================
 // Tab
 // =====================================================================
-const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => loadUsers().then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
+const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => (ME.role === 'admin' ? loadUsers() : Promise.resolve()).then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
 
 const NHAP_LIEU = ['projects', 'revenue', 'cost'];
 const closeMenus = () => $$('.tab-grp.open').forEach((g) => { g.classList.remove('open'); $('[data-grp-toggle]', g).setAttribute('aria-expanded', 'false'); });
@@ -107,8 +108,8 @@ window.addEventListener('pagehide', () => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') api('/api/auth/me', AUTO).catch(() => {}); });
 setInterval(() => {
-  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && ME?.role === 'admin') {
-    loadUsers(true).catch(() => {});
+  if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && can('nhat_ky')) {
+    if (ME.role === 'admin') loadUsers(true).catch(() => {});
     loadLogs(true).catch(() => {});
   }
 }, 10 * 1000);
@@ -122,7 +123,9 @@ $('#btn-logout').addEventListener('click', async () => {
 // DỰ ÁN
 // =====================================================================
 const pForm = $('#p-form');
-const canEdit = () => ['admin', 'editor'].includes(ME.role);
+// Quyền theo nhóm thao tác – bảng QUYEN do máy chủ gửi (lib/validate.js): hd giá trị (QS) · tien tiền (Kế toán) · td/ns (Lãnh đạo) · nhat_ky (BKS)
+const can = (k) => (META?.quyen?.[k] || []).includes(ME?.role);
+const canEdit = () => can('hd') || can('tien');
 
 let dash = { du_an: [] };
 const dashById = () => new Map(dash.du_an.map((d) => [d.id, d]));
@@ -163,7 +166,7 @@ function renderProjects() {
         <td class="row-actions">
           <button data-rev="${r.id}" title="Xem / nhập doanh thu">Doanh thu</button>
           <button data-cost="${r.id}" title="Xem / nhập chi phí">Chi phí</button>
-          ${canEdit() ? `<button data-edit="${r.id}">Sửa</button>
+          ${can('hd') ? `<button data-edit="${r.id}">Sửa</button>
           <button class="danger" data-del="${r.id}">Xóa</button>` : ''}
         </td>
       </tr>`;
@@ -331,7 +334,7 @@ function buildRevenueSections() {
   wrap.innerHTML = Object.entries(REV_LABEL).map(([loai, L]) => `
     <div class="card rev-card" data-loai="${loai}">
       ${loai === 'qt' ? `<div class="toolbar tv-head"><h2>${L.title}</h2><button type="button" class="sm" id="qt-toggle-all">Mở tất cả</button></div>` : `<h2>${L.title}</h2>`}
-      ${canEdit() ? `
+      ${can('hd') ? `
       <form class="grid-form rev-form" data-loai="${loai}" novalidate>
         <input type="hidden" name="id">
         ${loai === 'hd' ? `
@@ -355,7 +358,7 @@ function buildRevenueSections() {
           <thead><tr>
             <th class="num">#</th><th>${loai === 'hd' ? 'Số HĐ / Phụ lục' : 'Số HĐ / Đợt – Hồ sơ'}</th><th>Ngày</th>
             <th class="num">Trước VAT</th><th class="num">VAT</th><th class="num">Tiền VAT</th>
-            <th class="num">Sau VAT</th><th>Ghi chú</th><th>Người cập nhật</th>${canEdit() ? '<th></th>' : ''}
+            <th class="num">Sau VAT</th><th>Ghi chú</th><th>Người cập nhật</th>${can('hd') ? '<th></th>' : ''}
           </tr></thead>
           <tbody></tbody>
           <tfoot></tfoot>
@@ -543,7 +546,7 @@ function renderRevenue() {
   $('#r-k-tv-sub').textContent = `Tạm ứng ${money(tv.tam_ung)} · Thanh toán ${money(tv.thanh_toan)} · Quyết toán ${money(tv.quyet_toan)}`;
 
   for (const loai of Object.keys(REV_LABEL)) {
-    const cols = canEdit() ? 10 : 9;
+    const cols = can('hd') ? 10 : 9;
     const card = $(`.rev-card[data-loai="${loai}"]`);
     const rows = items.filter((r) => r.loai === loai);
     if (loai === 'hd') {
@@ -556,7 +559,7 @@ function renderRevenue() {
         <td class="num">${money(t.gia_tri)}</td><td></td>
         <td class="num">${money(t.tien_vat)}</td>
         <td class="num">${money(t.sau_vat)}</td>
-        <td colspan="${canEdit() ? 3 : 2}"></td>
+        <td colspan="${can('hd') ? 3 : 2}"></td>
       </tr>`;
   }
   updateQtToggleAll();
@@ -584,7 +587,7 @@ function qtGroupList(rows) {
   return [...groups.values()].sort((a, b) => (a.k ? order.get(a.k) : 1e6) - (b.k ? order.get(b.k) : 1e6));
 }
 function qtGroupsHtml(rows) {
-  const edit = canEdit();
+  const edit = can('hd');
   // Giá trị HĐ (gồm PL, sau VAT) của từng HĐ để tính % đã nghiệm thu
   const hdVal = new Map();
   for (const g of hdGroups(revData.items.filter((r) => r.loai === 'hd'))) {
@@ -657,7 +660,7 @@ function hdRowHtml(r, stt, { child = false, head = false, toggle = '' } = {}) {
   return `
     <tr class="${child ? 'hd-child' : 'hd-head'}" data-rid="${r.id}" ${child ? `data-grp-child="${esc(hdKey(r))}"` : ''}>
       <td class="num muted">${stt}</td>
-      <td class="${child ? 'indent' : ''}">${toggle}${child ? '<span class="tree">└</span>' : ''}<span class="kind-tag ${r.ma_loai === 'HĐ' ? 'kind-hd' : ''}">${esc(r.ma_loai || '')}</span> ${canEdit() ? `<b class="so-ma-pick" data-soma="${esc(r.so_ma || '')}" title="Nhấp đúp để thêm phụ lục cho ${esc(r.so_ma || '')}">${esc(r.so_ma || r.so_hieu)}</b>` : `<b>${esc(r.so_ma || r.so_hieu)}</b>`}</td>
+      <td class="${child ? 'indent' : ''}">${toggle}${child ? '<span class="tree">└</span>' : ''}<span class="kind-tag ${r.ma_loai === 'HĐ' ? 'kind-hd' : ''}">${esc(r.ma_loai || '')}</span> ${can('hd') ? `<b class="so-ma-pick" data-soma="${esc(r.so_ma || '')}" title="Nhấp đúp để thêm phụ lục cho ${esc(r.so_ma || '')}">${esc(r.so_ma || r.so_hieu)}</b>` : `<b>${esc(r.so_ma || r.so_hieu)}</b>`}</td>
       <td>${dmy(r.ngay)}</td>
       <td class="num">${money(r.gia_tri)}</td>
       <td class="num">${vatBadge(r.vat)}</td>
@@ -665,7 +668,7 @@ function hdRowHtml(r, stt, { child = false, head = false, toggle = '' } = {}) {
       <td class="num strong">${money(r.sau_vat)}</td>
       <td class="wrap">${esc(r.ghi_chu)}</td>
       <td class="muted">${esc(r.nguoi_cap_nhat || '')}</td>
-      ${canEdit() ? `<td class="row-actions"><button data-redit="${r.id}">Sửa</button><button class="danger" data-rdel="${r.id}">Xóa</button></td>` : ''}
+      ${can('hd') ? `<td class="row-actions"><button data-redit="${r.id}">Sửa</button><button class="danger" data-rdel="${r.id}">Xóa</button></td>` : ''}
     </tr>`;
 }
 
@@ -679,7 +682,7 @@ function hdGroupsHtml(rows) {
       : '<span class="grp-toggle-sp"></span>';
     let html = '';
     if (g.head) html += hdRowHtml(g.head, n, { toggle });
-    else html += `<tr class="hd-head hd-orphan"><td class="num muted">${n}</td><td colspan="${canEdit() ? 9 : 8}">${toggle}${canEdit() ? `<b class="so-ma-pick" data-soma="${esc(g.so_ma)}" title="Nhấp đúp để thêm dòng cho ${esc(g.so_ma)}">${esc(g.so_ma)}</b>` : `<b>${esc(g.so_ma)}</b>`} <span class="st st-tam-tinh">Chưa có HĐ gốc</span></td></tr>`;
+    else html += `<tr class="hd-head hd-orphan"><td class="num muted">${n}</td><td colspan="${can('hd') ? 9 : 8}">${toggle}${can('hd') ? `<b class="so-ma-pick" data-soma="${esc(g.so_ma)}" title="Nhấp đúp để thêm dòng cho ${esc(g.so_ma)}">${esc(g.so_ma)}</b>` : `<b>${esc(g.so_ma)}</b>`} <span class="st st-tam-tinh">Chưa có HĐ gốc</span></td></tr>`;
     if (!closed) g.pls.forEach((r, i) => { html += hdRowHtml(r, `${n}.${i + 1}`, { child: true }); });
     if (g.pls.length) {
       const sum = (f) => members.reduce((s, r) => s + r[f], 0);
@@ -691,7 +694,7 @@ function hdGroupsHtml(rows) {
           <td class="num">${money(sum('gia_tri'))}</td><td></td>
           <td class="num">${money(sum('tien_vat'))}</td>
           <td class="num">${money(sum('sau_vat'))}</td>
-          <td colspan="${canEdit() ? 3 : 2}"></td>
+          <td colspan="${can('hd') ? 3 : 2}"></td>
         </tr>`;
     }
     return html;
@@ -837,13 +840,13 @@ function tienVeCardHtml() {
         <table class="tv-table">
           <thead><tr>
             <th class="num">#</th><th>Nội dung</th><th class="num">Giá trị tiền về</th><th>Ngày (dd/mm/yyyy)</th>
-            <th>Ghi chú</th><th>Người cập nhật</th>${canEdit() ? '<th></th>' : ''}
+            <th>Ghi chú</th><th>Người cập nhật</th>${can('tien') ? '<th></th>' : ''}
           </tr></thead>
           <tbody id="tv-body"></tbody>
           <tfoot id="tv-foot"></tfoot>
         </table>
       </div>
-      ${canEdit() ? `
+      ${can('tien') ? `
       <div class="tv-tools">
         <label class="tv-hd-pick">Thêm cho HĐ <select id="tv-hd-pick"></select></label>
         <button type="button" data-tvadd="tam_ung">+ Tạm ứng</button>
@@ -879,10 +882,10 @@ const tvDirty = (r) => !r.id || Boolean(tvEdits[r.key]);
 function tvRows() {
   const heads = tvHeads();
   const saved = revData.tien_ve.map((r) => ({ ...r, key: 'id' + r.id }));
-  if (tvDrafts === null && (saved.length || !canEdit() || heads.length)) {
+  if (tvDrafts === null && (saved.length || !can('tien') || heads.length)) {
     // Công trình chưa có dữ liệu: gợi ý sẵn mẫu Tạm ứng / TT Đợt 1 / Quyết toán cho HĐ đầu tiên
     const hd_id = heads[0]?.id;
-    tvDrafts = saved.length || !canEdit() ? [] : [
+    tvDrafts = saved.length || !can('tien') ? [] : [
       { key: 'd' + ++tvSeq, loai: 'tam_ung', hd_id },
       { key: 'd' + ++tvSeq, loai: 'dot', dot: 1, hd_id },
       { key: 'd' + ++tvSeq, loai: 'quyet_toan', hd_id },
@@ -899,7 +902,7 @@ function tvRows() {
 function renderTienVe() {
   const heads = tvHeads();
   const rows = tvRows();
-  const edit = canEdit();
+  const edit = can('tien');
   const cols = edit ? 7 : 6;
   const hdName = (id) => heads.find((h) => h.id === Number(id))?.so_hieu;
   $('#tv-total').textContent = money(revData.tong_tien_ve.tong);
@@ -1041,7 +1044,7 @@ async function tvReload() {
 
 function bindTienVe() {
   const card = $('#tv-card');
-  if (!canEdit()) return;
+  if (!can('tien')) return;
   $('#tv-hd-pick').addEventListener('change', updateTvButtons);
   // Ghi nhận nội dung đang sửa
   card.addEventListener('input', (e) => {
@@ -1227,8 +1230,12 @@ function updateCostPreview() {
 
 function initCostForm() {
   cForm.dataset.ready = '1';
-  cForm.elements.nhom.innerHTML = KHOI().map((k) => `<optgroup label="${esc(k.ten)}">${
-    nhomOf(k.code).map((n, i) => `<option value="${n.code}">${stt(k, i)}. ${esc(n.ten)}</option>`).join('')}</optgroup>`).join('');
+  // Nhóm Thầu phụ (tạo HĐ thầu phụ) thuộc quyền QS; các nhóm chi phí còn lại thuộc quyền Kế toán
+  const duocNhap = (code) => (code === 'thau_phu' ? can('hd') : can('tien'));
+  cForm.elements.nhom.innerHTML = KHOI().map((k) => {
+    const opts = nhomOf(k.code).map((n, i) => (duocNhap(n.code) ? `<option value="${n.code}">${stt(k, i)}. ${esc(n.ten)}</option>` : '')).join('');
+    return opts ? `<optgroup label="${esc(k.ten)}">${opts}</optgroup>` : '';
+  }).join('');
   fillSubOptions(cForm.elements.nhom.value);
   cForm.elements.nhom.addEventListener('change', () => fillSubOptions(cForm.elements.nhom.value));
   cForm.elements.nhom_con.addEventListener('change', updateNoiDungHint);
@@ -1301,7 +1308,7 @@ async function saveCost() {
 // ---------- Bảng cây: Nhóm -> Hạng mục -> Chi tiết ----------
 function renderCost() {
   const { items, tong } = costData;
-  const edit = canEdit();
+  const edit = can('tien');
   const pct = (v) => (tong.sau_vat ? ((v / tong.sau_vat) * 100).toFixed(1) + '%' : '—');
   $('#c-k-sau').textContent = money(tong.sau_vat);
   $('#c-k-sub').innerHTML = `Trước VAT ${money(tong.gia_tri)} · VAT ${money(tong.tien_vat)}${tong.tam_tinh ? ' · <span class="warn-text">có tạm tính</span>' : ''}` +
@@ -1502,7 +1509,7 @@ function tpGroups(list) {
 }
 function renderTpCard() {
   const all = costData.thau_phu;
-  const edit = canEdit();
+  const edit = can('hd');
   const nDa = all.filter(tpDaQt).length;
   $$('#tp-loc button').forEach((b) => {
     b.classList.toggle('on', b.dataset.v === tpFilter.loc);
@@ -1635,10 +1642,11 @@ function renderTpDlg() {
   const c = costData.thau_phu.find((x) => x.id === tpDlgId);
   const dlg = $('#tp-dlg');
   if (!c) return closeTp();
-  const canInfo = canEdit();
+  const canInfo = can('hd'), canPay = can('tien');
   const locked = c.khoa;
-  const edit = canInfo && !locked;   // đã quyết toán -> khóa số: không sửa HĐ/PL, thanh toán
-  const inp = (name, val, attrs = '') => `<input data-f="${name}" value="${esc(val ?? '')}" ${attrs} ${edit ? '' : 'disabled'}>`;
+  const editL = canInfo && !locked, editP = canPay && !locked; // đã quyết toán -> khóa số; HĐ/PL: QS · thanh toán: Kế toán
+  const edit = editL || editP;
+  const inp = (name, val, attrs = '', ok = edit) => `<input data-f="${name}" value="${esc(val ?? '')}" ${attrs} ${ok ? '' : 'disabled'}>`;
   const nextPl = 'PL' + String(Math.max(0, ...c.lines.map((l) => (l.ma_loai === 'HĐ' ? 0 : Number(l.ma_loai.slice(2)))), ...tpDrafts.lines.map((d) => Number(d.ma_loai.slice(2)))) + 1).padStart(2, '0');
 
   const lineRow = (l, draft) => {
@@ -1648,27 +1656,27 @@ function renderTpDlg() {
     const qtSau = draft ? 0 : l.qt_sau_vat;
     return `<tr data-k="${draft ? 'dl' + l.key : 'l' + l.id}" class="${draft ? 'tv-draft' : l.ma_loai === 'HĐ' ? 'tp-hd-row' : 'tp-pl-row'}">
       <td>${l.ma_loai === 'HĐ' ? '' : '<span class="tree">└</span>'}<span class="kind-tag ${l.ma_loai === 'HĐ' ? 'kind-hd' : ''}">${l.ma_loai}</span> <b>${esc(c.so_ma)}</b>${draft ? ' <span class="st st-tam-tinh">Chưa lưu</span>' : ''}</td>
-      <td>${inp('ngay', draft ? '' : isoToDmy(l.ngay), 'class="date-dmy"')}</td>
-      <td>${inp('gia_tri', gtStr, 'class="money num" placeholder="0"')}</td>
-      <td>${inp('vat', draft ? '' : l.vat || '', 'type="number" min="0" max="100" step="1" class="vat-in" placeholder="0"')}</td>
+      <td>${inp('ngay', draft ? '' : isoToDmy(l.ngay), 'class="date-dmy"', editL)}</td>
+      <td>${inp('gia_tri', gtStr, 'class="money num" placeholder="0"', editL)}</td>
+      <td>${inp('vat', draft ? '' : l.vat || '', 'type="number" min="0" max="100" step="1" class="vat-in" placeholder="0"', editL)}</td>
       <td class="num strong" data-calc="hd">${money(hdSau)}</td>
-      <td>${inp('gia_tri_qt', qtStr, 'class="money num" placeholder="= giá trị HĐ/PL"')}</td>
+      <td>${inp('gia_tri_qt', qtStr, 'class="money num" placeholder="= giá trị HĐ/PL"', editL)}</td>
       <td class="num strong" data-calc="qt">${locked ? '<span class="muted small">chốt theo<br>thanh toán</span>' : money(qtSau) + (!draft && !l.da_qt ? '<div class="muted small">chưa QT</div>' : '')}</td>
-      <td>${inp('ghi_chu', draft ? '' : l.ghi_chu, 'maxlength="500"')}</td>
-      <td class="row-actions">${edit ? `<button class="primary sm" data-save ${draft ? '' : 'hidden'}>Lưu</button>${
+      <td>${inp('ghi_chu', draft ? '' : l.ghi_chu, 'maxlength="500"', editL)}</td>
+      <td class="row-actions">${editL ? `<button class="primary sm" data-save ${draft ? '' : 'hidden'}>Lưu</button>${
         l.ma_loai === 'HĐ' ? '' : `<button class="danger sm" data-del>${draft ? 'Bỏ' : 'Xóa'}</button>`}` : ''}</td>
     </tr>`;
   };
   const payLabel = (p, draft) => (p.loai === 'dot'
-    ? `TT Đợt ${edit ? `<input data-f="dot" type="number" min="1" max="999" class="tv-dot" value="${esc(p.dot ?? '')}">` : esc(p.dot)}`
+    ? `TT Đợt ${editP ? `<input data-f="dot" type="number" min="1" max="999" class="tv-dot" value="${esc(p.dot ?? '')}">` : esc(p.dot)}`
     : TT_LABEL[p.loai]) + (draft ? ' <span class="st st-tam-tinh">Chưa lưu</span>' : '');
   const payRow = (p, draft) => `<tr data-k="${draft ? 'dp' + p.key : 'p' + p.id}" class="${draft ? 'tv-draft' : ''}">
       <td><b>${payLabel(p, draft)}</b></td>
-      <td>${inp('ngay', draft ? '' : isoToDmy(p.ngay), 'class="date-dmy"')}</td>
-      <td>${inp('so_tien', draft ? '' : money(p.so_tien), 'class="money num" placeholder="Nhập giá trị"')}</td>
-      <td>${inp('ghi_chu', draft ? '' : p.ghi_chu, 'maxlength="500"')}</td>
-      <td class="row-actions">${edit ? `<button class="primary sm" data-save ${draft ? '' : 'hidden'}>Lưu</button><button class="danger sm" data-del>${draft ? 'Bỏ' : 'Xóa'}</button>`
-        : locked && canInfo && p.loai === 'quyet_toan' ? '<button class="danger sm" data-del title="Xóa dòng Quyết toán để mở khóa (cần Passcode)">🔓 Mở khóa</button>' : ''}</td>
+      <td>${inp('ngay', draft ? '' : isoToDmy(p.ngay), 'class="date-dmy"', editP)}</td>
+      <td>${inp('so_tien', draft ? '' : money(p.so_tien), 'class="money num" placeholder="Nhập giá trị"', editP)}</td>
+      <td>${inp('ghi_chu', draft ? '' : p.ghi_chu, 'maxlength="500"', editP)}</td>
+      <td class="row-actions">${editP ? `<button class="primary sm" data-save ${draft ? '' : 'hidden'}>Lưu</button><button class="danger sm" data-del>${draft ? 'Bỏ' : 'Xóa'}</button>`
+        : locked && canPay && p.loai === 'quyet_toan' ? '<button class="danger sm" data-del title="Xóa dòng Quyết toán để mở khóa (cần Passcode)">🔓 Mở khóa</button>' : ''}</td>
     </tr>`;
   const hasQt = c.pays.some((p) => p.loai === 'quyet_toan') || tpDrafts.pays.some((p) => p.loai === 'quyet_toan');
 
@@ -1702,7 +1710,7 @@ function renderTpDlg() {
       <tbody>${c.lines.map((l) => lineRow(l, false)).join('')}${tpDrafts.lines.map((d) => lineRow(d, true)).join('')}</tbody>
       <tfoot><tr><td colspan="4">TỔNG</td><td class="num">${money(c.hd_sau_vat)}</td><td></td><td class="num">${money(c.qt_sau_vat)}${locked ? '<div class="muted small">= tổng thanh toán</div>' : ''}</td><td colspan="2"></td></tr></tfoot>
     </table></div>
-    ${edit ? `<div class="tv-tools"><button class="sm" data-addpl="${nextPl}">+ Thêm ${nextPl}</button>
+    ${editL ? `<div class="tv-tools"><button class="sm" data-addpl="${nextPl}">+ Thêm ${nextPl}</button>
       <span class="muted small">Ô HT/QT để trống = chưa quyết toán (lấy bằng giá trị HĐ/PL)</span></div>` : ''}
 
     <h4>Giá trị thanh toán</h4>
@@ -1713,11 +1721,11 @@ function renderTpDlg() {
       <tfoot><tr><td colspan="2">TỔNG THANH TOÁN</td><td class="num">${money(c.da_tt)}</td><td colspan="2"></td></tr></tfoot>
     </table></div>
     ${edit ? `<div class="tv-tools">
-      <button class="sm" data-addpay="tam_ung">+ Tạm ứng</button>
+      ${editP ? `<button class="sm" data-addpay="tam_ung">+ Tạm ứng</button>
       <button class="sm" data-addpay="dot">+ Đợt thanh toán</button>
-      <button class="sm" data-addpay="quyet_toan" ${hasQt ? 'disabled title="Đã có Quyết toán"' : ''}>+ Quyết toán</button>
+      <button class="sm" data-addpay="quyet_toan" ${hasQt ? 'disabled title="Đã có Quyết toán"' : ''}>+ Quyết toán</button>` : ''}
       <span class="spacer"></span>
-      <button class="danger sm" data-deltp>Xóa hợp đồng thầu phụ</button>
+      ${editL ? '<button class="danger sm" data-deltp>Xóa hợp đồng thầu phụ</button>' : ''}
     </div>` : locked && canInfo ? '<div class="tv-tools"><span class="spacer"></span><button class="danger sm" data-deltp>Xóa hợp đồng thầu phụ</button></div>' : ''}
     <div class="msg" id="tp-msg" role="alert"></div>`;
   if (edit) {
@@ -1842,7 +1850,7 @@ function nkFillSelects() {
   const f = $('#nk-filter');
   const su = f.elements.user_id, sh = f.elements.hanh_dong;
   const keepU = su.value, keepH = sh.value;
-  su.innerHTML = '<option value="">Tất cả</option>' + users.map((u) => `<option value="${u.id}">${esc(u.username)} – ${esc(u.full_name)}</option>`).join('');
+  su.innerHTML = '<option value="">Tất cả</option>' + (users.length ? users : NK.tk || []).map((u) => `<option value="${u.id}">${esc(u.username)} – ${esc(u.full_name)}</option>`).join('');
   sh.innerHTML = '<option value="">Tất cả</option>' + NK.hd.map((h) => `<option>${esc(h)}</option>`).join('');
   su.value = keepU; sh.value = keepH;
 }
@@ -1851,6 +1859,7 @@ async function loadLogs(auto = false, page = 1) {
   if (!$('#nk-card')) return;
   if (auto && NK.page > 1) return; // đang xem các trang sau -> không tự làm mới để khỏi mất chỗ đang đọc
   const r = await api('/api/nhat-ky?' + nkParams({ page: page > 1 ? page : 0 }), auto ? AUTO : {});
+  if (r.tai_khoan) NK.tk = r.tai_khoan;
   if (!NK.hd.length || !auto) { NK.hd = r.hanh_dong; nkFillSelects(); }
   NK.items = r.items;
   NK.more = r.more;
