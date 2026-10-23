@@ -644,7 +644,7 @@ function bBhDialog(d) {
     try {
       const r = await api(`/api/du-an/${d.id}/bh`, { method: 'PUT', body: JSON.stringify({ bh_khac: bh === '' ? 0 : Number(bh), ns_cp: ns === '' ? 0 : Number(ns), ghi_chu_bh: f.elements.gc.value }) });
       d.bh_khac = r.bh_khac; d.ghi_chu_bh = r.ghi_chu_bh; d.ns_cp = r.ns_cp;
-      close(); renderReport();
+      close(); renderKeepPos(`[data-ivbh="${d.id}"]`);
     } catch (err) { showMsg($('.msg', f), err.message, 'err'); }
   });
   dlg.showModal();
@@ -1048,6 +1048,18 @@ function bBarH(el, items, series, { pctOf } = {}) {
 // ---------------------------------------------------------------------
 // Dựng báo cáo
 // ---------------------------------------------------------------------
+// Vẽ lại báo cáo mà giữ nguyên vị trí đang xem: ghi khoảng cách từ đỉnh màn hình tới nút vừa bấm,
+// vẽ lại xong cuộn bù đúng khoảng đó (Safari iPhone/iPad không tự giữ vị trí cuộn khi nội dung thay đổi)
+function renderKeepPos(sel) {
+  const before = sel && document.querySelector(sel);
+  const top = before ? before.getBoundingClientRect().top : null;
+  const box = $('#b-report');
+  if (box) box.style.minHeight = box.offsetHeight + 'px'; // giữ chiều cao trong lúc vẽ lại để trang không co lại, kéo vị trí cuộn lên
+  renderReport();
+  const fix = () => { const after = top !== null && document.querySelector(sel); if (after) window.scrollBy(0, after.getBoundingClientRect().top - top); };
+  fix();
+  requestAnimationFrame(() => { fix(); setTimeout(() => { fix(); if (box) box.style.minHeight = ''; fix(); }, 250); }); // biểu đồ vẽ sau 1 nhịp
+}
 function renderReport() {
   if (!BC) return; // đang tải: lựa chọn (kỳ, VAT, phạm vi) đã lưu, tự áp dụng khi tải xong
   const sel = $('#b-project');
@@ -1830,9 +1842,9 @@ $('#b-reload').addEventListener('click', () => loadReport().catch((err) => alert
 $('#b-report').addEventListener('click', (e) => {
   if (e.target.id === 'b-open-all' || e.target.id === 'b-close-all') $$('#b-report details.b-proj').forEach((d) => (d.open = e.target.id === 'b-open-all'));
   if (e.target.id === 'f-set-target') return bTargetDialog();
-  if (e.target.closest('[data-ivgop]')) { BST.iv_gop = !BST.iv_gop; return renderReport(); } // mục IV: mở / ẩn LN gộp
+  if (e.target.closest('[data-ivgop]')) { BST.iv_gop = !BST.iv_gop; return renderKeepPos('[data-ivgop]'); } // mục IV: mở / ẩn LN gộp
   const ivct = e.target.closest('[data-ivct]'); // mục IV: mở / ẩn bảng chi tiết của dòng DT / CP / LN
-  if (ivct) { BST.iv_ct = BST.iv_ct === ivct.dataset.ivct ? null : ivct.dataset.ivct; return renderReport(); }
+  if (ivct) { const k = ivct.dataset.ivct; BST.iv_ct = BST.iv_ct === k ? null : k; return renderKeepPos(`.iv-sum [data-ivct="${k}"]`); }
   const ivbh = e.target.closest('[data-ivbh]');
   if (ivbh) return bBhDialog(BC.du_an.find((x) => x.id === Number(ivbh.dataset.ivbh)));
   const kp = e.target.closest('[data-kypick]');

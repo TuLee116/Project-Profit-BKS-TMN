@@ -1093,3 +1093,4 @@ dialog.sess-dlg h3 { color: var(--navy); }
 .td-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .pc-modal { grid-template-columns: minmax(0, 1fr); }
 .pc-modal-box { min-width: 0; max-width: 100%; justify-self: center; }
+body { overflow-anchor: none; } /* vị trí cuộn do renderKeepPos tự giữ, mọi trình duyệt như nhau */
