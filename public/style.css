@@ -964,7 +964,7 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
   background: linear-gradient(90deg, #eef3fa 0%, #f8fafc 60%, #fff 100%); border: 1px solid #dbe4f0; border-left: 4px solid var(--navy); }
 .f-head + .th-head { margin-top: 6px; }
 .th-no { flex: none; display: grid; place-items: center; min-width: 40px; height: 40px; padding: 0 8px; border-radius: 10px;
-  background: var(--navy); color: #fff; font: 800 16px/1 Georgia, 'Times New Roman', serif; letter-spacing: .5px; box-shadow: 0 2px 6px rgba(15,40,80,.25); }
+  background: var(--navy); color: #fff; font-size: 15px; font-weight: 800; line-height: 1; letter-spacing: .5px; box-shadow: 0 2px 6px rgba(15,40,80,.25); }
 .th-ttl { min-width: 0; flex: 1; }
 .th-ttl h3 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--navy); }
 .th-ttl p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
