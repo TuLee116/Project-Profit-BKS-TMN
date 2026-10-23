@@ -1617,7 +1617,7 @@ function bTdBlock(d) {
   C[3] = tds[3] ? { ...val(tds[3]), nhap: true, st: dmy(tds[3].ngay) }
     : { ...C[2], nhap: false, ke: 'TĐ2', st: done ? 'Đã hoàn thành · chưa chốt quyết toán' : 'Chưa quyết toán', warn: done };
   for (const n of [1, 2, 3]) C[n].ht = tds[n] ? bSysMoc(d, n, tds[n].ngay) : null;
-  const tt = Boolean(BST.td_tt);
+  const tt = BST.td_tt !== false; // bảng tiền thực tế mặc định hiện; bấm "So với thực tế" để ẩn
   const ROWS = [['dt', 'Doanh thu', true, false, 'td-r-dt'], ['cp', 'Chi phí', false, false, 'td-r-cp'], ['ln', 'Lợi nhuận', true, false, 'td-r-ln'], ['ts', 'Tỷ suất LN', true, true, 'td-r-ts']];
   const fmtV = (x, isPct) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x));
   const htNote = (n, k, isPct) => { // đối chiếu số hệ thống, chỉ báo khi lệch
@@ -1656,7 +1656,7 @@ function bTdBlock(d) {
     const v = (x, k, sm) => (x.co ? `<b class="${x[k] < 0 ? 'neg' : ''} ${sm ? 'td-sm' : ''}">${bTyU(x[k])}</b>` : '<span class="muted small">Chưa phát sinh</span>');
     const r = (label, k, cls = '', sm = false) => `<tr class="td-tt ${cls}"><th>${label}</th>${col.map((x) => `<td class="td-c">${v(x, k, sm)}</td>`).join('')}<td class="td-c td-tot">${v(T, k, sm)}</td></tr>`;
     const chiLab = `<button type="button" class="td-fold no-print" data-tdchi aria-expanded="${mo}" title="${mo ? 'Thu gọn' : 'Xem chi tiết: trả thầu phụ, chi phí khác'}">${mo ? '▾' : '▸'}</button>Thực chi`;
-    return `<div class="table-wrap td-wrap td-cash"><table class="td-mx no-mcard">
+    return `<p class="td-swipe muted small">↔ Vuốt ngang bảng để xem TĐ3 và Tổng cộng</p><div class="table-wrap td-wrap td-cash"><table class="td-mx no-mcard">
       <thead><tr><th class="td-corner">Tiền thực tế<br><small>sau VAT</small></th>${GDT.map((t, i) => `<th class="td-h td-h${i + 1}"><div class="td-hn"><b>TĐ${i + 1}</b></div><div class="td-ht2">${t}</div></th>`).join('')}<th class="td-h td-htot"><div class="td-hn"><b>Tổng cộng</b></div><div class="td-ht2">Lũy kế</div></th></tr></thead>
       <tbody>${r('Tổng tiền về', 'thu', 'td-tt-k')}${r(chiLab, 'chi', 'td-tt-k')}${mo ? r('<span class="td-sub">├ Trả thầu phụ</span>', 'tp', 'td-tt-sub', true) + r('<span class="td-sub">└ Chi phí khác</span>', 'cp', 'td-tt-sub', true) : ''}
         ${r('Còn lại (thu − chi)', 'con', 'td-tt-k')}${r('Còn lại lũy kế', 'lk', '', true)}</tbody>
@@ -1793,7 +1793,7 @@ $('#b-report').addEventListener('click', async (e) => {
     return bPcDraw(card);
   }
   if (e.target.closest('[data-tdtt]')) { // bật/tắt dòng thực tế cho mọi TĐ, giữ nguyên tab đang xem
-    BST.td_tt = !BST.td_tt;
+    BST.td_tt = BST.td_tt === false;
     $('.pc-body', card).innerHTML = bPcBody(BC.du_an.find((x) => x.id === id), 'tong');
     return bPcDraw(card);
   }

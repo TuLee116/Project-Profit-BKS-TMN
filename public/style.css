@@ -1104,3 +1104,11 @@ body { overflow-anchor: none; } /* vị trí cuộn do renderKeepPos tự giữ,
 @keyframes tapTip { from { opacity: 0; transform: translateY(4px); } }
 @media (hover: none) { [title], [data-tip] { cursor: pointer; -webkit-tap-highlight-color: rgba(44,95,163,.15); } }
 @media print { .tap-tip { display: none; } }
+/* Bảng tiền thực tế / ma trận: tiêu đề và nhãn dòng xuống dòng, không bị cắt chữ */
+.td-ht2, .td-mx .td-corner, .td-mx tbody th { white-space: normal; overflow-wrap: anywhere; }
+.td-mx tbody th { overflow: visible; }
+.td-cash .td-mx { min-width: 600px; }
+@media (max-width: 640px) { .td-cash .td-mx { min-width: 560px; } .td-cash .td-c b { font-size: 14px; } }
+.td-swipe { display: none; margin: 10px 0 -4px; }
+@media (max-width: 640px) { .td-swipe { display: block; } }
+@media print { .td-swipe { display: none !important; } }
