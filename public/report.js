@@ -397,11 +397,11 @@ function bFinHtml(list, v) {
       <button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range}${P.prev ? ` <span class="muted">· so với ${ymTxt(P.prev.from)}${P.prev.from !== P.prev.to ? ' – ' + ymTxt(P.prev.to) : ''}</span>` : ''} <span class="f-caret">▾</span></button>
     </div>
 
-    <div class="f-tier"><span>1</span>Kết quả trong kỳ <small>${esc(P.label)} · tỷ đồng, ${vt} (dòng tiền sau VAT)</small></div>
+    <div class="f-tier"><span>1</span>Tổng DT – CP – LN dự kiến (theo HĐ) <small>tỷ đồng, ${vt} · dòng tiền: ${esc(P.label)}, sau VAT</small></div>
     <div class="f-grid">
-      ${card('dt', 'Doanh thu', cur.dt, bDelta(cur.dt, prv?.dt, true), ['Giá trị nghiệm thu trong kỳ', prevTxt(prv?.dt)])}
-      ${card('cp', 'Chi phí', cur.cp, bDelta(cur.cp, prv?.cp, false), [`Bằng <b>${bpct(cur.cp, cur.dt)}</b> doanh thu kỳ`, prevTxt(prv?.cp)])}
-      ${card('ln', 'Lợi nhuận', cur.ln, bDelta(cur.ln, prv?.ln, true), [`Tỷ suất lợi nhuận: <b class="${cur.ln < 0 ? 'neg' : ''}">${bpct(cur.ln, cur.dt)}</b>`, prevTxt(prv?.ln)])}
+      ${card('dt', 'Tổng doanh thu dự kiến', K.dt, '', ['Theo HĐ + phụ lục (đã QT thì theo QT)', `Thực hiện lũy kế: <b>${bTy(LK.dt)}</b> (${bpct(LK.dt, K.dt)})`])}
+      ${card('cp', 'Tổng chi phí dự kiến', K.cp, '', [`Bằng <b>${bpct(K.cp, K.dt)}</b> doanh thu dự kiến`, `Thực hiện lũy kế: <b>${bTy(LK.cp)}</b> (${bpct(LK.cp, K.cp)})`])}
+      ${card('ln', 'Tổng lợi nhuận dự kiến', K.ln, '', [`Tỷ suất lợi nhuận: <b class="${K.ln < 0 ? 'neg' : ''}">${bpct(K.ln, K.dt)}</b>`, `Thực hiện lũy kế: <b class="${LK.ln < 0 ? 'neg' : ''}">${bTy(LK.ln)}</b>`])}
       ${card('dong', 'Dòng tiền thực tế', cur.dong_tien, bDelta(cur.dong_tien, prv?.dong_tien, true), [`Thu <b>${bTy(cur.thu)}</b> · Chi <b>${bTy(cur.chi)}</b>`, `Số dư cuối kỳ: <b class="${bal < 0 ? 'neg' : ''}">${tyN(bal)}</b>`])}
     </div>
 
