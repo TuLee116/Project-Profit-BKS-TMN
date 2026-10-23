@@ -419,6 +419,12 @@ function bTongHopData(list, v, P) {
     { dt: 0, cp: 0, ln: 0, tp: 0, hd_sv: 0, thu: 0, chi: 0, con: 0, vay: 0, goc: 0, phai_thu: 0 });
   return { to, rows, T };
 }
+// Tiêu đề mục báo cáo tổng hợp: số La Mã · tên mục · mô tả · nhãn phạm vi / đơn vị
+const thHead = (no, title, desc, tags) => `<div class="th-head">
+      <span class="th-no">${no}</span>
+      <div class="th-ttl"><h3>${title}</h3><p>${desc}</p></div>
+      <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}<span>Đơn vị: tỷ đồng</span></div>
+    </div>`;
 function bTongHopHtml(list, v, P) {
   const { to, rows, T } = bTongHopData(list, v, P);
   const vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
@@ -434,7 +440,7 @@ function bTongHopHtml(list, v, P) {
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   return `
-    <div class="f-tier th-tier"><span>I</span>Doanh thu theo hợp đồng <small>toàn bộ hợp đồng · tỷ đồng, ${vt}</small></div>
+    ${thHead('I', 'Doanh thu theo hợp đồng', 'Tổng giá trị hợp đồng (HĐ + phụ lục) – chi phí – lợi nhuận', ['Toàn bộ hợp đồng', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid">
       ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
@@ -449,7 +455,7 @@ function bTongHopHtml(list, v, P) {
     </table></div>
     <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
-    <div class="f-tier th-tier"><span>II</span>Dòng tiền thực tế <small>tiền thật lũy kế đến ${dTo} · tỷ đồng, sau VAT</small></div>
+    ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, 'Sau VAT'])}
     <div class="f-grid">
       ${card('dt', 'Dòng thu', T.thu, ['Tiền về: tạm ứng + thanh toán + quyết toán', `Đạt <b>${bpct(T.thu, T.hd_sv)}</b> DT hợp đồng`])}
       ${card('cp', 'Dòng chi', T.chi, ['Chi phí đã chi + đã trả thầu phụ', `Bằng <b>${bpct(T.chi, T.thu)}</b> dòng thu`])}
@@ -463,7 +469,7 @@ function bTongHopHtml(list, v, P) {
       ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
     </table></div>
 
-    <div class="f-tier th-tier"><span>III</span>Dòng tiền còn lại phải thu <small>lấy từ I và II · tỷ đồng, sau VAT</small></div>
+    ${thHead('III', 'Dòng tiền còn lại phải thu', 'Doanh thu hợp đồng (I) trừ dòng thu thực tế (II)', ['Từ mục I và II', 'Sau VAT'])}
     <div class="f-grid th-grid3">
       ${card('dt', 'Doanh thu hợp đồng (DTHĐ)', T.hd_sv, ['HĐ + phụ lục, sau VAT', 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('ln', 'Dòng thu', T.thu, [`${meter(T.thu, T.hd_sv, BCOL.thu)}`, `Đã thu <b>${bpct(T.thu, T.hd_sv)}</b> DTHĐ`])}
