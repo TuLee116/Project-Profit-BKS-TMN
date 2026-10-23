@@ -322,3 +322,32 @@ function mcardLabels(table) {
   const start = () => { run(); new MutationObserver(queue).observe(document.body, { childList: true, subtree: true }); };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
 })();
+
+// ---------- Thiết bị cảm ứng (điện thoại, máy tính bảng): chạm 1 lần vào ô có chú thích -> hiện bong bóng thông tin ----------
+// Máy tính vẫn dùng chú thích khi rê chuột (title). Nút, liên kết, ô nhập giữ nguyên chức năng bấm.
+(function tapTips() {
+  if (!window.matchMedia || !matchMedia('(hover: none)').matches) return;
+  let tip = null;
+  const hide = () => { if (tip) { tip.remove(); tip = null; } };
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.tap-tip')) return hide();
+    const el = e.target.closest('[title], [data-tip]');
+    if (!el || el.closest('button, a, input, select, textarea, label, summary')) return hide();
+    const text = el.dataset.tip || el.getAttribute('title');
+    if (!text) return hide();
+    el.dataset.tip = text; el.removeAttribute('title'); // bỏ chú thích mặc định của trình duyệt
+    if (tip && tip._el === el) return hide();
+    hide();
+    tip = document.createElement('div');
+    tip.className = 'tap-tip'; tip.setAttribute('role', 'tooltip'); tip.textContent = text; tip._el = el;
+    document.body.appendChild(tip);
+    const r = el.getBoundingClientRect(), t = tip.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - t.width / 2), vw - t.width - 8);
+    const above = r.top - t.height - 12 >= 8;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${above ? r.top - t.height - 10 : r.bottom + 10}px`;
+    tip.classList.add(above ? 'up' : 'down');
+    tip.style.setProperty('--ax', `${Math.min(Math.max(14, r.left + r.width / 2 - left), t.width - 14)}px`);
+  });
+  ['scroll', 'resize'].forEach((ev) => window.addEventListener(ev, hide, { passive: true, capture: true }));
+})();
