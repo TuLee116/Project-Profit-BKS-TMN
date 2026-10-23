@@ -28,6 +28,8 @@ let users = [];
     if (!el.dataset.role.split(' ').includes(ME.role)) el.remove();
   });
   { const g = $('[data-grp="qt"] [data-grp-toggle]'); const ten = { bks: 'Kiểm soát', it: 'Hệ thống' }[ME.role]; if (g && ten) g.innerHTML = `${ten} <span class="caret">▾</span>`; } // BKS: nhật ký · IT: tài khoản, nhật ký
+  // Lãnh đạo, Ban Kiểm soát: xem Dự án / Doanh thu / Chi phí (chỉ xem – không có form, nút sửa) -> nhóm menu gọi là "Dữ liệu"
+  if (!can('hd') && !can('tien')) { const g = $('[data-grp="nhap"] [data-grp-toggle]'); if (g) g.innerHTML = 'Dữ liệu <span class="caret">▾</span>'; }
   document.body.classList.add('roles-ready'); // đến đây mới hiện các mục theo quyền (tránh nhấp nháy tab quản trị)
 
   const stSel = $('#p-form [name=trang_thai]');
@@ -168,7 +170,7 @@ function renderProjects() {
           <button data-rev="${r.id}" title="Xem / nhập doanh thu">Doanh thu</button>
           <button data-cost="${r.id}" title="Xem / nhập chi phí">Chi phí</button>
           ${can('hd') ? `<button data-edit="${r.id}">Sửa</button>
-          <button class="danger" data-del="${r.id}">Xóa</button>` : ''}
+          ${can('xoa_da') ? `<button class="danger" data-del="${r.id}">Xóa</button>` : ''}` : ''}
         </td>
       </tr>`;
     }).join('')
@@ -1146,13 +1148,13 @@ async function loadCostTab() {
   if (!projects.some((p) => p.id === revProjectId)) revProjectId = projects[0].id;
   sel.innerHTML = projects.map((p) => `<option value="${p.id}">${esc(p.ma_du_an)} – ${esc(p.ten_du_an)}</option>`).join('');
   sel.value = revProjectId;
-  if (cForm && !cForm.dataset.ready) initCostForm();
+  if (cForm?.isConnected && !cForm.dataset.ready) initCostForm(); // vai trò chỉ xem: form đã gỡ khỏi trang -> bỏ qua
   await loadCost();
 }
 
 $('#c-project').addEventListener('change', (e) => {
   revProjectId = Number(e.target.value);
-  if (cForm) resetCostForm();
+  if (cForm?.isConnected) resetCostForm();
   loadCost().catch((err) => alert(err.message));
 });
 
