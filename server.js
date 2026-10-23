@@ -377,6 +377,20 @@ api.put('/du-an/:id/ngay', canEdit, wrap(async (req, res) => {
   res.json({ id, ngay_bat_dau: data.ngay_bat_dau, ngay_ket_thuc: data.ngay_ket_thuc });
 }));
 
+// BH/Khác + ghi chú của công trình (bảng chi tiết thời điểm – mục IV): nhập tay
+api.put('/du-an/:id/bh', canEdit, wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  const cur = id && (await store.listProjects()).find((p) => p.id === id);
+  if (!cur) return bad(res, 'Không tìm thấy dự án', 404);
+  const raw = String(req.body?.bh_khac ?? '').replace(/[.,\s]/g, '');
+  const bh = raw === '' ? 0 : Number(raw);
+  if (!Number.isInteger(bh) || Math.abs(bh) > 1e15) return bad(res, 'BH/Khác phải là số nguyên (đồng)');
+  const ghi = String(req.body?.ghi_chu_bh ?? '').trim().slice(0, 300);
+  await store.setProjectBh(id, { bh_khac: bh, ghi_chu_bh: ghi }, req.user.id);
+  audit.log(req, 'Sửa', 'Dự án', `BH/Khác ${new Intl.NumberFormat('vi-VN').format(bh)} đ · Ghi chú: ${ghi || '—'} | Trước: ${new Intl.NumberFormat('vi-VN').format(Number(cur.bh_khac) || 0)} đ · ${cur.ghi_chu_bh || '—'}`, { du_an: cur.ma_du_an });
+  res.json({ id, bh_khac: bh, ghi_chu_bh: ghi });
+}));
+
 api.delete('/du-an/:id', canEdit, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
