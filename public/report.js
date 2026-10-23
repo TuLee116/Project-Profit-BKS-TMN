@@ -448,11 +448,9 @@ function bTongHopHtml(list, v, P) {
         const now = bNowYm();
         const kh = list.reduce((a, d) => a + d.du_kien.doanh_thu.sv - d.du_kien.chi_phi.sv, 0);
         const tt = list.reduce((a, d) => a + bThuc(d, now).con, 0);
-        const nQt = list.filter((d) => d.moc?.da_qt).length;
         return card('ts', 'LN kế hoạch còn lại', kh - tt, [
-          `LN kế hoạch <b>${bTy(kh)}</b> − LN thực tế <b class="${tt < 0 ? 'neg' : ''}">${bTy(tt)}</b> tỷ`,
-          'LN thực tế = tiền về − tiền chi (không gồm vay, trả gốc)',
-          `<span class="muted">Sau VAT · KH: ${nQt}/${list.length} dự án theo QT (TĐ3), còn lại theo TĐ2</span>`,
+          `Kế hoạch <b>${bTy(kh)}</b> − Thực tế <b class="${tt < 0 ? 'neg' : ''}">${bTy(tt)}</b> tỷ`,
+          '<span class="muted">Sau VAT</span>',
         ]);
       })()}
     </div>
@@ -462,7 +460,7 @@ function bTongHopHtml(list, v, P) {
         <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)])}
     </table></div>
-    <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">LN kế hoạch còn lại = LN kế hoạch (đã QT: TĐ3, chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi, không gồm vay, trả gốc), sau VAT. Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, 'Sau VAT'])}
     <div class="f-grid">
