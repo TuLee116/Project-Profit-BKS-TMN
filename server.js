@@ -331,6 +331,35 @@ users.put('/:id', wrap(async (req, res) => {
   res.json({ id });
 }));
 
+// ---------- Phiên đăng nhập của 1 tài khoản (quản trị): xem và buộc đăng xuất ----------
+const sessionTarget = async (req, res) => {
+  const id = parseId(req.params.id);
+  const u = id && (await store.getUserById(id));
+  if (!u) { bad(res, 'Không tìm thấy tài khoản', 404); return null; }
+  return u;
+};
+users.get('/:id/sessions', wrap(async (req, res) => {
+  const u = await sessionTarget(req, res); if (!u) return;
+  const rows = await store.listUserSessions(u.id);
+  res.json(rows.map(({ token_hash, ua, ...r }) => ({ ...r, thiet_bi: audit.device(ua), hien_tai: token_hash === req.sessionHash })));
+}));
+// Đăng xuất 1 phiên (sid) hoặc tất cả phiên (không có sid); không đăng xuất chính phiên quản trị đang dùng
+users.delete('/:id/sessions/:sid?', wrap(async (req, res) => {
+  const u = await sessionTarget(req, res); if (!u) return;
+  const sid = req.params.sid ? String(req.params.sid).replace(/[^0-9a-f]/gi, '').slice(0, 16) : '';
+  if (sid) {
+    if (req.sessionHash && req.sessionHash.startsWith(sid)) return bad(res, 'Không thể đăng xuất phiên bạn đang dùng (dùng nút Đăng xuất)');
+    const s = await store.deleteSessionById(u.id, sid);
+    if (!s) return bad(res, 'Phiên đã kết thúc hoặc không tồn tại', 404);
+    audit.log(req, 'Đăng xuất', 'Tài khoản', `Quản trị buộc đăng xuất 1 phiên của ${u.username} · ${audit.device(s.ua)} · IP ${s.ip || '—'}`);
+    return res.json({ ok: true, so_phien: 1 });
+  }
+  const n = (await store.listUserSessions(u.id)).filter((x) => x.token_hash !== req.sessionHash).length;
+  await store.deleteUserSessions(u.id, req.sessionHash || '');
+  audit.log(req, 'Đăng xuất', 'Tài khoản', `Quản trị buộc đăng xuất tất cả phiên của ${u.username} (${n} phiên)`);
+  res.json({ ok: true, so_phien: n });
+}));
+
 users.delete('/:id', wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');

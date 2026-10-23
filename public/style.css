@@ -1059,3 +1059,7 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .iv-gop { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 8px; padding: 0; border-radius: 50%; border: 1px solid #b45309; background: #fff; color: #b45309; font-size: 14px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: 1px; }
 .iv-gop.on, .iv-gop:hover { background: #b45309; color: #fff; }
 .iv-tip { cursor: help; text-decoration: underline dotted #94a3b8; text-underline-offset: 3px; }
+dialog.pass-dlg.sess-dlg { width: min(900px, calc(100vw - 32px)); }
+dialog.sess-dlg h3 { color: var(--navy); }
+.sess-tbl { width: 100%; font-size: 13px; }
+.sess-tbl th, .sess-tbl td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }

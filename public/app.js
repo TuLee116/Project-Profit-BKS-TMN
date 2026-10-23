@@ -1920,6 +1920,46 @@ function seenTxt(t, online) {
   return `<span class="muted">${dt(t)}</span><br>${rel}`;
 }
 
+// Phiên đăng nhập của 1 tài khoản (quản trị): thiết bị · IP · thời gian · trạng thái; buộc đăng xuất 1 phiên hoặc tất cả
+async function sessionDialog(u) {
+  if (!u) return;
+  const dlg = document.createElement('dialog');
+  dlg.className = 'pass-dlg sess-dlg';
+  document.body.appendChild(dlg);
+  const close = () => { dlg.close(); dlg.remove(); loadUsers(true).catch(() => {}); };
+  const st = (r) => (r.online ? '<span class="st st-hoan-thanh">Trực tuyến</span>' : '<span class="st st-tam-dung">Đang đăng nhập (tab ẩn / im lặng)</span>');
+  const render = async (msg = '') => {
+    let rows = [];
+    try { rows = await api(`/api/users/${u.id}/sessions`); } catch (err) { msg = err.message; }
+    const others = rows.filter((r) => !r.hien_tai).length;
+    dlg.innerHTML = `<div class="stack">
+      <h3>Phiên đăng nhập · ${esc(u.username)} <span class="muted small">(${esc(u.full_name)})</span></h3>
+      <p class="muted small">Các phiên còn hiệu lực (chưa đăng xuất, chưa quá ${Number(META?.idle_phut) || 60} phút không thao tác). Buộc đăng xuất: máy đó phải đăng nhập lại; thao tác được ghi nhật ký.</p>
+      <div class="table-wrap"><table class="no-mcard sess-tbl"><thead><tr><th>Thiết bị</th><th>IP</th><th>Đăng nhập lúc</th><th>Thao tác cuối</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>${rows.map((r) => `<tr><td>${esc(r.thiet_bi)}${r.hien_tai ? ' <span class="badge light">Phiên của bạn</span>' : ''}</td><td>${esc(r.ip || '—')}</td>
+          <td class="muted">${dt(r.created_at)}</td><td class="muted">${dt(r.last_active_at)}</td><td>${st(r)}</td>
+          <td>${r.hien_tai ? '' : `<button class="danger sm" data-sid="${esc(r.id)}">Đăng xuất</button>`}</td></tr>`).join('')
+          || '<tr><td colspan="6" class="muted">Không có phiên nào đang đăng nhập</td></tr>'}</tbody></table></div>
+      <div class="msg" role="alert"></div>
+      <div class="actions">${others ? `<button class="danger" data-sall>Đăng xuất tất cả (${others} phiên)</button>` : ''}<button data-x>Đóng</button></div>
+    </div>`;
+    if (msg) showMsg($('.msg', dlg), msg, msg.startsWith('Đã') ? 'ok' : 'err');
+  };
+  dlg.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-x]')) return close();
+    const b = e.target.closest('[data-sid], [data-sall]');
+    if (!b) return;
+    const all = b.hasAttribute('data-sall');
+    if (!confirm(all ? `Đăng xuất tất cả phiên của ${u.username}?` : `Đăng xuất phiên này của ${u.username}?`)) return;
+    try {
+      const r = await api(`/api/users/${u.id}/sessions${all ? '' : '/' + encodeURIComponent(b.dataset.sid)}`, { method: 'DELETE' });
+      await render(`Đã đăng xuất ${r.so_phien} phiên`);
+    } catch (err) { await render(err.message); }
+  });
+  await render();
+  dlg.showModal();
+}
+
 async function loadUsers(auto = false) {
   users = await api('/api/users', auto === true ? AUTO : {});
   $('#u-tbody').innerHTML = users.map((u) => `
@@ -1931,6 +1971,7 @@ async function loadUsers(auto = false) {
       <td class="muted">${dt(u.last_login_at)}</td>
       <td>${seenTxt(u.last_seen_at, u.online)}</td>
       <td class="row-actions">
+        <button data-usess="${u.id}" title="Xem các phiên đang đăng nhập, buộc đăng xuất">Phiên${u.so_phien ? ` (${u.so_phien})` : ''}</button>
         <button data-uedit="${u.id}">Sửa</button>
         ${u.id === ME.id ? '' : `<button class="danger" data-udel="${u.id}">Xóa</button>`}
       </td>
@@ -1969,7 +2010,8 @@ uForm?.addEventListener('submit', async (e) => {
 $('#u-cancel')?.addEventListener('click', () => { resetUserForm(); showMsg($('#u-msg'), ''); });
 
 $('#u-tbody')?.addEventListener('click', async (e) => {
-  const { uedit, udel } = e.target.dataset;
+  const { uedit, udel, usess } = e.target.dataset;
+  if (usess) return sessionDialog(users.find((x) => x.id === Number(usess)));
   if (uedit) {
     const u = users.find((x) => x.id === Number(uedit));
     if (!u) return;
