@@ -412,9 +412,8 @@ function bTongHopData(list, v, P) {
   const rows = list.map((d) => {
     const c = bThuc(d, to);
     const dt = d.du_kien.doanh_thu[v];
-    // Dự án chưa quyết toán có Ngân sách chi phí dự kiến (trước VAT) lớn hơn chi phí đã ghi nhận -> CP kế hoạch theo ngân sách
     const cpGt = d.du_kien.chi_phi.gt, cpSv = d.du_kien.chi_phi.sv;
-    // Ngân sách chi phí dự kiến (chưa QT): trong ngân sách -> CP theo ngân sách; chi phí ghi nhận vượt ngân sách -> CP theo thực tế, báo đỏ
+    // DT-CP dự kiến (chi phí dự kiến, chưa QT): trong phạm vi -> CP theo DT-CP dự kiến; chi phí ghi nhận vượt -> CP theo thực tế, báo đỏ
     const nsGt = !d.moc?.da_qt && d.ns_cp > 0 ? d.ns_cp : 0;
     const vuot = nsGt > 0 && cpGt > nsGt;
     const ns = nsGt && !vuot ? nsGt : 0;
@@ -454,7 +453,7 @@ function bTongHopHtml(list, v, P) {
       ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
       ${(() => { // LN còn lại = LN kế hoạch (đã QT: TĐ3 · chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi); cùng sau VAT vì tiền thật đã gồm VAT
         const now = bNowYm();
-        const kh = bTongHopData(list, 'sv', P).T.ln; // cùng cách tính cột Lợi nhuận (gồm ngân sách CP), sau VAT
+        const kh = bTongHopData(list, 'sv', P).T.ln; // cùng cách tính cột Lợi nhuận (gồm DT-CP dự kiến), sau VAT
         const tt = list.reduce((a, d) => a + bThuc(d, now).con, 0);
         return card('ts', 'LN kế hoạch còn lại · sau VAT', kh - tt, [
           `Kế hoạch <b>${bTy(kh)}</b> − Thực tế <b class="${tt < 0 ? 'neg' : ''}">${bTy(tt)}</b> tỷ`,
@@ -462,12 +461,12 @@ function bTongHopHtml(list, v, P) {
       })()}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN']).replace('</tr></thead>', `${canEditPc() ? '<th class="no-print th-act" title="Nhập ngân sách chi phí dự kiến"></th>' : ''}</tr></thead>`)}
-      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt)}</td><td class="num ${x.vuot ? 'th-vuot' : ''}"${x.ns ? ` title="Ngân sách ${bTy(x.ns_v)} tỷ · Đã ghi nhận ${bTy(x.cp_ghi)} tỷ${x.vuot ? ` · VƯỢT ngân sách ${bTy(x.cp_ghi - x.ns_v)} tỷ` : ''}"` : ''}>${bTy(x.cp)}</td>
-        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td>${canEditPc() ? `<td class="no-print th-act">${x.d.trang_thai !== 'Hoàn thành' ? `<button type="button" class="th-ns-edit" data-ivbh="${x.d.id}" title="Nhập ngân sách chi phí dự kiến">✎</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
+      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN']).replace('</tr></thead>', `${canEditPc() ? '<th class="no-print th-act" title="Nhập DT-CP dự kiến"></th>' : ''}</tr></thead>`)}
+      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt)}</td><td class="num ${x.vuot ? 'th-vuot' : ''}"${x.ns ? ` title="DT-CP dự kiến ${bTy(x.ns_v)} tỷ · Đã ghi nhận ${bTy(x.cp_ghi)} tỷ${x.vuot ? ` · VƯỢT DT-CP dự kiến ${bTy(x.cp_ghi - x.ns_v)} tỷ` : ''}"` : ''}>${bTy(x.cp)}</td>
+        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td>${canEditPc() ? `<td class="no-print th-act">${x.d.trang_thai !== 'Hoàn thành' ? `<button type="button" class="th-ns-edit" data-ivbh="${x.d.id}" title="Nhập DT-CP dự kiến">✎</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
       ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)]).replace('</tr></tfoot>', `${canEditPc() ? '<td class="no-print th-act"></td>' : ''}</tr></tfoot>`)}
     </table></div>
-    <p class="muted small f-note">LN kế hoạch còn lại = LN kế hoạch (đã QT: TĐ3, chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi, không gồm vay, trả gốc), luôn tính sau VAT. Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>Ngân sách chi phí dự kiến</b> (nhập ở nút ✎) thì lấy theo ngân sách, chi phí ghi nhận <b class="th-vuot">vượt ngân sách</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">LN kế hoạch còn lại = LN kế hoạch (đã QT: TĐ3, chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi, không gồm vay, trả gốc), luôn tính sau VAT. Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, 'Sau VAT'])}
     <div class="f-grid">
@@ -609,7 +608,7 @@ function bBhDialog(d) {
   dlg.innerHTML = `<form method="dialog" class="stack">
     <h3>Số liệu nhập tay · ${esc(d.ma_du_an)}</h3>
     <p class="muted small">${esc(d.ten_du_an)}</p>
-    <label>Ngân sách chi phí dự kiến (trước VAT, đồng)<input name="ns" class="money" value="${d.ns_cp ? bf.format(d.ns_cp) : ''}" placeholder="VD: 8.700.000.000 – để trống nếu chưa có"></label>
+    <label>DT-CP dự kiến – chi phí (trước VAT, đồng)<input name="ns" class="money" value="${d.ns_cp ? bf.format(d.ns_cp) : ''}" placeholder="VD: 8.700.000.000 – để trống nếu chưa có"></label>
     <label>BH/Khác (đồng)<input name="bh" class="money" value="${d.bh_khac ? bf.format(d.bh_khac) : ''}" placeholder="VD: 70.000.000"></label>
     <label>Ghi chú<input name="gc" maxlength="300" value="${esc(d.ghi_chu_bh || '')}" placeholder="VD: giữ lại bảo hành 5%, hết hạn 01/2027"></label>
     <div class="msg" role="alert"></div>

@@ -377,7 +377,7 @@ api.put('/du-an/:id/ngay', canEdit, wrap(async (req, res) => {
   res.json({ id, ngay_bat_dau: data.ngay_bat_dau, ngay_ket_thuc: data.ngay_ket_thuc });
 }));
 
-// Số liệu nhập tay của công trình: ngân sách chi phí dự kiến (mục I) · BH/Khác + ghi chú (mục IV)
+// Số liệu nhập tay của công trình: DT-CP dự kiến (mục I) · BH/Khác + ghi chú (mục IV)
 api.put('/du-an/:id/bh', canEdit, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.listProjects()).find((p) => p.id === id);
@@ -386,13 +386,13 @@ api.put('/du-an/:id/bh', canEdit, wrap(async (req, res) => {
   const bh = raw === '' ? 0 : Number(raw);
   if (!Number.isInteger(bh) || Math.abs(bh) > 1e15) return bad(res, 'BH/Khác phải là số nguyên (đồng)');
   const ghi = String(req.body?.ghi_chu_bh ?? '').trim().slice(0, 300);
-  // Ngân sách chi phí dự kiến (trước VAT): không gửi -> giữ nguyên
+  // DT-CP dự kiến – chi phí (trước VAT): không gửi -> giữ nguyên
   const rawNs = req.body?.ns_cp === undefined ? null : String(req.body.ns_cp).replace(/[.,\s]/g, '');
   const ns = rawNs === null ? Number(cur.ns_cp) || 0 : rawNs === '' ? 0 : Number(rawNs);
-  if (!Number.isInteger(ns) || ns < 0 || ns > 1e15) return bad(res, 'Ngân sách chi phí phải là số nguyên không âm (đồng)');
+  if (!Number.isInteger(ns) || ns < 0 || ns > 1e15) return bad(res, 'DT-CP dự kiến phải là số nguyên không âm (đồng)');
   await store.setProjectBh(id, { bh_khac: bh, ghi_chu_bh: ghi, ns_cp: ns }, req.user.id);
   const f = (x) => new Intl.NumberFormat('vi-VN').format(Number(x) || 0);
-  audit.log(req, 'Sửa', 'Dự án', `Ngân sách CP ${f(ns)} đ · BH/Khác ${f(bh)} đ · Ghi chú: ${ghi || '—'} | Trước: NS ${f(cur.ns_cp)} đ · BH ${f(cur.bh_khac)} đ · ${cur.ghi_chu_bh || '—'}`, { du_an: cur.ma_du_an });
+  audit.log(req, 'Sửa', 'Dự án', `DT-CP dự kiến ${f(ns)} đ · BH/Khác ${f(bh)} đ · Ghi chú: ${ghi || '—'} | Trước: DT-CP dự kiến ${f(cur.ns_cp)} đ · BH ${f(cur.bh_khac)} đ · ${cur.ghi_chu_bh || '—'}`, { du_an: cur.ma_du_an });
   res.json({ id, bh_khac: bh, ghi_chu_bh: ghi, ns_cp: ns });
 }));
 
