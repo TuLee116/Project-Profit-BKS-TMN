@@ -397,15 +397,10 @@ function bFinHtml(list, v) {
       <button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range}${P.prev ? ` <span class="muted">· so với ${ymTxt(P.prev.from)}${P.prev.from !== P.prev.to ? ' – ' + ymTxt(P.prev.to) : ''}</span>` : ''} <span class="f-caret">▾</span></button>
     </div>
 
-    <div class="f-tier"><span>1</span>Tổng DT – CP – LN dự kiến (theo HĐ) <small>tỷ đồng, ${vt} · dòng tiền: ${esc(P.label)}, sau VAT</small></div>
-    <div class="f-grid">
-      ${card('dt', 'Tổng doanh thu dự kiến', K.dt, '', ['Theo HĐ + phụ lục (đã QT thì theo QT)', `Thực hiện lũy kế: <b>${bTy(LK.dt)}</b> (${bpct(LK.dt, K.dt)})`])}
-      ${card('cp', 'Tổng chi phí dự kiến', K.cp, '', [`Bằng <b>${bpct(K.cp, K.dt)}</b> doanh thu dự kiến`, `Thực hiện lũy kế: <b>${bTy(LK.cp)}</b> (${bpct(LK.cp, K.cp)})`])}
-      ${card('ln', 'Tổng lợi nhuận dự kiến', K.ln, '', [`Tỷ suất lợi nhuận: <b class="${K.ln < 0 ? 'neg' : ''}">${bpct(K.ln, K.dt)}</b>`, `Thực hiện lũy kế: <b class="${LK.ln < 0 ? 'neg' : ''}">${bTy(LK.ln)}</b>`])}
-      ${card('dong', 'Dòng tiền thực tế', cur.dong_tien, bDelta(cur.dong_tien, prv?.dong_tien, true), [`Thu <b>${bTy(cur.thu)}</b> · Chi <b>${bTy(cur.chi)}</b>`, `Số dư cuối kỳ: <b class="${bal < 0 ? 'neg' : ''}">${tyN(bal)}</b>`])}
-    </div>
+    ${bTongHopHtml(list, v, P)}
 
-    <div class="f-tier"><span>2</span>Tiến độ so với hợp đồng &amp; mục tiêu năm ${year}
+    <div class="th-divider"><span>Phân tích theo kỳ · ${esc(P.label)}</span></div>
+    <div class="f-tier"><span>1</span>Tiến độ so với hợp đồng &amp; mục tiêu năm ${year}
       <small>tỷ đồng, ${vt}</small>${BC.la_quan_tri ? `<button type="button" class="sm no-print f-tier-btn" id="f-set-target">${anyTarget ? 'Sửa mục tiêu' : '+ Đặt mục tiêu năm'}</button>` : ''}</div>
     <div class="table-wrap"><table class="b-table f-prog">
       <thead>
@@ -422,11 +417,11 @@ function bFinHtml(list, v) {
     </table></div>
     <p class="muted small f-foot-note">Thực hiện lũy kế gồm cả các dòng chưa nhập ngày · Trả nợ gốc vay ${tyN(traGoc)} không tính vào chi phí${anyTarget ? '' : ' · Chưa đặt mục tiêu năm'}.</p>
 
-    <div class="f-tier"><span>3</span>Biểu đồ doanh thu – chi phí <small>doanh thu, chi phí (cột) · lợi nhuận (đường) · rê chuột để xem số</small></div>
+    <div class="f-tier"><span>2</span>Biểu đồ doanh thu – chi phí <small>doanh thu, chi phí (cột) · lợi nhuận (đường) · rê chuột để xem số</small></div>
     <div class="f-box f-big" id="fz-box"><div id="fz-bar" class="fz-bar"></div><div id="f-ch-col" class="chart"></div>
       <p class="muted small fz-hint">Bấm vào cột hoặc lăn chuột lên trên biểu đồ để xem chi tiết hơn (Năm → Quý → Tháng → Ngày) · lăn xuống để thu gọn.</p></div>
 
-    <div class="f-tier"><span>4</span>Cơ cấu theo công trình <small>trong kỳ · tỷ đồng</small></div>
+    <div class="f-tier"><span>3</span>Cơ cấu theo công trình <small>trong kỳ · tỷ đồng</small></div>
     <div class="f-row2">
       <div class="f-box"><h3>Tỷ trọng doanh thu</h3><div id="f-ch-donut" class="chart"></div></div>
       <div class="f-box"><h3>Hiệu quả từng công trình</h3>
@@ -439,6 +434,82 @@ function bFinHtml(list, v) {
     </div>
     <p class="muted small f-note">Số theo kỳ tính theo ngày phát sinh: doanh thu theo ngày nghiệm thu, chi phí theo ngày chứng từ / thanh toán thầu phụ, dòng tiền = tiền về − tiền chi.${undated ? ` <b class="warn-text">${undated} dòng chưa nhập ngày</b> không thuộc kỳ nào (xem Cảnh báo).` : ''}</p>
   </section>`;
+}
+
+// ---------------------------------------------------------------------
+// BÁO CÁO TỔNG HỢP (Ban TGĐ / Hội đồng)
+//  I.  Doanh thu theo hợp đồng: DT = HĐ + PL (đã QT theo QT) · CP = thầu phụ theo HĐ/QT + chi phí khác đã ghi nhận · LN = DT − CP (theo nút VAT)
+//  II. Dòng tiền thực tế (sau VAT, lũy kế): Dòng thu = tiền về · Dòng chi = chi phí đã chi + trả thầu phụ · Còn lại = thu − chi (không gồm vay / trả gốc)
+//  III. Còn lại phải thu = DTHĐ (sau VAT) − Dòng thu
+// ---------------------------------------------------------------------
+function bTongHopData(list, v, P) {
+  const to = P.to < bNowYm() ? P.to : bNowYm();
+  const rows = list.map((d) => {
+    const c = bThuc(d, to);
+    const dt = d.du_kien.doanh_thu[v], cp = d.du_kien.chi_phi[v];
+    const tp = d.nhom.find((n) => n.code === 'thau_phu')?.[v] || 0;
+    return { d, dt, cp, ln: dt - cp, tp, hd_sv: d.du_kien.doanh_thu.sv, thu: c.thu, chi: c.chi, con: c.con, vay: c.vay, goc: c.goc, phai_thu: d.du_kien.doanh_thu.sv - c.thu };
+  });
+  const T = rows.reduce((a, x) => { for (const k of ['dt', 'cp', 'ln', 'tp', 'hd_sv', 'thu', 'chi', 'con', 'vay', 'goc', 'phai_thu']) a[k] += x[k]; return a; },
+    { dt: 0, cp: 0, ln: 0, tp: 0, hd_sv: 0, thu: 0, chi: 0, con: 0, vay: 0, goc: 0, phai_thu: 0 });
+  return { to, rows, T };
+}
+function bTongHopHtml(list, v, P) {
+  const { to, rows, T } = bTongHopData(list, v, P);
+  const vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
+  const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
+  const meter = (a, b, color) => `<span class="f-meter"><i style="width:${b > 0 ? Math.max(0, Math.min(100, (a / b) * 100)) : 0}%;background:${a < 0 ? '#d92d35' : color}"></i></span>`;
+  const card = (k, title, val, lines, unit = 'tỷ') => `<div class="f-card f-${k}" title="${unit === '%' ? '' : bn(val) + ' đ'}">
+      <div class="f-body"><div class="f-title">${title}</div>
+        <div class="f-val ${val < 0 ? 'neg' : ''}">${unit === '%' ? bpct(val, 1) : `${bTy(val)} <small>tỷ</small>`}</div>
+        <div class="f-lines">${lines.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div></div></div>`;
+  const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-prj" title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="th-name">${esc(x.d.ten_du_an)}</span> <span class="st st-${slug(x.d.trang_thai)} th-st">${esc(x.d.trang_thai)}</span></td>`;
+  const tsT = T.dt ? T.ln / T.dt : 0;
+  const dTo = to === bNowYm() ? new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : `${lastDay(to)}/${to.slice(5)}/${to.slice(0, 4)}`;
+  const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
+  const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
+  return `
+    <div class="f-tier th-tier"><span>I</span>Doanh thu theo hợp đồng <small>toàn bộ hợp đồng · tỷ đồng, ${vt}</small></div>
+    <div class="f-grid">
+      ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
+      ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
+      ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
+      ${card('ts', 'Tỷ suất lợi nhuận', tsT, [`${meter(tsT, 0.3, BCOL.dk)}`, 'Lợi nhuận / Doanh thu'], '%')}
+    </div>
+    <div class="table-wrap"><table class="b-table th-table">
+      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
+      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt)}</td><td class="num">${bTy(x.cp)}</td>
+        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}</b></td></tr>`).join('')}</tbody>
+      ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)])}
+    </table></div>
+    <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; không gồm trả nợ gốc vay. Dự án đang thi công: chi phí sẽ tăng khi tiếp tục phát sinh. Thanh tỷ lệ: đầy = 30%.</p>
+
+    <div class="f-tier th-tier"><span>II</span>Dòng tiền thực tế <small>tiền thật lũy kế đến ${dTo} · tỷ đồng, sau VAT</small></div>
+    <div class="f-grid">
+      ${card('dt', 'Dòng thu', T.thu, ['Tiền về: tạm ứng + thanh toán + quyết toán', `Đạt <b>${bpct(T.thu, T.hd_sv)}</b> DT hợp đồng`])}
+      ${card('cp', 'Dòng chi', T.chi, ['Chi phí đã chi + đã trả thầu phụ', `Bằng <b>${bpct(T.chi, T.thu)}</b> dòng thu`])}
+      ${card('ln', 'Còn lại (thu − chi)', T.con, [T.con < 0 ? 'Đang chi nhiều hơn thu' : 'Tiền dự án đang có', 'Không gồm tiền vay, trả nợ gốc'])}
+      ${card('dong', 'Sau vay & trả nợ', T.con + T.vay - T.goc, [`Nhận vay <b>${bTy(T.vay)}</b> · Trả gốc <b>${bTy(T.goc)}</b> tỷ`, `Dư nợ vay: <b>${bTy(T.vay - T.goc)}</b> tỷ`])}
+    </div>
+    <div class="table-wrap"><table class="b-table th-table">
+      ${hd(['Dòng thu', 'Dòng chi', 'Còn lại (Thu − Chi)'])}
+      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.thu)}</td><td class="num">${bTy(x.chi)}</td>
+        <td class="num strong ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
+      ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
+    </table></div>
+
+    <div class="f-tier th-tier"><span>III</span>Dòng tiền còn lại phải thu <small>lấy từ I và II · tỷ đồng, sau VAT</small></div>
+    <div class="f-grid th-grid3">
+      ${card('dt', 'Doanh thu hợp đồng (DTHĐ)', T.hd_sv, ['HĐ + phụ lục, sau VAT', 'HĐ đã quyết toán lấy theo quyết toán'])}
+      ${card('ln', 'Dòng thu', T.thu, [`${meter(T.thu, T.hd_sv, BCOL.thu)}`, `Đã thu <b>${bpct(T.thu, T.hd_sv)}</b> DTHĐ`])}
+      ${card('cp', 'Còn lại phải thu', T.phai_thu, ['DTHĐ − Dòng thu', `Còn <b>${bpct(T.phai_thu, T.hd_sv)}</b> DTHĐ chưa thu`])}
+    </div>
+    <div class="table-wrap"><table class="b-table th-table">
+      ${hd(['DTHĐ', 'Dòng thu', 'Còn lại phải thu', '% đã thu'])}
+      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.hd_sv)}</td><td class="num">${bTy(x.thu)}</td>
+        <td class="num strong">${ty(x.phai_thu)}</td><td class="f-pct">${meter(x.thu, x.hd_sv, BCOL.thu)}<b>${bpct(x.thu, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
+      ${foot([bTy(T.hd_sv), bTy(T.thu), ty(T.phai_thu), bpct(T.thu, T.hd_sv)])}
+    </table></div>`;
 }
 
 // Số liệu Tổng quan tài chính theo kỳ (dùng chung cho xuất Excel / PowerPoint)

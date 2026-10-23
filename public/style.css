@@ -956,3 +956,26 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
   table.m-card > tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; align-items: start; }
   table.m-card > tbody > tr:has(> td.m-span:only-child) { grid-column: 1 / -1; }
 }
+
+/* ---------- Báo cáo tổng hợp I–III (Ban TGĐ / Hội đồng) ---------- */
+.f-ts { --f-ac: #7e5aa6; }
+.th-tier > span { width: auto; min-width: 22px; padding: 0 6px; border-radius: 11px; }
+.th-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.f-card .f-lines .f-meter { margin-top: 4px; }
+.th-table { margin-top: 12px; }
+.th-table th { white-space: nowrap; }
+.th-table .th-stt { width: 44px; text-align: center; color: var(--muted); }
+.th-table .th-prj { min-width: 260px; }
+.th-table .th-name { color: #334155; }
+.th-table .th-st { margin-left: 4px; font-size: 10.5px; padding: 1px 7px; vertical-align: 1px; }
+.th-table td.num { font-variant-numeric: tabular-nums; }
+.th-table .pos { color: #0a7d32; }
+.th-table .f-pct { min-width: 150px; white-space: nowrap; }
+.th-table .f-pct .f-meter { display: inline-block; width: 80px; vertical-align: middle; margin-right: 8px; }
+.th-table tbody tr:nth-child(even) td { background: #fafbfd; }
+.th-table tfoot td { font-weight: 800; color: var(--navy); background: #eef3fa; border-top: 2px solid var(--navy); }
+.th-divider { display: flex; align-items: center; gap: 12px; margin: 30px 0 4px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+.th-divider::before, .th-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+@media (max-width: 1200px) { .th-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+@media (max-width: 640px) { .th-grid3 { grid-template-columns: minmax(0, 1fr) !important; } }
+@media print { .th-table { font-size: 10px; } .th-table .th-prj { min-width: 0; } .th-tier { break-after: avoid; } .th-table { break-inside: avoid; } }
