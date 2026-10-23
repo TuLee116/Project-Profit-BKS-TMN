@@ -482,7 +482,7 @@ function bTongHopHtml(list, v, P) {
       ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
     </table></div>
 
-    ${thHead('III', 'Dòng tiền còn lại phải thu', 'Doanh thu hợp đồng (I) trừ dòng thu thực tế (II)', ['Từ mục I và II', 'Sau VAT'])}
+    ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Doanh thu hợp đồng (I) trừ dòng thu thực tế (II)', ['Từ mục I và II', 'Sau VAT'])}
     <div class="f-grid th-grid3">
       ${card('dt', 'Doanh thu hợp đồng (DTHĐ)', T.hd_sv, ['HĐ + phụ lục, sau VAT', 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('ln', 'Dòng thu', T.thu, [`${meter(T.thu, T.hd_sv, BCOL.thu)}`, `Đã thu <b>${bpct(T.thu, T.hd_sv)}</b> DTHĐ`])}
@@ -598,7 +598,7 @@ function bMuc4Html(list, v) {
       foot([bTy(T.l1), pctT(tsF(T.l1, T.t1)), bTy(T.l2), pctT(tsF(T.l2, T.t2)), bTy(T.l3), pctT(tsF(T.l3, T.t3)), `${T.l3 - T.l1 >= 0 ? '+' : '−'}${bTy(Math.abs(T.l3 - T.l1))}`, bTy(T.thuc)]),
       'Lợi nhuận = Doanh thu − Chi phí tại từng thời điểm · Số mờ = chưa quyết toán, lấy theo TĐ2 · Thực tế = tiền đã nhận − tiền đã chi (không gồm vay, trả gốc)');
   }
-  return `${thHead('IV', 'Doanh thu – chi phí theo thời điểm', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · tự tính theo dữ liệu hệ thống', ['Theo dữ liệu hệ thống', vt])}
+  return `${thHead('IV', 'Doanh thu hoàn thành – quyết toán', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · tự tính theo dữ liệu hệ thống', ['Theo dữ liệu hệ thống', vt])}
     ${sum}${det}`;
 }
 // Sửa BH/Khác + ghi chú (nhập tay) của 1 dự án
