@@ -420,10 +420,10 @@ function bTongHopData(list, v, P) {
   return { to, rows, T };
 }
 // Tiêu đề mục báo cáo tổng hợp: số La Mã · tên mục · mô tả · nhãn phạm vi / đơn vị
-const thHead = (no, title, desc, tags) => `<div class="th-head">
+const thHead = (no, title, desc, tags, extra = '') => `<div class="th-head">
       <span class="th-no">${no}</span>
       <div class="th-ttl"><h3>${title}</h3><p>${desc}</p></div>
-      <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}<span>Đơn vị: tỷ đồng</span></div>
+      <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}<span>Đơn vị: tỷ đồng</span>${extra}</div>
     </div>`;
 function bTongHopHtml(list, v, P) {
   const { to, rows, T } = bTongHopData(list, v, P);
@@ -515,8 +515,7 @@ function bMuc4Html(list, v) {
   const edit = canEditPc();
   const lnP = (a, b) => (a ? (a - b) / a : null);
   // Bảng tổng hợp: số bấm được để mở / đóng bảng chi tiết
-  const num = (x, isPct, ghost) => `<button type="button" class="iv-num ${ghost ? 'td-ghost' : ''}" data-ivct title="Bấm để ${mo ? 'ẩn' : 'xem'} bảng chi tiết theo dự án">
-      <b class="${x < 0 ? 'neg' : ''}">${isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x)}</b></button>`;
+  const num = (x, isPct, ghost) => `<b class="${x < 0 ? 'neg' : ''} ${ghost ? 'iv-ghost' : ''}">${isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x)}</b>`;
   const allGhost = T.n_qt === 0;
   const R = [
     ['Doanh thu', [T.t1, T.t2, T.t3], true, false, 'td-r-dt'],
@@ -537,8 +536,6 @@ function bMuc4Html(list, v) {
   // Bảng chi tiết doanh thu theo dự án (ẩn, bấm số để hiện)
   const m = (x, ghost) => `<span class="${ghost ? 'td-ghost-t' : ''} ${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
   const det = !mo ? '' : `<div class="iv-det">
-    <div class="iv-det-h"><b>Chi tiết thời điểm – doanh thu với chủ đầu tư</b><span class="muted small">tỷ đồng · ${vt} · số mờ = chưa quyết toán, lấy theo TĐ2</span>
-      <button type="button" class="sm no-print" data-ivct>Ẩn chi tiết</button></div>
     <div class="table-wrap"><table class="b-table th-table iv-table no-mcard">
       <thead>
         <tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Dự án / Công trình</th><th rowspan="2" class="num">TĐ1</th>
@@ -555,9 +552,10 @@ function bMuc4Html(list, v) {
       <tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.t1)}</td>${pls.map((k) => `<td class="num">${bTy(T.pl[k])}</td>`).join('')}<td class="num">${bTy(T.t2)}</td>
         <td class="num">${bTy(T.t3)}</td><td class="num">${bTy(T.nhan)}</td><td class="num">${bTy(T.con)}</td><td class="num">${bTy(T.bh)}</td><td></td>${edit ? '<td class="no-print"></td>' : ''}</tr></tfoot>
     </table></div>
-    <p class="muted small f-note">Cột TĐ2 1, 2, 3… = từng phụ lục PL01, PL02… (âm = giảm) · Tổng TĐ2 = TĐ1 + các phụ lục · Còn lại = TĐ3 (chưa quyết toán: TĐ2) − Đã nhận · Đã nhận = tiền CĐT đã trả${v === 'gt' ? ', quy về trước VAT theo tỷ lệ VAT của hợp đồng' : ''} · BH/Khác, Ghi chú nhập tay.</p>
+    <p class="muted small f-note">Cột TĐ2 1, 2, 3… = từng phụ lục PL01, PL02… (âm = giảm) · Tổng TĐ2 = TĐ1 + các phụ lục · Số mờ = chưa quyết toán, lấy theo TĐ2 · Còn lại = TĐ3 (chưa quyết toán: TĐ2) − Đã nhận · Đã nhận = tiền CĐT đã trả${v === 'gt' ? ', quy về trước VAT theo tỷ lệ VAT của hợp đồng' : ''} · BH/Khác, Ghi chú nhập tay.</p>
   </div>`;
-  return `${thHead('IV', 'Doanh thu – chi phí theo thời điểm', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · bấm vào số để xem chi tiết từng dự án', ['Tất cả dự án', vt])}
+  const btn = `<button type="button" class="iv-btn no-print ${mo ? 'on' : ''}" data-ivct aria-expanded="${mo}">${mo ? '▴ Ẩn chi tiết' : '▾ Xem chi tiết dự án'}</button>`;
+  return `${thHead('IV', 'Doanh thu – chi phí theo thời điểm', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3)', ['Tất cả dự án', vt], btn)}
     ${sum}${det}`;
 }
 // Sửa BH/Khác + ghi chú (nhập tay) của 1 dự án
