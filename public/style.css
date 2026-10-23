@@ -1058,3 +1058,4 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .iv-sum tr.iv-gop-1 th, .iv-sum tr.iv-gop-1 td { border-top: 2px solid #dbe4f0; }
 .iv-gop { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 8px; padding: 0; border-radius: 50%; border: 1px solid #b45309; background: #fff; color: #b45309; font-size: 14px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: 1px; }
 .iv-gop.on, .iv-gop:hover { background: #b45309; color: #fff; }
+.iv-tip { cursor: help; text-decoration: underline dotted #94a3b8; text-underline-offset: 3px; }

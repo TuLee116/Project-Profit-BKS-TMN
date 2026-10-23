@@ -567,13 +567,20 @@ function bMuc4Html(list, v) {
   </table></div>`;
 
   // ---- Bảng chi tiết theo dự án của dòng đang mở ----
-  const m = (x, ghost) => `<span class="${ghost ? 'td-ghost-t' : ''} ${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
+  const m = (x, ghost) => `<span class="${ghost ? 'td-ghost-t' : ''} ${x < 0 ? 'neg' : ''}"${ghost ? ' title="Tạm tính theo TĐ2 – dự án chưa quyết toán"' : ''}>${bTy(x)}</span>`;
   const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-prj" title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="th-name">${esc(x.d.ten_du_an)}</span></td>`;
   const plCols = (ks, pick, tot) => `${ks.map((k) => `<td class="num">${pick[k] === undefined ? '<span class="muted">–</span>' : m(pick[k])}</td>`).join('')}<td class="num strong">${m(tot)}</td>`;
   const plHead = (ks) => `<tr>${ks.map((k, i) => `<th class="num iv-g2" title="${esc(k)}">${i + 1}</th>`).join('')}<th class="num iv-g2">Tổng</th></tr>`;
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   const wrap = (title, thead, body, tfoot, note) => `<div class="iv-det"><div class="iv-det-t">${title}</div><div class="table-wrap"><table class="b-table th-table iv-table no-mcard"><thead>${thead}</thead><tbody>${body}</tbody>${tfoot}</table></div>
     <p class="muted small f-note">${note}${v === 'gt' ? ' · Tiền thật (đã nhận / đã chi) quy về trước VAT theo tỷ lệ VAT của hợp đồng' : ''}</p></div>`;
+  // Rê chuột vào ô tổng: tách số THỰC (dự án đã quyết toán) và TẠM TÍNH (chưa QT, lấy theo TĐ2)
+  const splitTip = (k, label) => {
+    const q = rows.filter((x) => x.qt), t = rows.filter((x) => !x.qt);
+    const sq = q.reduce((a, x) => a + x[k], 0), st = t.reduce((a, x) => a + x[k], 0);
+    return ` title="${label}\nThực – đã quyết toán (${q.length} dự án): ${bTy(sq)} tỷ\nTạm tính theo TĐ2 – chưa QT (${t.length} dự án): ${bTy(st)} tỷ\nTổng: ${bn(sq + st)} đồng"`;
+  };
+  const tipCell = (k, label, val) => `<td class="num iv-tip"${splitTip(k, label)}>${val}</td>`;
   let det = '';
   if (ct === 'dt') {
     det = wrap('Chi tiết doanh thu với chủ đầu tư',
@@ -584,8 +591,8 @@ function bMuc4Html(list, v) {
         <td class="num strong">${m(x.t3, !x.qt)}</td><td class="num">${m(x.nhan)}</td><td class="num strong">${m(x.con, !x.qt)}</td>
         <td class="num">${x.bh ? m(x.bh) : '<span class="muted">–</span>'}</td><td class="iv-gc">${esc(x.gc)}</td>
         ${edit ? `<td class="no-print"><button type="button" class="td-btn" data-ivbh="${x.d.id}">Sửa</button></td>` : ''}</tr>`).join(''),
-      `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.t1)}</td>${pls.map((k) => `<td class="num">${bTy(T.pl[k])}</td>`).join('')}<td class="num">${bTy(T.t2)}</td>
-        <td class="num">${bTy(T.t3)}</td><td class="num">${bTy(T.nhan)}</td><td class="num">${bTy(T.con)}</td><td class="num">${bTy(T.bh)}</td><td></td>${edit ? '<td class="no-print"></td>' : ''}</tr></tfoot>`,
+      `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.t1)}</td>${pls.map(() => '<td></td>').join('')}<td class="num">${bTy(T.t2)}</td>
+        ${tipCell('t3', 'TĐ3 – Quyết toán', bTy(T.t3))}<td class="num">${bTy(T.nhan)}</td>${tipCell('con', 'Còn lại = TĐ3 − Đã nhận', bTy(T.con))}<td class="num">${bTy(T.bh)}</td><td></td>${edit ? '<td class="no-print"></td>' : ''}</tr></tfoot>`,
       'TĐ2 cột 1, 2, 3… = từng phụ lục với CĐT PL01, PL02… (âm = giảm) · Số mờ = chưa quyết toán, lấy theo TĐ2 · Còn lại = TĐ3 − Đã nhận · BH/Khác, Ghi chú nhập tay');
   } else if (ct === 'cp') {
     det = wrap('Chi tiết chi phí',
@@ -593,7 +600,8 @@ function bMuc4Html(list, v) {
         <th colspan="${cpls.length + 1}" class="grp iv-g2">TĐ2</th><th rowspan="2" class="num">TĐ3</th><th rowspan="2" class="num">Đã chi</th><th rowspan="2" class="num">Còn phải chi</th></tr>${plHead(cpls)}`,
       rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${m(x.c1)}</td>${plCols(cpls, x.cpl, x.c2)}
         <td class="num strong">${m(x.c3, !x.qt)}</td><td class="num">${m(x.chi)}</td><td class="num strong">${m(x.con_chi, !x.qt)}</td></tr>`).join(''),
-      foot([bTy(T.c1), ...cpls.map((k) => bTy(T.cpl[k])), bTy(T.c2), bTy(T.c3), bTy(T.chi), bTy(T.con_chi)]),
+      `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.c1)}</td>${cpls.map(() => '<td></td>').join('')}<td class="num">${bTy(T.c2)}</td>
+        ${tipCell('c3', 'TĐ3 – Quyết toán', bTy(T.c3))}<td class="num">${bTy(T.chi)}</td>${tipCell('con_chi', 'Còn phải chi = TĐ3 − Đã chi', bTy(T.con_chi))}</tr></tfoot>`,
       'Chi phí = thầu phụ (TĐ1 HĐ gốc · TĐ2 + phụ lục thầu phụ · TĐ3 quyết toán) + toàn bộ chi phí khác đã ghi nhận · TĐ2 cột 1, 2, 3… = phụ lục thầu phụ PL01, PL02… · Đã chi = trả thầu phụ + chi phí khác đã chi · Còn phải chi = TĐ3 − Đã chi');
   } else if (ct === 'ln') {
     const lc = (l, t, ghost) => `<td class="num strong">${m(l, ghost)}</td><td class="num iv-ts">${t === null ? '—' : `<span class="${ghost ? 'td-ghost-t' : ''} ${l < 0 ? 'neg' : ''}">${pctT(t)}</span>`}</td>`;
