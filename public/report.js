@@ -482,14 +482,14 @@ function bTongHopHtml(list, v, P) {
       ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
     </table></div>
 
-    ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Tổng thu kế hoạch từ chủ đầu tư trừ tổng chi thực tế', ['Từ mục I và II', 'Sau VAT'])}
+    ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Giá trị hợp đồng với chủ đầu tư trừ tổng thực chi', ['Từ mục I và II', 'Sau VAT'])}
     <div class="f-grid th-grid3">
-      ${card('dt', 'Thu – kế hoạch CĐT', T.hd_sv, ['Tổng CĐT phải trả theo HĐ + phụ lục', 'HĐ đã quyết toán lấy theo quyết toán'])}
-      ${card('cp', 'Chi – thực chi', T.chi, [`${meter(T.chi, T.hd_sv, BCOL.chi)}`, `Bằng <b>${bpct(T.chi, T.hd_sv)}</b> tổng thu kế hoạch`])}
-      ${card('ln', 'Còn lại (thu − chi)', T.hd_sv - T.chi, ['Thu kế hoạch − Chi thực tế', `Bằng <b>${bpct(T.hd_sv - T.chi, T.hd_sv)}</b> tổng thu kế hoạch`])}
+      ${card('dt', 'Hợp đồng', T.hd_sv, ['Tổng CĐT phải trả theo HĐ + phụ lục', 'HĐ đã quyết toán lấy theo quyết toán'])}
+      ${card('cp', 'Thực chi', T.chi, [`${meter(T.chi, T.hd_sv, BCOL.chi)}`, `Bằng <b>${bpct(T.chi, T.hd_sv)}</b> giá trị hợp đồng`])}
+      ${card('ln', 'Còn lại', T.hd_sv - T.chi, ['Hợp đồng − Thực chi', `Bằng <b>${bpct(T.hd_sv - T.chi, T.hd_sv)}</b> giá trị hợp đồng`])}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Thu (KH CĐT)', 'Chi (thực chi)', 'Còn lại (thu − chi)', '% chi / thu'])}
+      ${hd(['Hợp đồng', 'Thực chi', 'Còn lại', '% thực chi / HĐ'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.hd_sv)}</td><td class="num">${bTy(x.chi)}</td>
         <td class="num strong">${ty(x.hd_sv - x.chi)}</td><td class="f-pct">${meter(x.chi, x.hd_sv, BCOL.chi)}<b>${bpct(x.chi, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.hd_sv), bTy(T.chi), ty(T.hd_sv - T.chi), bpct(T.chi, T.hd_sv)])}
