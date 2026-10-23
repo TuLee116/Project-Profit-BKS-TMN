@@ -1171,8 +1171,7 @@ function bPcSection(list, v) {
     </div>
     ${one
     ? `<div class="pc-grid one">${list.map((d) => bPcCard(d, BC.du_an.indexOf(d))).join('')}</div>`
-    : `<p class="muted small pc-gal-hint no-print">Số trên ô: <b>tiền thật</b> (thực thu, thực chi, còn lại = thu − chi; tỷ đồng, sau VAT, lũy kế đến hết kỳ) · bấm vào công trình để xem tổng quan nhanh, trong đó bấm <b>Xem chi tiết công trình</b> để xem đầy đủ.</p>
-       <div class="pc-gal">${list.map((d) => bPcTile(d, BC.du_an.indexOf(d), v, P)).join('')}</div>
+    : `<div class="pc-gal">${list.map((d) => bPcTile(d, BC.du_an.indexOf(d), v, P)).join('')}</div>
        <div class="pc-modal" id="pc-modal" hidden></div>`}
   </section>`;
 }
@@ -1493,7 +1492,6 @@ function bTdBlock(d) {
       <thead><tr><th class="td-corner">Chỉ tiêu</th>${[1, 2, 3].map(head).join('')}</tr></thead>
       <tbody>${ROWS.map(([k, label, good, isPct, cls]) => `<tr class="${cls}"><th>${label}</th>${[1, 2, 3].map((n) => cell(n, k, good, isPct)).join('')}</tr>`).join('')}</tbody>
     </table></div>${thucRows}
-    <div class="pc-note">TĐ1 ký hợp đồng · TĐ2 có phát sinh (tăng / giảm / không đổi so với TĐ1) · TĐ3 quyết toán (so với TĐ2 và TĐ1) – số kế hoạch nhập tay, trước VAT, tỷ đồng · Cột <i>mờ</i> = chưa chốt, lấy bằng thời điểm trước · <b>HT … lệch</b> = khác số hệ thống (DT theo HĐ gốc / HĐ + PL / QT; riêng TĐ3 đối chiếu cả CP = thầu phụ quyết toán + chi phí khác có ngày ≤ ngày chốt)${tt ? ' · Tiền thực tế theo giai đoạn: TĐ1 = tiền tạm ứng (CĐT ứng, ứng cho thầu phụ), TĐ2 = các đợt thanh toán, TĐ3 = quyết toán; Thực chi = trả thầu phụ + chi phí khác (bấm ▸ để xem); chi phí khác xếp theo ngày chi so với ngày CĐT thanh toán đợt đầu / quyết toán; không gồm vay, trả gốc' : ''}</div>
   </div>`;
 }
 function bTdDialog(d, n) {
