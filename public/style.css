@@ -1063,3 +1063,33 @@ dialog.pass-dlg.sess-dlg { width: min(900px, calc(100vw - 32px)); }
 dialog.sess-dlg h3 { color: var(--navy); }
 .sess-tbl { width: 100%; font-size: 13px; }
 .sess-tbl th, .sess-tbl td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+
+/* ---------- Ma trận TĐ / mục IV trên điện thoại, máy gập, máy tính bảng: chữ không tràn sang ô bên cạnh ---------- */
+.td-mx th, .td-mx td { overflow: hidden; }
+.td-dl { white-space: normal; line-height: 1.35; }
+.td-dl small { display: block; }
+.td-st { white-space: normal; }
+@media (max-width: 1100px) {
+  .td-c b { font-size: 16px; }
+  .td-dl { font-size: 11px; }
+}
+@media (max-width: 640px) {
+  .td-mx { min-width: 520px; font-size: 12px; }
+  .td-mx .td-corner { width: 92px; }
+  .td-mx th, .td-mx td { padding: 8px 7px; }
+  .td-mx tbody th { white-space: normal; font-size: 11px; }
+  .td-c b { font-size: 15px; }
+  .td-c b .pc-u { font-size: 10px; }
+  .td-hn b { font-size: 15px; }
+  .td-ht2 { font-size: 10.5px; }
+  .td-st { font-size: 10.5px; }
+  .td-dl { font-size: 10.5px; }
+  .iv-ct { padding: 2px 8px; font-size: 10px; }
+  .pc-modal .td-c b { font-size: 16px; }
+}
+/* Khung công trình / báo cáo: luôn vừa màn hình; bảng rộng chỉ vuốt ngang bên trong khung bảng */
+#pc-modal, #pc-modal .pc-card, #pc-modal .pc-body, .pc-card, .pc-body, .pc-tds, .f-sec { min-width: 0; max-width: 100%; }
+.pc-tds > *, .pc-body > * { min-width: 0; max-width: 100%; }
+.td-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.pc-modal { grid-template-columns: minmax(0, 1fr); }
+.pc-modal-box { min-width: 0; max-width: 100%; justify-self: center; }
