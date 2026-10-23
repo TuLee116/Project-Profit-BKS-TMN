@@ -27,18 +27,19 @@ let users = [];
   $$('[data-role]').forEach((el) => {
     if (!el.dataset.role.split(' ').includes(ME.role)) el.remove();
   });
-  if (ME.role === 'bks') { const g = $('[data-grp="qt"] [data-grp-toggle]'); if (g) g.innerHTML = 'Kiểm soát <span class="caret">▾</span>'; } // BKS: chỉ có nhật ký
+  { const g = $('[data-grp="qt"] [data-grp-toggle]'); const ten = { bks: 'Kiểm soát', it: 'Hệ thống' }[ME.role]; if (g && ten) g.innerHTML = `${ten} <span class="caret">▾</span>`; } // BKS: nhật ký · IT: tài khoản, nhật ký
   document.body.classList.add('roles-ready'); // đến đây mới hiện các mục theo quyền (tránh nhấp nháy tab quản trị)
 
   const stSel = $('#p-form [name=trang_thai]');
   if (stSel) stSel.innerHTML = META.trang_thai.map((t) => `<option>${esc(t)}</option>`).join('');
   const roleSel = $('#u-form [name=role]');
-  if (roleSel) roleSel.innerHTML = Object.entries(META.roles).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+  if (roleSel) roleSel.innerHTML = Object.entries(META.roles).filter(([k]) => ME.role === 'admin' || k !== 'admin').map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
 
   // Mặc định vào Báo cáo; người nhập liệu mở lại đúng mục đang làm dở (mục không thuộc quyền -> Báo cáo)
   let start = 'report';
   try { start = localStorage.getItem('tab') || start; } catch {}
-  showTab($(`.topbar [data-tab="${start}"]`) ? start : 'report');
+  const macDinh = $('.topbar [data-tab="report"]') ? 'report' : 'users'; // IT không có Báo cáo -> vào Tài khoản
+  showTab($(`.topbar [data-tab="${start}"]`) ? start : macDinh);
 })();
 
 function applyBranding(s) {
@@ -50,7 +51,7 @@ function applyBranding(s) {
 // =====================================================================
 // Tab
 // =====================================================================
-const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => (ME.role === 'admin' ? loadUsers() : Promise.resolve()).then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
+const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => (can('tai_khoan') ? loadUsers() : Promise.resolve()).then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
 
 const NHAP_LIEU = ['projects', 'revenue', 'cost'];
 const closeMenus = () => $$('.tab-grp.open').forEach((g) => { g.classList.remove('open'); $('[data-grp-toggle]', g).setAttribute('aria-expanded', 'false'); });
@@ -109,7 +110,7 @@ window.addEventListener('pagehide', () => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') api('/api/auth/me', AUTO).catch(() => {}); });
 setInterval(() => {
   if (document.visibilityState === 'visible' && !$('#tab-users')?.hidden && can('nhat_ky')) {
-    if (ME.role === 'admin') loadUsers(true).catch(() => {});
+    if (can('tai_khoan')) loadUsers(true).catch(() => {});
     loadLogs(true).catch(() => {});
   }
 }, 10 * 1000);
@@ -1999,9 +2000,9 @@ async function loadUsers(auto = false) {
       <td class="muted">${dt(u.last_login_at)}</td>
       <td>${seenTxt(u.last_seen_at, u.online)}</td>
       <td class="row-actions">
-        <button data-usess="${u.id}" title="Xem các phiên đang đăng nhập, buộc đăng xuất">Phiên${u.so_phien ? ` (${u.so_phien})` : ''}</button>
-        <button data-uedit="${u.id}">Sửa</button>
-        ${u.id === ME.id ? '' : `<button class="danger" data-udel="${u.id}">Xóa</button>`}
+        ${ME.role === 'it' && u.role === 'admin' ? '<span class="muted small">Chỉ Quản trị</span>' : `<button data-usess="${u.id}" title="Xem các phiên đang đăng nhập, buộc đăng xuất">Phiên${u.so_phien ? ` (${u.so_phien})` : ''}</button>
+        <button data-uedit="${u.id}">Sửa</button>`}
+        ${u.id === ME.id || ME.role !== 'admin' ? '' : `<button class="danger" data-udel="${u.id}">Xóa</button>`}
       </td>
     </tr>`).join('');
 }

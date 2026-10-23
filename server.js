@@ -182,6 +182,9 @@ api.post('/auth/away', wrap(async (req, res) => {
 
 // Từ đây trở xuống: bắt buộc đăng nhập
 api.use(auth.requireAuth);
+// IT (Kỹ thuật hệ thống): chỉ vào phần kỹ thuật – không đọc / ghi số liệu dự án, báo cáo tài chính
+const IT_DUOC_VAO = /^\/(meta|auth\/|users(\/|$)|nhat-ky|lien-he$|settings$)/;
+api.use((req, res, next) => (req.user?.role === 'it' && !IT_DUOC_VAO.test(req.path) ? bad(res, 'Vai trò Kỹ thuật hệ thống không xem số liệu dự án', 403) : next()));
 api.use(audit.middleware); // ghi nhật ký mọi thao tác thêm / sửa / xóa
 
 // ---------- Nhật ký hoạt động ----------
@@ -289,7 +292,7 @@ async function readContact() {
   return { ...info, phien_ban: override ? { ma: override, tu_dong: PHIEN_BAN.ma, ghi_de: true } : { ...PHIEN_BAN, ghi_de: false } };
 }
 api.get('/lien-he', wrap(async (_req, res) => res.json(await readContact())));
-api.put('/lien-he', auth.requireRole('admin'), wrap(async (req, res) => {
+api.put('/lien-he', quyen('lien_he'), wrap(async (req, res) => {
   const { data, errors } = validateContact(req.body || {});
   if (errors.length) return bad(res, errors);
   const save = { ...data, phien_ban_goc: data.phien_ban ? PHIEN_BAN.ma : '' };
@@ -301,13 +304,16 @@ api.put('/lien-he', auth.requireRole('admin'), wrap(async (req, res) => {
 
 // ---------- Quản lý tài khoản (chỉ Quản trị) ----------
 const users = express.Router();
-users.use(auth.requireRole('admin'));
+users.use(quyen('tai_khoan'));
+// IT quản lý tài khoản nhưng không đụng tới tài khoản / vai trò Quản trị và không xóa tài khoản
+const laIT = (req) => req.user.role === 'it';
 
 users.get('/', wrap(async (_req, res) => res.json(await store.listUsers())));
 
 users.post('/', wrap(async (req, res) => {
   const { data, errors } = validateUser(req.body || {}, true);
   if (errors.length) return bad(res, errors);
+  if (laIT(req) && data.role === 'admin') return bad(res, 'Kỹ thuật hệ thống không được tạo tài khoản Quản trị', 403);
   const id = await store.createUser({ ...data, password_hash: await auth.hashPassword(data.password) });
   res.status(201).json({ id });
 }));
@@ -319,6 +325,7 @@ users.put('/:id', wrap(async (req, res) => {
   if (!target) return bad(res, 'Không tìm thấy tài khoản', 404);
   const { data, errors } = validateUser(req.body || {}, false, target.username);
   if (errors.length) return bad(res, errors);
+  if (laIT(req) && (target.role === 'admin' || data.role === 'admin')) return bad(res, 'Kỹ thuật hệ thống không được sửa tài khoản Quản trị hoặc cấp quyền Quản trị', 403);
 
   const isSelf = id === req.user.id;
   if (isSelf && (data.role !== 'admin' || !data.active)) return bad(res, 'Không thể tự hạ quyền hoặc khóa chính mình');
@@ -340,6 +347,7 @@ const sessionTarget = async (req, res) => {
   const id = parseId(req.params.id);
   const u = id && (await store.getUserById(id));
   if (!u) { bad(res, 'Không tìm thấy tài khoản', 404); return null; }
+  if (laIT(req) && u.role === 'admin') { bad(res, 'Kỹ thuật hệ thống không xem / đăng xuất phiên của Quản trị', 403); return null; }
   return u;
 };
 users.get('/:id/sessions', wrap(async (req, res) => {
@@ -365,6 +373,7 @@ users.delete('/:id/sessions/:sid?', wrap(async (req, res) => {
 }));
 
 users.delete('/:id', wrap(async (req, res) => {
+  if (laIT(req)) return bad(res, 'Kỹ thuật hệ thống chỉ được khóa, không được xóa tài khoản', 403);
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');
   if (id === req.user.id) return bad(res, 'Không thể xóa tài khoản đang đăng nhập');

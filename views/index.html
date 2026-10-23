@@ -21,7 +21,7 @@
     </div>
     <!-- Menu: Báo cáo (mặc định) · Nhập liệu ▾ (Dự án, Doanh thu, Chi phí) · Quản trị ▾ (Tài khoản, Cài đặt) · tên người dùng ▾ (Cá nhân, Liên hệ, Đăng xuất) -->
     <nav id="tabs" class="tabs">
-      <button data-tab="report">Báo cáo</button>
+      <button data-tab="report" data-role="admin lanh_dao bks qs ke_toan editor viewer">Báo cáo</button>
       <div class="tab-grp" data-role="admin editor qs ke_toan" data-grp="nhap">
         <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true">Nhập liệu <span class="caret">▾</span></button>
         <div class="tab-menu" role="menu">
@@ -30,10 +30,10 @@
           <button data-tab="cost" role="menuitem">Chi phí</button>
         </div>
       </div>
-      <div class="tab-grp" data-role="admin bks" data-grp="qt">
+      <div class="tab-grp" data-role="admin bks it" data-grp="qt">
         <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true">Quản trị <span class="caret">▾</span></button>
         <div class="tab-menu" role="menu">
-          <button data-tab="users" role="menuitem" data-role="admin">Tài khoản &amp; nhật ký</button>
+          <button data-tab="users" role="menuitem" data-role="admin it">Tài khoản &amp; nhật ký</button>
           <button data-tab="users" role="menuitem" data-role="bks">Nhật ký hoạt động</button>
           <button data-tab="settings" role="menuitem" data-role="admin">Cài đặt</button>
         </div>
@@ -199,7 +199,7 @@
 
     <!-- ================= TÀI KHOẢN ================= -->
     <section id="tab-users" class="tab-panel" hidden>
-      <div class="card">
+      <div class="card" data-role="admin it">
         <h2 id="u-form-title">Thêm tài khoản</h2>
         <form id="u-form" class="grid-form">
           <input type="hidden" name="id">
@@ -222,7 +222,7 @@
           Khi sửa, để trống mật khẩu nếu không muốn đổi.
         </p>
       </div>
-      <div class="card" data-role="admin">
+      <div class="card" data-role="admin it">
         <h2>Danh sách tài khoản</h2>
         <div class="table-wrap">
           <table>
@@ -322,13 +322,13 @@
     <section id="tab-contact" class="tab-panel" hidden>
       <div class="card narrow">
         <div id="lh-view">
-          <div class="toolbar"><h2>Thông tin hệ thống</h2><button type="button" class="sm" id="lh-edit" data-role="admin">Sửa</button></div>
+          <div class="toolbar"><h2>Thông tin hệ thống</h2><button type="button" class="sm" id="lh-edit" data-role="admin it">Sửa</button></div>
           <dl class="info-list" id="sys-info"></dl>
           <hr>
           <h2>Liên hệ hỗ trợ</h2>
           <dl class="info-list" id="sys-contact"></dl>
         </div>
-        <form id="lh-form" class="stack" hidden data-role="admin">
+        <form id="lh-form" class="stack" hidden data-role="admin it">
           <h2>Sửa thông tin hệ thống</h2>
           <label>Tên hệ thống/Website *<input name="ten" required maxlength="150"></label>
           <label>Đơn vị sở hữu *<input name="so_huu" required maxlength="150"></label>
