@@ -137,8 +137,11 @@ function bBalance(list, b) { // số dư dòng tiền lũy kế đến hết th�
 function bSeries(list, v, P) {
   const byQ = P.n > 12;
   const out = [];
-  for (let k = P.from; k <= P.to; k = ymAdd(k, byQ ? 3 : 1)) {
-    let a = k, b = byQ ? ymAdd(k, 2) : k;
+  // Gộp quý: bắt đầu từ đầu quý dương lịch chứa P.from (01, 04, 07, 10), cắt theo phạm vi kỳ
+  const [fy, fm] = P.from.split('-').map(Number);
+  const k0 = byQ ? `${fy}-${String(Math.floor((fm - 1) / 3) * 3 + 1).padStart(2, '0')}` : P.from;
+  for (let k = k0; k <= P.to; k = ymAdd(k, byQ ? 3 : 1)) {
+    let a = k < P.from ? P.from : k, b = byQ ? ymAdd(k, 2) : k;
     if (b > P.to) b = P.to;
     const [yy, mm] = k.split('-').map(Number);
     const o = bSumRange(list, v, a, b);
