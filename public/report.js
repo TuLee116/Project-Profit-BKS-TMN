@@ -444,16 +444,14 @@ function bTongHopHtml(list, v, P) {
       ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
       ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
-      ${(() => { // Hoàn thành kế hoạch lợi nhuận: LN quyết toán (TĐ3; chưa QT tạm tính theo TĐ2) so với LN kế hoạch (TĐ1 – HĐ ký)
+      ${(() => { // Chênh lệch LN = LN quyết toán (TĐ3; chưa QT tạm tính theo TĐ2) − LN kế hoạch (TĐ1 – HĐ ký)
         const K = bMuc4Data(list, v).T, kh = K.l1, th = T.ln, cl = th - kh;
-        const ts1 = K.t1 ? kh / K.t1 : 0, ts3 = T.dt ? th / T.dt : 0, dts = (ts3 - ts1) * 100;
-        const vh = Math.abs(cl) < 1000 ? '● Đạt đúng kế hoạch' : `<b class="${cl > 0 ? 'pos' : 'neg'}">${cl > 0 ? '▲ Vượt' : '▼ Hụt'} ${cl > 0 ? '+' : '−'}${bTy(Math.abs(cl))}</b> tỷ`;
-        return card('ts', 'Hoàn thành KH lợi nhuận', kh ? th / kh : 0, [
-          `${meter(th, kh, cl < 0 ? '#d92d35' : BCOL.dk)}`,
-          `KH (HĐ ký) <b>${bTy(kh)}</b> tỷ · ${vh}`,
-          `Tỷ suất ${(ts1 * 100).toFixed(1).replace('.', ',')}% → <b>${(ts3 * 100).toFixed(1).replace('.', ',')}%</b> (${dts >= 0 ? '+' : '−'}${Math.abs(dts).toFixed(1).replace('.', ',')} điểm %)`,
+        const ts1 = K.t1 ? kh / K.t1 : 0, ts3 = T.dt ? th / T.dt : 0;
+        return card('ts', 'Chênh lệch LN so với KH', cl, [
+          `LN quyết toán (TĐ3) <b>${bTy(th)}</b> − LN kế hoạch (TĐ1) <b>${bTy(kh)}</b> tỷ`,
+          `<b class="${cl < 0 ? 'neg' : 'pos'}">${Math.abs(cl) < 1000 ? '● Đạt đúng kế hoạch' : cl > 0 ? '▲ Vượt kế hoạch' : '▼ Hụt kế hoạch'}</b> · Tỷ suất ${(ts1 * 100).toFixed(1).replace('.', ',')}% → ${(ts3 * 100).toFixed(1).replace('.', ',')}%`,
           K.n_qt < rows.length ? `<span class="muted">${rows.length - K.n_qt} dự án chưa QT: tạm tính theo TĐ2</span>` : '',
-        ], '%');
+        ]);
       })()}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
