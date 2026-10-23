@@ -1051,3 +1051,5 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .iv-table td .td-dl { display: inline; margin: 0; }
 .f-lines b.pos { color: #0f8a5f; } .f-lines b.neg { color: #d92d35; }
 .f-lines .f-meter { display: block; }
+.th-ns { display: inline-block; padding: 0 5px; border-radius: 4px; font-size: 9.5px; font-weight: 800; color: #7e5aa6; background: #f1ebf8; vertical-align: 1px; }
+.th-ns-edit { padding: 0 5px; font-size: 11px; line-height: 16px; border-radius: 4px; color: var(--muted); }
