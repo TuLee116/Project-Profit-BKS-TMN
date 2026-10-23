@@ -1446,7 +1446,7 @@ function bTdBlock(d) {
   const fmtV = (x, isPct) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x));
   const htNote = (n, k, isPct) => { // đối chiếu số hệ thống, chỉ báo khi lệch
     const h = C[n].ht;
-    if (!h || isPct) return '';
+    if (!h || isPct || (k !== 'dt' && n < 3)) return ''; // CP/LN ở TĐ1–TĐ2 là dự toán, chi phí thực chưa phát sinh đủ -> không đối chiếu
     const sys = k === 'dt' ? h.dt : k === 'cp' ? h.cp : h.ln;
     const diff = C[n][k] - sys;
     return Math.abs(diff) <= Math.max(1000, Math.abs(sys) * 0.005) ? '' : `<small class="td-ht" title="Số hệ thống theo ${TD_HT[n]}: ${bn(sys)} đ">HT ${bTy(sys)} · lệch ${diff > 0 ? '+' : '−'}${bTy(Math.abs(diff))}</small>`;
@@ -1465,10 +1465,18 @@ function bTdBlock(d) {
     return `<th class="td-h td-h${n}"><div class="td-hn"><b>TĐ${n}</b>${btn}</div><div class="td-ht2">${TD_TEN[n]}</div>
       <div class="td-st ${c.nhap ? 'td-st-ok' : c.warn ? 'td-st-warn' : ''}">${c.nhap ? '✓ Đã chốt ' : ''}${c.st}</div></th>`;
   };
+  // Tiền thật theo giai đoạn thanh toán (sau VAT): TĐ1 tạm ứng · TĐ2 các đợt thanh toán · TĐ3 quyết toán
+  //  thu / trả thầu phụ theo loại thanh toán; chi phí khác theo mốc ngày CĐT thanh toán đợt đầu / quyết toán (lib/report.js)
   const thucRows = !tt ? '' : (() => {
-    const a = [1, 2, 3].map((n) => (tds[n] ? bTienThucDen(d, tds[n].ngay) : null));
-    const r = (label, k, isPct) => `<tr class="td-tt"><th>${label}</th>${a.map((x) => `<td class="td-c">${x ? `<b class="${x[k] < 0 ? 'neg' : ''}">${isPct ? (x.thu ? `${((x.con / x.thu) * 100).toFixed(1).replace('.', ',')}%` : '—') : bTyU(x[k])}</b>` : '<span class="muted">—</span>'}</td>`).join('')}</tr>`;
-    return `<tr class="td-sep"><th colspan="4">Tiền thực tế đến ngày chốt · sau VAT</th></tr>${r('Thực thu', 'thu')}${r('Thực chi', 'chi')}${r('Còn lại thực', 'con')}`;
+    const g = d.tien_thuc?.gd || { thu: [0, 0, 0], tp: [0, 0, 0], cp: [0, 0, 0] };
+    const col = [0, 1, 2].map((i) => ({ thu: g.thu[i], tp: g.tp[i], cp: g.cp[i] }));
+    let lk = 0;
+    col.forEach((x) => { x.con = x.thu - x.tp - x.cp; lk += x.con; x.lk = lk; x.co = x.thu || x.tp || x.cp; });
+    const GDT = ['Tạm ứng (sau ký HĐ)', 'Các đợt thanh toán', 'Quyết toán'];
+    const v = (x, k, strong) => (x.co ? `<b class="${x[k] < 0 ? 'neg' : ''} ${strong ? '' : 'td-sm'}">${bTyU(x[k])}</b>` : '<span class="muted small">Chưa phát sinh</span>');
+    const r = (label, k, strong) => `<tr class="td-tt ${strong ? 'td-tt-k' : ''}"><th>${label}</th>${col.map((x) => `<td class="td-c">${v(x, k, strong)}</td>`).join('')}</tr>`;
+    return `<tr class="td-sep"><th>Tiền thực tế<br><small>sau VAT</small></th>${GDT.map((t) => `<th>${t}</th>`).join('')}</tr>
+      ${r('Thực thu', 'thu', true)}${r('Trả thầu phụ', 'tp')}${r('Chi phí khác', 'cp')}${r('Còn lại (thu − chi)', 'con', true)}${r('Còn lại lũy kế', 'lk', true)}`;
   })();
   return `<div class="pc-tds">
     <div class="pc-td-bar no-print"><span>Ma trận <b>kế hoạch</b> theo hợp đồng tại 3 thời điểm · trước VAT</span>
@@ -1477,7 +1485,7 @@ function bTdBlock(d) {
       <thead><tr><th class="td-corner">Chỉ tiêu</th>${[1, 2, 3].map(head).join('')}</tr></thead>
       <tbody>${ROWS.map(([k, label, good, isPct, cls]) => `<tr class="${cls}"><th>${label}</th>${[1, 2, 3].map((n) => cell(n, k, good, isPct)).join('')}</tr>`).join('')}${thucRows}</tbody>
     </table></div>
-    <div class="pc-note">TĐ1 ký hợp đồng · TĐ2 có phát sinh (tăng / giảm / không đổi so với TĐ1) · TĐ3 quyết toán (so với TĐ2 và TĐ1) – số kế hoạch nhập tay, trước VAT, tỷ đồng · Cột <i>mờ</i> = chưa chốt, lấy bằng thời điểm trước · <b>HT … lệch</b> = khác số hệ thống (DT theo HĐ gốc / HĐ + PL / QT; CP = thầu phụ cùng mốc + chi phí khác có ngày ≤ ngày chốt)${tt ? ' · Tiền thực tế = tiền đã về và đã chi đến ngày chốt (không gồm vay / trả gốc)' : ''}</div>
+    <div class="pc-note">TĐ1 ký hợp đồng · TĐ2 có phát sinh (tăng / giảm / không đổi so với TĐ1) · TĐ3 quyết toán (so với TĐ2 và TĐ1) – số kế hoạch nhập tay, trước VAT, tỷ đồng · Cột <i>mờ</i> = chưa chốt, lấy bằng thời điểm trước · <b>HT … lệch</b> = khác số hệ thống (DT theo HĐ gốc / HĐ + PL / QT; riêng TĐ3 đối chiếu cả CP = thầu phụ quyết toán + chi phí khác có ngày ≤ ngày chốt)${tt ? ' · Tiền thực tế theo giai đoạn: TĐ1 = tiền tạm ứng (CĐT ứng, ứng cho thầu phụ), TĐ2 = các đợt thanh toán, TĐ3 = quyết toán; chi phí khác xếp theo ngày chi so với ngày CĐT thanh toán đợt đầu / quyết toán; không gồm vay, trả gốc' : ''}</div>
   </div>`;
 }
 function bTdDialog(d, n) {

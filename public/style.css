@@ -1025,3 +1025,7 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .pc-modal .td-c b { font-size: 22px; }
 @media (max-width: 640px) { .td-mx th, .td-mx td { padding: 8px; } .td-c b { font-size: 15px; } }
 @media print { .td-mx thead th { background: none; } }
+.td-c b.td-sm { font-size: 14px; font-weight: 700; color: #334155; }
+.td-mx tr.td-sep th { font-weight: 700; }
+.td-mx tr.td-tt-k th { color: var(--navy); }
+.td-mx tr.td-sep th { white-space: normal; vertical-align: bottom; } .td-mx tr.td-sep th small { font-size: 10.5px; text-transform: none; font-weight: 500; }
