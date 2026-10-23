@@ -970,7 +970,9 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .th-table .th-st { margin-left: 4px; font-size: 10.5px; padding: 1px 7px; vertical-align: 1px; }
 .th-table td.num { font-variant-numeric: tabular-nums; }
 .th-table .pos { color: #0a7d32; }
-.th-table .f-pct { min-width: 150px; white-space: nowrap; }
+.th-table .f-pct { min-width: 160px; white-space: nowrap; text-align: right; }
+.th-table .f-pct > b { display: inline-block; min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
+.th-table .th-tt { color: #b45309; font-weight: 800; margin-left: 1px; }
 .th-table .f-pct .f-meter { display: inline-block; width: 80px; vertical-align: middle; margin-right: 8px; }
 .th-table tbody tr:nth-child(even) td { background: #fafbfd; }
 .th-table tfoot td { font-weight: 800; color: var(--navy); background: #eef3fa; border-top: 2px solid var(--navy); }

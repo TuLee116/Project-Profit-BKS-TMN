@@ -479,10 +479,10 @@ function bTongHopHtml(list, v, P) {
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt)}</td><td class="num">${bTy(x.cp)}</td>
-        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}</b></td></tr>`).join('')}</tbody>
+        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)])}
     </table></div>
-    <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; không gồm trả nợ gốc vay. Dự án đang thi công: chi phí sẽ tăng khi tiếp tục phát sinh. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
     <div class="f-tier th-tier"><span>II</span>Dòng tiền thực tế <small>tiền thật lũy kế đến ${dTo} · tỷ đồng, sau VAT</small></div>
     <div class="f-grid">
