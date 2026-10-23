@@ -34,17 +34,15 @@ Cập nhật: 22/10/2026. Đọc file này đầu phiên mới; chi tiết kỹ 
 - Dữ liệu mẫu 12 dự án DEMO (`lib/demo.js`, seed mặc định 22): 0 cảnh báo, 12/12 có lãi, VAT 10% (nhân công 8%), ảnh minh họa tự vẽ `lib/assets/demo/`.
 - **Giao diện điện thoại** (commit `3401ea3`, V01.22.10.26): bảng → thẻ (≤ 900px), menu lưới 4×2, danh sách trước form; máy tính và bản in giữ nguyên.
 
-## 4. Trạng thái hiện tại (22/10/2026)
-- GitHub: `staging` = `3401ea3` (có giao diện điện thoại); `main` = `605f6c1` (V13.20.10.26). **Chưa sync staging → main.**
-- **Railway đang sự cố bảo mật, tạm dừng build** (status.railway.com/incident/QH8L8B3E); gói Trial mở build sau cùng. Cả 2 site vẫn chạy bản V13.
-  - Khi build mở lại: đổi mật khẩu Postgres (production + staging), xóa `SETUP_TOKEN`, kiểm tra kết nối GitHub, Redeploy 1 lần.
-  - Tài khoản Railway là **Trial** (~24 ngày / 4,03 USD) → cần nâng gói Hobby trước khi chạy số liệu thật.
-- **Nhập liệu thật trên bản chính (tài khoản `claude`) – ĐANG TẠM DỪNG:**
-  - DA-2026-01 Nhà xưởng KCN Điện Nam – Điện Ngọc (Hoàn thành, HĐ 25 tỷ): **đã nhập đủ**.
-  - DA-2026-02 Trường TH Hòa Xuân (Đang thi công, 19,5 tỷ): **nhập dở** → cần xóa rồi nhập lại.
-  - DA-2026-03 Văn phòng 7 tầng Mỹ Khê (Đang thi công, 28 tỷ): chưa nhập.
-  - Quy tắc: số tròn, mỗi HĐ thầu phụ ≤ 5 tỷ, mỗi dự án ≤ 30 tỷ; ghi chậm (~0,8 s/lệnh, < 120 lệnh/phút).
-  - Script đã viết sẵn (chỉ có trong máy phiên cũ, sẽ mất): nội dung 3 dự án nằm ở mục 5. Chỉ chạy khi người dùng nói "chạy tiếp".
+## 4. Trạng thái hiện tại (23/10/2026)
+- GitHub: `staging` = `main` (V01.23.10.26, có giao diện điện thoại) – đã sync 23/10/2026.
+- Railway: sự cố đã cho build lại mọi gói. Việc người dùng tự làm trên Railway: đổi mật khẩu Postgres (production + staging), xóa `SETUP_TOKEN`, kiểm tra kết nối GitHub (Settings → Source), Redeploy nếu site không tự lên bản mới.
+  - Tài khoản Railway là **Trial** → cần nâng gói Hobby trước khi chạy số liệu thật.
+- **Nhập liệu thật trên bản chính (tài khoản `claude`) – ĐÃ XONG 3 dự án** (23/10/2026):
+  - DA-2026-01 (id 27) đủ. Lỗi còn lại: tạm ứng TP-02…TP-05 ngày 20/03/2025 trước ngày ký HĐTP (HĐ đã quyết toán, bị khóa).
+  - DA-2026-02 (id 28): nhập bổ sung (không xóa) điện nước T8–13, lương T9–13, vay BIDV; sửa ngày tạm ứng TP-07/08/09.
+  - DA-2026-03 (id 29): nhập mới đủ theo mục 5 (tên đối tác/ngày do Claude đặt – chờ người dùng xác nhận).
+  - Quy tắc: số tròn, mỗi HĐ thầu phụ ≤ 5 tỷ, mỗi dự án ≤ 30 tỷ; ghi chậm (~0,8 s/lệnh, < 120 lệnh/phút). API cần header `X-Requested-With: fetch` + `Origin`.
 
 ## 5. Số liệu 3 dự án (để nhập lại nếu cần), đơn vị triệu đồng
 - **DA-2026-02** – CĐT Ban QLDA ĐTXD quận Cẩm Lệ, HĐ `05/2025/HĐTC-TMN` 18.000 (05/09/2025), PL01 +1.500 (10/02/2026); NT đợt 1–3 mỗi đợt 4.000 (20/12/2025, 20/04/2026, 20/08/2026); tiền về TƯ 2.000, đợt 1 3.500, đợt 2 3.500, đợt 3 3.000. Thầu phụ: Phần thô 4.000 (XD Hòa Khánh), Cửa – nhôm kính 3.000 (Nhôm kính Đà Thành), Điện nước 2.500 (ME Miền Trung), Sân trường 1.500 (Cảnh quan Xanh); trả TƯ 10% + 1 đợt 40% (sau VAT). Chi phí vật tư (Hợp Nhân 900…), nhân công, máy, lán trại, bảo lãnh 40; lương BCH 50/tháng; vay 2.000, trả gốc 1.000 + lãi 20.
