@@ -1029,3 +1029,9 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .td-mx tr.td-sep th { font-weight: 700; }
 .td-mx tr.td-tt-k th { color: var(--navy); }
 .td-mx tr.td-sep th { white-space: normal; vertical-align: bottom; } .td-mx tr.td-sep th small { font-size: 10.5px; text-transform: none; font-weight: 500; }
+.td-cash { margin-top: 12px; }
+.td-htot { --td-ac: #1e3a5f; background: #eef3fa !important; }
+.td-mx td.td-tot { background: #f5f8fc; border-left: 2px solid #dbe4f0; }
+.td-mx tr.td-tt-sub th { font-weight: 500; color: #475569; }
+.td-sub { padding-left: 14px; font-variant-numeric: tabular-nums; }
+.td-fold { padding: 0 6px; margin-right: 6px; font-size: 11px; line-height: 18px; border-radius: 5px; vertical-align: 1px; }

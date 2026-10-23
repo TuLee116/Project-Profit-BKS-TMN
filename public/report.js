@@ -1471,21 +1471,29 @@ function bTdBlock(d) {
     const g = d.tien_thuc?.gd || { thu: [0, 0, 0], tp: [0, 0, 0], cp: [0, 0, 0] };
     const col = [0, 1, 2].map((i) => ({ thu: g.thu[i], tp: g.tp[i], cp: g.cp[i] }));
     let lk = 0;
-    col.forEach((x) => { x.con = x.thu - x.tp - x.cp; lk += x.con; x.lk = lk; x.co = x.thu || x.tp || x.cp; });
+    col.forEach((x) => { x.chi = x.tp + x.cp; x.con = x.thu - x.chi; lk += x.con; x.lk = lk; x.co = x.thu || x.chi; });
+    const T = { thu: 0, tp: 0, cp: 0 };
+    col.forEach((x) => { T.thu += x.thu; T.tp += x.tp; T.cp += x.cp; });
+    T.chi = T.tp + T.cp; T.con = T.thu - T.chi; T.lk = T.con; T.co = true;
+    const mo = Boolean(BST.td_chi);
     const GDT = ['Tạm ứng (sau ký HĐ)', 'Các đợt thanh toán', 'Quyết toán'];
-    const v = (x, k, strong) => (x.co ? `<b class="${x[k] < 0 ? 'neg' : ''} ${strong ? '' : 'td-sm'}">${bTyU(x[k])}</b>` : '<span class="muted small">Chưa phát sinh</span>');
-    const r = (label, k, strong) => `<tr class="td-tt ${strong ? 'td-tt-k' : ''}"><th>${label}</th>${col.map((x) => `<td class="td-c">${v(x, k, strong)}</td>`).join('')}</tr>`;
-    return `<tr class="td-sep"><th>Tiền thực tế<br><small>sau VAT</small></th>${GDT.map((t) => `<th>${t}</th>`).join('')}</tr>
-      ${r('Thực thu', 'thu', true)}${r('Trả thầu phụ', 'tp')}${r('Chi phí khác', 'cp')}${r('Còn lại (thu − chi)', 'con', true)}${r('Còn lại lũy kế', 'lk', true)}`;
+    const v = (x, k, sm) => (x.co ? `<b class="${x[k] < 0 ? 'neg' : ''} ${sm ? 'td-sm' : ''}">${bTyU(x[k])}</b>` : '<span class="muted small">Chưa phát sinh</span>');
+    const r = (label, k, cls = '', sm = false) => `<tr class="td-tt ${cls}"><th>${label}</th>${col.map((x) => `<td class="td-c">${v(x, k, sm)}</td>`).join('')}<td class="td-c td-tot">${v(T, k, sm)}</td></tr>`;
+    const chiLab = `<button type="button" class="td-fold no-print" data-tdchi aria-expanded="${mo}" title="${mo ? 'Thu gọn' : 'Xem chi tiết: trả thầu phụ, chi phí khác'}">${mo ? '▾' : '▸'}</button>Thực chi`;
+    return `<div class="table-wrap td-wrap td-cash"><table class="td-mx no-mcard">
+      <thead><tr><th class="td-corner">Tiền thực tế<br><small>sau VAT</small></th>${GDT.map((t, i) => `<th class="td-h td-h${i + 1}"><div class="td-hn"><b>TĐ${i + 1}</b></div><div class="td-ht2">${t}</div></th>`).join('')}<th class="td-h td-htot"><div class="td-hn"><b>Tổng cộng</b></div><div class="td-ht2">Lũy kế</div></th></tr></thead>
+      <tbody>${r('Tổng tiền về', 'thu', 'td-tt-k')}${r(chiLab, 'chi', 'td-tt-k')}${mo ? r('<span class="td-sub">├ Trả thầu phụ</span>', 'tp', 'td-tt-sub', true) + r('<span class="td-sub">└ Chi phí khác</span>', 'cp', 'td-tt-sub', true) : ''}
+        ${r('Còn lại (thu − chi)', 'con', 'td-tt-k')}${r('Còn lại lũy kế', 'lk', '', true)}</tbody>
+    </table></div>`;
   })();
   return `<div class="pc-tds">
     <div class="pc-td-bar no-print"><span>Ma trận <b>kế hoạch</b> theo hợp đồng tại 3 thời điểm · trước VAT</span>
       ${Object.keys(tds).length ? `<button type="button" class="pc-tt-sw ${tt ? 'on' : ''}" data-tdtt aria-pressed="${tt ? 'true' : 'false'}">${tt ? '✓ ' : ''}So với thực tế</button>` : ''}</div>
     <div class="table-wrap td-wrap"><table class="td-mx no-mcard">
       <thead><tr><th class="td-corner">Chỉ tiêu</th>${[1, 2, 3].map(head).join('')}</tr></thead>
-      <tbody>${ROWS.map(([k, label, good, isPct, cls]) => `<tr class="${cls}"><th>${label}</th>${[1, 2, 3].map((n) => cell(n, k, good, isPct)).join('')}</tr>`).join('')}${thucRows}</tbody>
-    </table></div>
-    <div class="pc-note">TĐ1 ký hợp đồng · TĐ2 có phát sinh (tăng / giảm / không đổi so với TĐ1) · TĐ3 quyết toán (so với TĐ2 và TĐ1) – số kế hoạch nhập tay, trước VAT, tỷ đồng · Cột <i>mờ</i> = chưa chốt, lấy bằng thời điểm trước · <b>HT … lệch</b> = khác số hệ thống (DT theo HĐ gốc / HĐ + PL / QT; riêng TĐ3 đối chiếu cả CP = thầu phụ quyết toán + chi phí khác có ngày ≤ ngày chốt)${tt ? ' · Tiền thực tế theo giai đoạn: TĐ1 = tiền tạm ứng (CĐT ứng, ứng cho thầu phụ), TĐ2 = các đợt thanh toán, TĐ3 = quyết toán; chi phí khác xếp theo ngày chi so với ngày CĐT thanh toán đợt đầu / quyết toán; không gồm vay, trả gốc' : ''}</div>
+      <tbody>${ROWS.map(([k, label, good, isPct, cls]) => `<tr class="${cls}"><th>${label}</th>${[1, 2, 3].map((n) => cell(n, k, good, isPct)).join('')}</tr>`).join('')}</tbody>
+    </table></div>${thucRows}
+    <div class="pc-note">TĐ1 ký hợp đồng · TĐ2 có phát sinh (tăng / giảm / không đổi so với TĐ1) · TĐ3 quyết toán (so với TĐ2 và TĐ1) – số kế hoạch nhập tay, trước VAT, tỷ đồng · Cột <i>mờ</i> = chưa chốt, lấy bằng thời điểm trước · <b>HT … lệch</b> = khác số hệ thống (DT theo HĐ gốc / HĐ + PL / QT; riêng TĐ3 đối chiếu cả CP = thầu phụ quyết toán + chi phí khác có ngày ≤ ngày chốt)${tt ? ' · Tiền thực tế theo giai đoạn: TĐ1 = tiền tạm ứng (CĐT ứng, ứng cho thầu phụ), TĐ2 = các đợt thanh toán, TĐ3 = quyết toán; Thực chi = trả thầu phụ + chi phí khác (bấm ▸ để xem); chi phí khác xếp theo ngày chi so với ngày CĐT thanh toán đợt đầu / quyết toán; không gồm vay, trả gốc' : ''}</div>
   </div>`;
 }
 function bTdDialog(d, n) {
@@ -1602,6 +1610,11 @@ $('#b-report').addEventListener('click', async (e) => {
     BST.th_on = !BST.th_on;
     const tab = $('.pc-tabs button.on', card)?.dataset.pt || 'dt';
     $('.pc-body', card).innerHTML = bPcBody(BC.du_an.find((x) => x.id === id), tab);
+    return bPcDraw(card);
+  }
+  if (e.target.closest('[data-tdchi]')) { // mở / thu gọn chi tiết Thực chi (trả thầu phụ, chi phí khác)
+    BST.td_chi = !BST.td_chi;
+    $('.pc-body', card).innerHTML = bPcBody(BC.du_an.find((x) => x.id === id), 'tong');
     return bPcDraw(card);
   }
   if (e.target.closest('[data-tdtt]')) { // bật/tắt dòng thực tế cho mọi TĐ, giữ nguyên tab đang xem
