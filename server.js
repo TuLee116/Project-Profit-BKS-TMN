@@ -471,7 +471,7 @@ const tdVal = (b) => {
   if (!Number.isInteger(cp) || cp < 0 || cp > 1e15) errors.push('Chi phí phải là số nguyên không âm (đồng)');
   return { data: { td, ngay, dt, cp, ghi_chu: String(b.ghi_chu || '').trim().slice(0, 200) }, errors };
 };
-const TD_TEN = { 1: 'Ban đầu', 2: 'Có phát sinh', 3: 'Quyết toán' };
+const TD_TEN = { 1: 'Ký hợp đồng', 2: 'Có phát sinh', 3: 'Quyết toán' };
 const tdTxt = (t) => (t ? `${TD_TEN[t.td] || ''} · ${t.ngay.split('-').reverse().join('/')} · DT ${new Intl.NumberFormat('vi-VN').format(t.dt)} đ · CP ${new Intl.NumberFormat('vi-VN').format(t.cp)} đ` : '—');
 api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
   const id = parseId(req.params.id);
@@ -481,11 +481,11 @@ api.put('/du-an/:id/thoi-diem/:td', canEdit, wrap(async (req, res) => {
   if (errors.length) return bad(res, errors);
   const all = await store.listThoiDiem(id);
   const old = all.find((t) => t.td === data.td);
-  const prev = all.find((t) => t.td === data.td - 1), next = all.find((t) => t.td === data.td + 1);
-  // Nhập theo thứ tự: có TĐ trước mới nhập TĐ sau; ngày không lùi so với TĐ trước, không vượt TĐ sau
-  if (data.td > 1 && !prev) return bad(res, `Cần nhập TĐ${data.td - 1} trước khi nhập TĐ${data.td}`);
-  if (prev && data.ngay < prev.ngay) return bad(res, `Ngày TĐ${data.td} không được trước ngày TĐ${data.td - 1} (${prev.ngay.split('-').reverse().join('/')})`);
-  if (next && data.ngay > next.ngay) return bad(res, `Ngày TĐ${data.td} không được sau ngày TĐ${data.td + 1} (${next.ngay.split('-').reverse().join('/')})`);
+  // TĐ gần nhất trước / sau đã chốt (TĐ2 có thể bỏ trống khi không phát sinh: TĐ3 chỉ cần TĐ1)
+  const prev = all.filter((t) => t.td < data.td).sort((a, b) => b.td - a.td)[0], next = all.filter((t) => t.td > data.td).sort((a, b) => a.td - b.td)[0];
+  if (data.td > 1 && !all.some((t) => t.td === 1)) return bad(res, `Cần chốt TĐ1 (ký hợp đồng) trước khi nhập TĐ${data.td}`);
+  if (prev && data.ngay < prev.ngay) return bad(res, `Ngày TĐ${data.td} không được trước ngày TĐ${prev.td} (${prev.ngay.split('-').reverse().join('/')})`);
+  if (next && data.ngay > next.ngay) return bad(res, `Ngày TĐ${data.td} không được sau ngày TĐ${next.td} (${next.ngay.split('-').reverse().join('/')})`);
   await store.setThoiDiem(id, data.td, data, req.user.id);
   audit.log(req, old ? 'Sửa' : 'Thêm', 'Thời điểm', `TĐ${data.td} · ${tdTxt(data)}${old ? ` | Trước: ${tdTxt(old)}` : ''}`, { du_an: p.ma_du_an });
   res.json(await store.listThoiDiem(id));

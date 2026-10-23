@@ -990,3 +990,38 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 @media (max-width: 1200px) { .th-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
 @media (max-width: 640px) { .th-grid3 { grid-template-columns: minmax(0, 1fr) !important; } }
 @media print { .th-table { font-size: 10px; } .th-table .th-prj { min-width: 0; } .th-head { break-after: avoid; background: none; } .th-no { box-shadow: none; } .th-table { break-inside: avoid; } }
+
+/* ---------- Ma trận TĐ1 – TĐ2 – TĐ3 (khung công trình) ---------- */
+.td-wrap { margin-top: 2px; }
+.td-mx { width: 100%; min-width: 560px; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.td-mx th, .td-mx td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.td-mx thead th { background: #f4f7fb; text-align: left; }
+.td-mx .td-corner { width: 130px; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; vertical-align: bottom; }
+.td-h { border-top: 3px solid var(--td-ac); }
+.td-h1 { --td-ac: #2c5fa3; } .td-h2 { --td-ac: #c27a3e; } .td-h3 { --td-ac: #16968a; }
+.td-hn { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.td-hn b { font-size: 17px; color: var(--navy); }
+.td-ht2 { font-size: 12px; font-weight: 700; color: var(--td-ac); text-transform: uppercase; letter-spacing: .3px; }
+.td-st { margin-top: 3px; font-size: 11.5px; font-weight: 500; color: var(--muted); text-transform: none; letter-spacing: 0; }
+.td-st-ok { color: #0f8a5f; font-weight: 600; }
+.td-st-warn { color: #b45309; font-weight: 600; }
+.td-btn { padding: 2px 9px; font-size: 11px; border-radius: 6px; }
+.td-btn.td-add { border-style: dashed; color: var(--navy); }
+.td-mx tbody th { text-align: left; font-weight: 700; color: #334155; white-space: nowrap; border-left: 4px solid var(--pc-ac, transparent); }
+.td-mx tr.td-r-dt th { --pc-ac: #2c5fa3; } .td-mx tr.td-r-cp th { --pc-ac: #c27a3e; } .td-mx tr.td-r-ln th { --pc-ac: #16968a; } .td-mx tr.td-r-ts th { --pc-ac: #7e5aa6; }
+.td-mx tbody th, .td-mx .td-corner { position: sticky; left: 0; z-index: 1; background: #fff; }
+.td-mx .td-corner { background: #f4f7fb; }
+.td-mx td { background: #fff; }
+.td-c b { display: block; font-size: 18px; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td-c b .pc-u { font-size: 11px; }
+.td-ghost b { color: #94a3b8; }
+.td-dl { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.td-dl small { font-weight: 500; color: var(--muted); }
+.td-ok { color: #0f8a5f; } .td-bad { color: #d92d35; } .td-eq { color: #64748b; } .td-ke { color: #94a3b8; font-weight: 600; }
+.td-ht { display: block; margin-top: 2px; font-size: 10.5px; color: #b45309; }
+.td-mx tr.td-sep th { position: static; background: #f8fafc; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); border-left: 0; }
+.td-mx tr.td-tt b { font-size: 15px; }
+.pc-modal .td-mx { font-size: 14px; }
+.pc-modal .td-c b { font-size: 22px; }
+@media (max-width: 640px) { .td-mx th, .td-mx td { padding: 8px; } .td-c b { font-size: 15px; } }
+@media print { .td-mx thead th { background: none; } }

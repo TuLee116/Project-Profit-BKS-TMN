@@ -1387,10 +1387,11 @@ function bPcBody(d, tab) {
 }
 
 // ---------------------------------------------------------------------
-// Thời điểm chốt số (TĐ1–TĐ3): số thực tế nhập tay, so với số hệ thống tự tính đến cùng ngày (trước VAT)
-// Chỉ hiện các TĐ đã nhập (có TĐ2 thì hiện TĐ1–TĐ2, có TĐ3 thì hiện đủ); chưa có TĐ nào -> 1 dòng chờ nhập TĐ1
+// Thời điểm chốt số (TĐ1–TĐ3) – ma trận DT · CP · LN · Tỷ suất (kế hoạch, trước VAT):
+//  TĐ1 ký hợp đồng (chưa chốt -> lấy HĐ gốc trên hệ thống) · TĐ2 có phát sinh (chưa chốt -> = TĐ1) · TĐ3 quyết toán (chưa chốt -> = TĐ2)
+//  TĐ2 so với TĐ1, TĐ3 so với TĐ2 (và so với TĐ1): ▲ tăng / ▼ giảm / ● không đổi
 // ---------------------------------------------------------------------
-const TD_TEN = { 1: 'Ban đầu', 2: 'Có phát sinh', 3: 'Quyết toán' };
+const TD_TEN = { 1: 'Ký hợp đồng', 2: 'Có phát sinh', 3: 'Quyết toán' };
 const TD_HT = { 1: 'HĐ gốc', 2: 'HĐ + phụ lục', 3: 'quyết toán' };
 // Số hệ thống theo mốc (KẾ HOẠCH theo hợp đồng): TĐ1 = HĐ gốc · TĐ2 = HĐ + PL · TĐ3 = quyết toán (DT);
 // CP = thầu phụ cùng mốc + chi phí khác đã ghi nhận đến ngày chốt (ngày chứng từ ≤ ngày chốt)
@@ -1404,18 +1405,6 @@ function bSysMoc(d, td, ngay) {
   return { dt: dt || 0, cp: cp || 0, ln: (dt || 0) - (cp || 0) };
 }
 const bTodayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
-function bTdBox(label, cls, val, sys, isPct) {
-  const fmtV = (x) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x));
-  let note;
-  if (val === null || sys === null) note = `HT ${fmtV(sys)}`;
-  else {
-    const diff = val - sys;
-    const near = isPct ? Math.abs(diff) < 0.0005 : Math.abs(diff) <= Math.max(1000, Math.abs(sys) * 0.005);
-    const dtx = isPct ? `${diff > 0 ? '+' : ''}${(diff * 100).toFixed(1).replace('.', ',')} điểm %` : `${diff > 0 ? '+' : ''}${bTy(diff)} tỷ đ`;
-    note = `HT ${fmtV(sys)} · <i class="${near ? 'ok' : 'lech'}">${near ? 'khớp' : 'lệch ' + dtx}</i>`;
-  }
-  return `<div class="pc-k ${cls}"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${fmtV(val)}</b><small class="pc-td-ht">${note}</small></div>`;
-}
 // Tiền thật đến ngày chốt (sau VAT): thực thu = tiền về; thực chi = chi phí đã chi + đã trả thầu phụ (gồm tạm ứng);
 // không gồm nhận tiền vay / trả nợ gốc – cùng cách tính mục "Thực thu – Thực chi"
 function bTienThucDen(d, ngay) {
@@ -1424,41 +1413,72 @@ function bTienThucDen(d, ngay) {
   o.con = o.thu - o.chi;
   return o;
 }
-// Dòng "Thực tế đến ngày chốt" (bật/tắt): tiền thật thu – chi – còn lại (sau VAT), tách hẳn khỏi số kế hoạch phía trên
-function bTdThucTe(d, t) {
-  const a = bTienThucDen(d, t.ngay);
-  const pctTxt = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`;
-  const cell = (label, val, sub, isPct) => `<div class="pc-tt-c"><span>${label}</span><b class="${val < 0 ? 'neg' : ''}">${isPct ? (val === null ? '—' : pctTxt(val)) : bTyU(val)}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
-  return `<div class="pc-td-tt"><div class="pc-tt-lab">Tiền thực tế<br><span>đến ${dmy(t.ngay)} · sau VAT</span></div>
-    ${cell('Thực thu (tiền về)', a.thu)}${cell('Thực chi (tiền ra)', a.chi)}${cell('Còn lại thực (thu − chi)', a.con)}${cell('Tỷ lệ còn lại / thực thu', a.thu ? a.con / a.thu : null, '', true)}</div>`;
+// Mức thay đổi so với mốc trước: good = tăng là tốt (DT, LN, tỷ suất); chi phí tăng là xấu
+function bTdDelta(cur, base, good, isPct, vs) {
+  if (cur === null || base === null) return '';
+  const diff = cur - base;
+  const zero = isPct ? Math.abs(diff) < 0.0005 : Math.abs(diff) < 1000;
+  if (zero) return `<span class="td-dl td-eq">● Không đổi${vs ? ` <small>so với ${vs}</small>` : ''}</span>`;
+  const up = diff > 0;
+  const amt = isPct ? `${up ? '+' : '−'}${Math.abs(diff * 100).toFixed(1).replace('.', ',')} điểm %`
+    : `${up ? '+' : '−'}${bTy(Math.abs(diff))} tỷ${base ? ` (${up ? '+' : '−'}${Math.abs((diff / Math.abs(base)) * 100).toFixed(1).replace('.', ',')}%)` : ''}`;
+  return `<span class="td-dl ${up === good ? 'td-ok' : 'td-bad'}">${up ? '▲ Tăng' : '▼ Giảm'} ${amt}${vs ? ` <small>so với ${vs}</small>` : ''}</span>`;
 }
 function bTdBlock(d) {
-  const tds = [...(d.thoi_diem || [])].sort((a, b) => a.td - b.td);
+  const tds = Object.fromEntries((d.thoi_diem || []).map((t) => [t.td, t]));
   const edit = canEditPc();
-  const pct = (a, b) => (b ? a / b : null);
-  const tt = Boolean(BST.td_tt) && tds.length;
-  const rows = tds.map((t) => {
-    const s = bSysMoc(d, t.td, t.ngay), ln = t.dt - t.cp;
-    return `<div class="pc-td" ${t.ghi_chu ? `title="${esc(t.ghi_chu)}"` : ''}>
-      <div class="pc-td-lab"><b>TĐ${t.td}</b><em>${TD_TEN[t.td]}</em><span>${dmy(t.ngay)}</span>${edit ? `<button type="button" class="pc-td-edit no-print" data-tdedit="${t.td}">Sửa</button>` : ''}</div>
-      <div class="pc-kpis">${bTdBox('Doanh thu', 'k-dt', t.dt, s.dt)}${bTdBox('Chi phí', 'k-cp', t.cp, s.cp)}${bTdBox('Lợi nhuận', 'k-ln', ln, s.ln)}${bTdBox('Tỷ suất LN', 'k-ts', pct(ln, t.dt), pct(s.ln, s.dt), true)}</div>
-    </div>${tt ? bTdThucTe(d, t) : ''}`;
-  });
-  if (!tds.length) {
-    const s = bSysMoc(d, 1, bTodayIso());
-    rows.push(`<div class="pc-td pc-td-empty">
-      <div class="pc-td-lab"><b>TĐ1</b><em>${TD_TEN[1]}</em><span>Chưa nhập</span></div>
-      <div class="pc-td-none">${edit ? '<button type="button" class="primary sm no-print" data-tdedit="1">+ Nhập DT – CP ban đầu</button>' : '<span class="muted">Chưa nhập số liệu thời điểm</span>'}
-        <span class="muted small">Hệ thống theo HĐ gốc: DT <b>${bTy(s.dt)}</b> · CP <b>${bTy(s.cp)}</b> · LN <b class="${s.ln < 0 ? 'neg' : ''}">${bTy(s.ln)}</b> tỷ</span></div>
-    </div>`);
-  }
-  const next = tds.length + 1;
-  const add = edit && tds.length && next <= 3 ? `<button type="button" class="pc-td-add no-print" data-tdedit="${next}">+ Thêm TĐ${next} – ${TD_TEN[next]}</button>` : '';
-  const sw = tds.length ? `<div class="pc-td-bar no-print"><span>Số <b>kế hoạch</b> theo hợp đồng tại từng thời điểm</span>
-    <button type="button" class="pc-tt-sw ${tt ? 'on' : ''}" data-tdtt aria-pressed="${tt ? 'true' : 'false'}">${tt ? '✓ ' : ''}So với thực tế</button></div>` : '';
-  return `<div class="pc-tds">${sw}${rows.join('')}${add}
-    <div class="pc-note">TĐ1 ban đầu · TĐ2 có phát sinh · TĐ3 quyết toán – số <b>kế hoạch</b> nhập tay (trước VAT, tỷ đồng) · dòng nhỏ <b>HT</b> = số hệ thống: DT theo HĐ gốc / HĐ + phụ lục / quyết toán; CP = thầu phụ cùng mốc + chi phí khác có ngày ≤ ngày chốt${
-      tt ? ' · dòng <b>Tiền thực tế</b> = tiền đã về và tiền đã chi ra đến ngày chốt (sau VAT, không gồm vay / trả nợ gốc)' : ''}</div></div>`;
+  const done = d.trang_thai === 'Hoàn thành';
+  const m = d.moc || {};
+  const coPL = (m.dt_ps || 0) !== (m.dt_goc || 0) || (m.tp_ps || 0) !== (m.tp_goc || 0);
+  const val = (x) => ({ ...x, ln: x.dt - x.cp, ts: x.dt ? (x.dt - x.cp) / x.dt : null });
+  // Giá trị hiệu lực từng cột + trạng thái (chưa chốt thì kế thừa cột trước)
+  const C = {};
+  const s1 = bSysMoc(d, 1, bTodayIso());
+  C[1] = tds[1] ? { ...val(tds[1]), nhap: true, st: dmy(tds[1].ngay) }
+    : { ...val({ dt: s1.dt, cp: s1.cp }), nhap: false, st: 'Chưa chốt · theo HĐ gốc trên hệ thống', warn: true };
+  C[2] = tds[2] ? { ...val(tds[2]), nhap: true, st: dmy(tds[2].ngay) }
+    : { ...C[1], nhap: false, ke: 'TĐ1', st: coPL ? 'Hệ thống đã có phụ lục – chưa chốt TĐ2' : done || tds[3] ? 'Không phát sinh' : 'Đang thi công · chưa phát sinh', warn: coPL };
+  C[3] = tds[3] ? { ...val(tds[3]), nhap: true, st: dmy(tds[3].ngay) }
+    : { ...C[2], nhap: false, ke: 'TĐ2', st: done ? 'Đã hoàn thành · chưa chốt quyết toán' : 'Chưa quyết toán', warn: done };
+  for (const n of [1, 2, 3]) C[n].ht = tds[n] ? bSysMoc(d, n, tds[n].ngay) : null;
+  const tt = Boolean(BST.td_tt);
+  const ROWS = [['dt', 'Doanh thu', true, false, 'td-r-dt'], ['cp', 'Chi phí', false, false, 'td-r-cp'], ['ln', 'Lợi nhuận', true, false, 'td-r-ln'], ['ts', 'Tỷ suất LN', true, true, 'td-r-ts']];
+  const fmtV = (x, isPct) => (isPct ? (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`) : bTyU(x));
+  const htNote = (n, k, isPct) => { // đối chiếu số hệ thống, chỉ báo khi lệch
+    const h = C[n].ht;
+    if (!h || isPct) return '';
+    const sys = k === 'dt' ? h.dt : k === 'cp' ? h.cp : h.ln;
+    const diff = C[n][k] - sys;
+    return Math.abs(diff) <= Math.max(1000, Math.abs(sys) * 0.005) ? '' : `<small class="td-ht" title="Số hệ thống theo ${TD_HT[n]}: ${bn(sys)} đ">HT ${bTy(sys)} · lệch ${diff > 0 ? '+' : '−'}${bTy(Math.abs(diff))}</small>`;
+  };
+  const cell = (n, k, good, isPct) => {
+    const c = C[n], v = c[k];
+    let dl = '';
+    if (n > 1) dl = c.nhap ? bTdDelta(v, C[n - 1][k], good, isPct, `TĐ${n - 1}`) : `<span class="td-dl td-ke">= ${c.ke}</span>`;
+    const dl1 = n === 3 && c.nhap && C[2].nhap ? bTdDelta(v, C[1][k], good, isPct, 'TĐ1') : '';
+    return `<td class="td-c ${c.nhap ? '' : 'td-ghost'}"><b class="${v < 0 ? 'neg' : ''}">${fmtV(v, isPct)}</b>${dl}${dl1}${htNote(n, k, isPct)}</td>`;
+  };
+  const head = (n) => {
+    const c = C[n], t = tds[n];
+    const btn = !edit ? '' : t ? `<button type="button" class="td-btn no-print" data-tdedit="${n}">Sửa</button>`
+      : n === 1 || tds[1] ? `<button type="button" class="td-btn td-add no-print" data-tdedit="${n}">+ Chốt TĐ${n}</button>` : '';
+    return `<th class="td-h td-h${n}"><div class="td-hn"><b>TĐ${n}</b>${btn}</div><div class="td-ht2">${TD_TEN[n]}</div>
+      <div class="td-st ${c.nhap ? 'td-st-ok' : c.warn ? 'td-st-warn' : ''}">${c.nhap ? '✓ Đã chốt ' : ''}${c.st}</div></th>`;
+  };
+  const thucRows = !tt ? '' : (() => {
+    const a = [1, 2, 3].map((n) => (tds[n] ? bTienThucDen(d, tds[n].ngay) : null));
+    const r = (label, k, isPct) => `<tr class="td-tt"><th>${label}</th>${a.map((x) => `<td class="td-c">${x ? `<b class="${x[k] < 0 ? 'neg' : ''}">${isPct ? (x.thu ? `${((x.con / x.thu) * 100).toFixed(1).replace('.', ',')}%` : '—') : bTyU(x[k])}</b>` : '<span class="muted">—</span>'}</td>`).join('')}</tr>`;
+    return `<tr class="td-sep"><th colspan="4">Tiền thực tế đến ngày chốt · sau VAT</th></tr>${r('Thực thu', 'thu')}${r('Thực chi', 'chi')}${r('Còn lại thực', 'con')}`;
+  })();
+  return `<div class="pc-tds">
+    <div class="pc-td-bar no-print"><span>Ma trận <b>kế hoạch</b> theo hợp đồng tại 3 thời điểm · trước VAT</span>
+      ${Object.keys(tds).length ? `<button type="button" class="pc-tt-sw ${tt ? 'on' : ''}" data-tdtt aria-pressed="${tt ? 'true' : 'false'}">${tt ? '✓ ' : ''}So với thực tế</button>` : ''}</div>
+    <div class="table-wrap td-wrap"><table class="td-mx no-mcard">
+      <thead><tr><th class="td-corner">Chỉ tiêu</th>${[1, 2, 3].map(head).join('')}</tr></thead>
+      <tbody>${ROWS.map(([k, label, good, isPct, cls]) => `<tr class="${cls}"><th>${label}</th>${[1, 2, 3].map((n) => cell(n, k, good, isPct)).join('')}</tr>`).join('')}${thucRows}</tbody>
+    </table></div>
+    <div class="pc-note">TĐ1 ký hợp đồng · TĐ2 có phát sinh (tăng / giảm / không đổi so với TĐ1) · TĐ3 quyết toán (so với TĐ2 và TĐ1) – số kế hoạch nhập tay, trước VAT, tỷ đồng · Cột <i>mờ</i> = chưa chốt, lấy bằng thời điểm trước · <b>HT … lệch</b> = khác số hệ thống (DT theo HĐ gốc / HĐ + PL / QT; CP = thầu phụ cùng mốc + chi phí khác có ngày ≤ ngày chốt)${tt ? ' · Tiền thực tế = tiền đã về và đã chi đến ngày chốt (không gồm vay / trả gốc)' : ''}</div>
+  </div>`;
 }
 function bTdDialog(d, n) {
   const t = (d.thoi_diem || []).find((x) => x.td === n);
