@@ -1996,6 +1996,36 @@ async function sessionDialog(u) {
   dlg.showModal();
 }
 
+// Bảng giải thích vai trò (nút i cạnh ô Vai trò): được làm / không được làm – khớp bảng QUYEN ở máy chủ
+const ROLE_GUIDE = {
+  admin: ['Toàn quyền: mọi dữ liệu, tài khoản, cài đặt, passcode xóa, phiên đăng nhập, nhật ký', '—'],
+  it: ['Tạo / khóa tài khoản, đặt lại mật khẩu, xem & buộc đăng xuất phiên, xem nhật ký, sửa thông tin liên hệ', 'Không xem số liệu dự án, báo cáo tài chính; không tạo / sửa / cấp quyền Quản trị; không xóa tài khoản'],
+  lanh_dao: ['Xem toàn bộ báo cáo và Dữ liệu (dự án, doanh thu, chi phí); chốt TĐ1–TĐ3; nhập DT-CP dự kiến; xuất file', 'Không nhập, sửa chứng từ, hợp đồng, tiền về, chi phí'],
+  bks: ['Xem toàn bộ báo cáo và Dữ liệu; xem nhật ký hoạt động (ai sửa gì, trước → sau); xuất file', 'Không sửa bất kỳ số liệu nào (kiểm soát độc lập)'],
+  qs: ['Nhập dự án, HĐ / phụ lục, nghiệm thu – quyết toán với CĐT, HĐ thầu phụ và phụ lục thầu phụ, ngày, ảnh công trình', 'Không nhập tiền về, thanh toán thầu phụ, chi phí; không xóa dự án'],
+  ke_toan: ['Nhập tiền về, thanh toán thầu phụ, chi phí, vay – trả nợ, BH/Khác', 'Không sửa HĐ, phụ lục, nghiệm thu, HĐ thầu phụ; không xóa dự án'],
+  editor: ['Nhập toàn bộ (giá trị + tiền), chốt TĐ, DT-CP dự kiến, xóa dự án (cần Passcode) – vai trò cũ, nên chuyển dần sang QS / Kế toán', 'Không quản lý tài khoản, cài đặt, nhật ký'],
+  viewer: ['Xem và xuất báo cáo', 'Không nhập, sửa; không vào trang Dữ liệu, nhật ký'],
+};
+function renderRoleGuide() {
+  const box = $('#role-guide');
+  if (!box) return;
+  box.innerHTML = `<div class="rg-head"><b>Quyền của từng vai trò</b><button type="button" class="ghost-x" data-rg-close aria-label="Đóng">✕</button></div>
+    <div class="table-wrap"><table class="rg-table no-mcard"><thead><tr><th>Vai trò</th><th>Được làm</th><th>Không được làm</th></tr></thead>
+    <tbody>${Object.entries(META.roles).filter(([k]) => ME.role === 'admin' || k !== 'admin').map(([k, v]) => `<tr><td><span class="st role-${k}">${esc(v)}</span></td>
+      <td>${esc(ROLE_GUIDE[k]?.[0] || '')}</td><td class="muted">${esc(ROLE_GUIDE[k]?.[1] || '')}</td></tr>`).join('')}</tbody></table></div>
+    <p class="muted small">Mọi vai trò đều xem được báo cáo (trừ IT). Quyền được kiểm tra ở máy chủ, ẩn nút chỉ để giao diện gọn.</p>`;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('#role-help, [data-rg-close]');
+  if (!b) return;
+  const box = $('#role-guide'), help = $('#role-help');
+  const open = b.id === 'role-help' ? box.hidden : false;
+  if (open) renderRoleGuide();
+  box.hidden = !open; help.setAttribute('aria-expanded', String(open));
+  if (open) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
 async function loadUsers(auto = false) {
   users = await api('/api/users', auto === true ? AUTO : {});
   $('#u-tbody').innerHTML = users.map((u) => `

@@ -206,7 +206,7 @@
           <label>Tên đăng nhập *<input name="username" required pattern="[A-Za-z0-9._\-]{3,50}" autocomplete="off"
             title="3–50 ký tự: chữ không dấu, số, dấu . _ -"></label>
           <label>Họ tên *<input name="full_name" required maxlength="100"></label>
-          <label>Quyền<select name="role"></select></label>
+          <label><span class="lbl-help">Vai trò <button type="button" class="help-q" id="role-help" aria-expanded="false" aria-controls="role-guide" title="Xem quyền của từng vai trò" aria-label="Xem quyền của từng vai trò"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="6.3" r="1.15" fill="currentColor"/><rect x="9.15" y="8.6" width="1.7" height="5.6" rx=".85" fill="currentColor"/></svg></button></span><select name="role"></select></label>
           <label><span id="u-pass-label">Mật khẩu *</span><input name="password" type="password" required autocomplete="new-password"></label>
           <label class="check"><input name="active" type="checkbox" checked> Đang hoạt động</label>
           <div class="actions">
@@ -215,12 +215,8 @@
           </div>
           <div id="u-msg" class="msg" role="alert"></div>
         </form>
-        <p class="muted small">
-          <b>Quản trị</b>: toàn quyền, quản lý tài khoản &amp; cài đặt ·
-          <b>Nhập liệu</b>: thêm/sửa/xóa dự án ·
-          <b>Chỉ xem</b>: xem và xuất báo cáo.
-          Khi sửa, để trống mật khẩu nếu không muốn đổi.
-        </p>
+        <div id="role-guide" class="role-guide" hidden></div>
+        <p class="muted small">Bấm <span class="help-q help-q-sm"><svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="6.3" r="1.15" fill="currentColor"/><rect x="9.15" y="8.6" width="1.7" height="5.6" rx=".85" fill="currentColor"/></svg></span> cạnh ô Vai trò để xem quyền của từng vai trò. Khi sửa, để trống mật khẩu nếu không muốn đổi.</p>
       </div>
       <div class="card" data-role="admin it">
         <h2>Danh sách tài khoản</h2>

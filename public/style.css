@@ -1150,3 +1150,38 @@ body { overflow-anchor: none; } /* vị trí cuộn do renderKeepPos tự giữ,
   .subnav { width: 100%; justify-content: space-between; }
   .subnav button { flex: 1; padding: 9px 6px; font-size: 13.5px; }
 }
+
+/* Nút i giải thích vai trò + bảng quyền */
+.lbl-help { display: inline-flex; align-items: center; gap: 6px; }
+.help-q { display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent;
+  color: #2c5fa3; cursor: pointer; box-shadow: none; transition: background .15s, color .15s, transform .15s; }
+.help-q:hover, .help-q:focus-visible, .help-q[aria-expanded="true"] { background: #2c5fa3; color: #fff; transform: scale(1.06); }
+.help-q:focus-visible { outline: 2px solid #9cc0ef; outline-offset: 1px; }
+.help-q svg { display: block; }
+.help-q-sm { width: 17px; height: 17px; vertical-align: -3px; cursor: default; color: #2c5fa3; }
+.help-q-sm:hover { background: transparent; color: #2c5fa3; transform: none; }
+.role-guide { margin: 14px 0 6px; padding: 12px 14px; border-radius: 12px; border: 1px solid #dbe4f0; background: #f8fbff; animation: tapTip .14s ease; }
+.role-guide[hidden] { display: none; }
+.rg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--navy); }
+.ghost-x { border: 0; background: transparent; font-size: 14px; color: var(--muted); cursor: pointer; padding: 2px 6px; box-shadow: none; }
+.rg-table { width: 100%; font-size: 12.5px; border-collapse: collapse; }
+.rg-table th, .rg-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.rg-table th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); background: #fff; }
+.rg-table td:first-child { white-space: nowrap; }
+@media (max-width: 640px) { .rg-table { min-width: 560px; } }
+.role-it { color: #1d4ed8; background: #dbeafe; }
+.role-lanh_dao { color: #9a3412; background: #ffedd5; }
+.role-bks { color: #b91c1c; background: #fee2e2; }
+.role-qs { color: #0f766e; background: #ccfbf1; }
+.role-ke_toan { color: #a16207; background: #fef3c7; }
+.rg-table { table-layout: fixed; }
+.rg-table th, .rg-table td { white-space: normal; overflow-wrap: anywhere; }
+.rg-table th:first-child, .rg-table td:first-child { width: 190px; white-space: nowrap; }
+.rg-table th:nth-child(3), .rg-table td:nth-child(3) { width: 34%; }
+@media (max-width: 640px) { .rg-table th:first-child, .rg-table td:first-child { width: 150px; } }
+
+.rg-table { table-layout: fixed; }
+.rg-table th, .rg-table td { white-space: normal; overflow-wrap: anywhere; }
+.rg-table th:first-child, .rg-table td:first-child { width: 190px; white-space: nowrap; }
+.rg-table th:nth-child(3), .rg-table td:nth-child(3) { width: 34%; }
+@media (max-width: 640px) { .rg-table th:first-child, .rg-table td:first-child { width: 150px; } }
