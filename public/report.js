@@ -432,7 +432,9 @@ function bTongHopData(list, v, P) {
     const g1 = td1 ? { dt: Number(td1.dt) || 0, cp: Number(td1.cp) || 0 } : bSysMoc(d, 1);
     const rD = v === 'sv' && m.dt?.goc?.gt ? m.dt.goc.sv / m.dt.goc.gt : v === 'sv' ? 1.1 : 1;
     const rCp = v === 'sv' ? (cpGt ? cpSv / cpGt : 1.1) : 1;
-    const dt1 = Math.round(g1.dt * rD), cp1 = Math.round(g1.cp * rCp);
+    // Số TĐ1 nhập tay là trước VAT; xem sau VAT thì quy đổi và làm tròn tới 0,1 tỷ (số ước tính, tránh số lẻ)
+    const r01 = (x) => (v === 'sv' ? Math.round(x / 1e8) * 1e8 : Math.round(x));
+    const dt1 = r01(g1.dt * rD), cp1 = r01(g1.cp * rCp);
     return { d, dt1, cp1, ln1: dt1 - cp1, td1: Boolean(td1), dt, cp, ns: Boolean(nsGt), ns_v: nsV, cp_ghi: d.du_kien.chi_phi[v], vuot, ln: dt - cp, tp, hd_sv: dt, thu, chi, con: thu - chi, vay: c.vay, goc: c.goc, phai_thu: dt - thu };
   });
   const T = rows.reduce((a, x) => { for (const k of ['dt1', 'cp1', 'ln1', 'dt', 'cp', 'ln', 'tp', 'hd_sv', 'thu', 'chi', 'con', 'vay', 'goc', 'phai_thu']) a[k] += x[k]; return a; },
@@ -471,7 +473,7 @@ function bTongHopHtml(list, v, P) {
         <td class="num strong ${x.ln1 < 0 ? 'neg' : 'pos'}">${bTy(x.ln1)}</td><td class="f-pct">${meter(x.dt1 ? x.ln1 / x.dt1 : 0, 0.3, BCOL.dk)}<b class="${x.ln1 < 0 ? 'neg' : ''}">${bpct(x.ln1, x.dt1)}${x.td1 ? '' : '<sup class="th-tt" title="Chưa chốt TĐ1: lấy HĐ gốc và chi phí trên hệ thống">*</sup>'}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.dt1), bTy(T.cp1), ty(T.ln1), bpct(T.ln1, T.dt1)])}
     </table></div>
-    <p class="muted small f-note">Số dự kiến theo TĐ1 đã chốt (Doanh thu, Chi phí khi ký HĐ – nhập ở bảng TĐ của từng dự án). <b>(*)</b> Dự án chưa chốt TĐ1: lấy HĐ gốc với CĐT, thầu phụ theo HĐ gốc và chi phí khác đã ghi nhận trên hệ thống. Xem sau VAT: doanh thu quy đổi theo VAT của HĐ gốc, chi phí theo tỷ lệ VAT của chi phí dự án. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">Số dự kiến theo TĐ1 đã chốt (Doanh thu, Chi phí khi ký HĐ – nhập ở bảng TĐ của từng dự án). <b>(*)</b> Dự án chưa chốt TĐ1: lấy HĐ gốc với CĐT, thầu phụ theo HĐ gốc và chi phí khác đã ghi nhận trên hệ thống. Xem sau VAT: doanh thu quy đổi theo VAT của HĐ gốc, chi phí theo tỷ lệ VAT của chi phí dự án, làm tròn tới 0,1 tỷ. Thanh tỷ lệ: đầy = 30%.</p>
     ${(() => { // Thẻ DT – CP – LN tại thời điểm mới nhất (đã QT: TĐ3 · chưa QT: TĐ2), lấy cùng nguồn mục IV
       const M = bMuc4Data(list, v), q = M.rows.filter((x) => x.qt), t = M.rows.filter((x) => !x.qt);
       const S = (a, k) => a.reduce((s2, x) => s2 + x[k], 0);
