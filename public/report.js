@@ -563,14 +563,17 @@ function bMuc4Html(list, v) {
   const lab = (key, label) => key === 'gop' // nút mở / ẩn 2 dòng LN gộp
     ? `<th>${label}<button type="button" class="iv-gop no-print ${gop ? 'on' : ''}" data-ivgop aria-expanded="${gop}" title="${gop ? 'Ẩn' : 'Xem'} lợi nhuận gộp">${gop ? '−' : '+'}</button></th>`
     : `<th>${label}${key ? `<button type="button" class="iv-ct no-print ${ct === key ? 'on' : ''}" data-ivct="${key}" aria-expanded="${ct === key}">${ct === key ? '▴ Ẩn chi tiết' : '▾ Chi tiết'}</button>` : ''}</th>`;
-  const cell = (vals, i, good, isPct) => `<td class="td-c">${num(vals[i], isPct, i === 2 && allGhost)}${i ? bTdDelta(vals[i], vals[i - 1], good, isPct, `TĐ${i}`) : ''}</td>`;
+  const tDt = [T.t1, T.t2, T.t3];
+  // Dòng Chi phí: thêm tỷ lệ chi phí / doanh thu cùng thời điểm
+  const pDt = (key, x, i) => (key === 'cp' && tDt[i] ? `<div class="iv-pdt">= ${pctT(x / tDt[i])} doanh thu</div>` : '');
+  const cell = (key, vals, i, good, isPct) => `<td class="td-c">${num(vals[i], isPct, i === 2 && allGhost)}${pDt(key, vals[i], i)}${i ? bTdDelta(vals[i], vals[i - 1], good, isPct, `TĐ${i}`) : ''}</td>`;
   const qtNote = T.n_qt === rows.length ? '✓ Tất cả dự án đã quyết toán' : `${T.n_qt}/${rows.length} dự án đã quyết toán · dự án chưa QT lấy bằng TĐ2`;
   const sum = `<div class="table-wrap td-wrap"><table class="td-mx no-mcard iv-sum">
     <thead><tr><th class="td-corner">Chỉ tiêu</th>
       <th class="td-h td-h1"><div class="td-hn"><b>TĐ1</b></div><div class="td-ht2">Hợp đồng</div><div class="td-st">HĐ gốc ký với CĐT</div></th>
       <th class="td-h td-h2"><div class="td-hn"><b>TĐ2</b></div><div class="td-ht2">Điều chỉnh</div><div class="td-st">HĐ + phụ lục tăng / giảm</div></th>
       <th class="td-h td-h3"><div class="td-hn"><b>TĐ3</b></div><div class="td-ht2">Quyết toán</div><div class="td-st ${T.n_qt === rows.length ? 'td-st-ok' : ''}">${qtNote}</div></th></tr></thead>
-    <tbody>${R.filter(([, , , , , cls]) => gop || !cls.includes('td-r-gop')).map(([key, label, vals, good, isPct, cls]) => `<tr class="${cls} ${ct === key ? 'iv-row-on' : ''}">${lab(key, label)}${[0, 1, 2].map((i) => cell(vals, i, good, isPct)).join('')}</tr>`).join('')}</tbody>
+    <tbody>${R.filter(([, , , , , cls]) => gop || !cls.includes('td-r-gop')).map(([key, label, vals, good, isPct, cls]) => `<tr class="${cls} ${ct === key ? 'iv-row-on' : ''}">${lab(key, label)}${[0, 1, 2].map((i) => cell(key, vals, i, good, isPct)).join('')}</tr>`).join('')}</tbody>
   </table></div>`;
 
   // ---- Bảng chi tiết theo dự án của dòng đang mở ----

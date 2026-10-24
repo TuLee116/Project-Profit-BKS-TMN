@@ -1185,3 +1185,6 @@ body { overflow-anchor: none; } /* vị trí cuộn do renderKeepPos tự giữ,
 .rg-table th:first-child, .rg-table td:first-child { width: 190px; white-space: nowrap; }
 .rg-table th:nth-child(3), .rg-table td:nth-child(3) { width: 34%; }
 @media (max-width: 640px) { .rg-table th:first-child, .rg-table td:first-child { width: 150px; } }
+
+/* Mục IV: tỷ lệ chi phí / doanh thu dưới số chi phí */
+.iv-pdt{font-size:11.5px;color:#6b7a90;font-weight:600;margin:2px 0 1px}
