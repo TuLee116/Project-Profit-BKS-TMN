@@ -1329,8 +1329,7 @@ function renderCost() {
   }
 
   const sumCells = (t, cls = '') => `
-      <td class="num ${cls}">${money(t.gia_tri)}</td><td></td>
-      <td class="num ${cls}">${money(t.tien_vat)}</td>
+      <td class="num ${cls}">${money(t.gia_tri)}</td>
       <td class="num ${cls}">${money(t.sau_vat)}</td>
       <td class="num">${pct(t.sau_vat)}</td>`;
   const toggle = (key, n) => (n ? `<button class="grp-toggle" data-cgrp="${key}">${costOpen.has(key) ? '▾' : '▸'}</button>` : '<span class="grp-toggle-sp"></span>');
@@ -1341,8 +1340,8 @@ function renderCost() {
       <td class="num muted">${no}</td>
       <td class="indent-${indent}"><span class="tree">└</span>${esc(r.noi_dung)}</td>
       <td class="c-dt">${esc(r.doi_tac)}${r.so_ct ? `<div class="muted small">${esc(r.so_ct)}</div>` : ''}</td><td>${dmy(r.ngay)}</td>
-      <td class="num">${money(r.gia_tri)}</td><td class="num">${r.khong_vat && !r.vat ? '<span class="muted small">Không VAT</span>' : vatBadge(r.vat)}</td>
-      <td class="num">${money(r.tien_vat)}</td><td class="num strong">${money(r.sau_vat)}</td>
+      <td class="num">${money(r.gia_tri)}</td>
+      <td class="num strong">${money(r.sau_vat)}<div class="c-vat">${r.vat ? `VAT ${r.vat}%` : r.khong_vat ? 'Không VAT' : vatBadge(0)}</div></td>
       <td class="num muted">${ngoaiCp(r) ? '—' : pct(r.sau_vat)}</td>
       <td class="c-note">${esc(r.ghi_chu)}</td>
       <td class="row-actions">${edit ? `<button class="sm" data-cedit="${r.id}">Sửa</button><button class="danger sm" data-cdel="${r.id}">Xóa</button>` : ''}</td>
@@ -1376,8 +1375,8 @@ function renderCost() {
             <td class="num muted">${no}.${j + 1}.${x + 1}</td>
             <td class="indent-2"><span class="tree">└</span><b class="tp-open" data-tp="${c.id}" title="Nhấp đúp để mở chi tiết">${esc(c.so_ma)}</b>${c.so_pl ? ` <span class="muted small">(+${c.so_pl} PL)</span>` : ''}</td>
             <td class="c-dt">${esc(c.doi_tac)}</td><td></td>
-            <td class="num">${money(c.qt_gia_tri)}</td><td class="num muted small">HT/QT</td>
-            <td class="num">${money(c.qt_tien_vat)}</td><td class="num strong">${money(c.qt_sau_vat)}</td>
+            <td class="num">${money(c.qt_gia_tri)}</td>
+            <td class="num strong">${money(c.qt_sau_vat)}<div class="c-vat">HT/QT</div></td>
             <td class="num muted">${pct(c.qt_sau_vat)}</td><td class="c-note">${esc(c.ghi_chu)}</td>
             <td class="row-actions"><button class="sm" data-tpopen="${c.id}">Chi tiết</button></td>
           </tr>`;
@@ -1402,7 +1401,7 @@ function renderCost() {
         const key = `${n.code}:_`;
         html += `<tr class="c-g2"><td class="num muted">${no}.${n.sub.length + 1}</td>
           <td colspan="3" class="indent-1">${toggle(key, orphan.length)}<span class="warn-text">Chưa phân loại hạng mục – bấm Sửa để chọn</span> <span class="muted small">(${orphan.length} dòng)</span></td>
-          <td colspan="5"></td><td></td><td></td></tr>`;
+          <td colspan="3"></td><td></td><td></td></tr>`;
         if (costOpen.has(key)) orphan.forEach((r, x) => { html += detail(r, `${no}.${n.sub.length + 1}.${x + 1}`, 2); });
       }
     });
@@ -1423,7 +1422,7 @@ function renderCost() {
           <table class="cost-table">
             <thead><tr>
               <th class="num">#</th><th>Nội dung</th><th>Đối tác / Số HĐ-CT</th><th>Ngày</th>
-              <th class="num">Trước VAT</th><th class="num">VAT</th><th class="num">Tiền VAT</th><th class="num">Sau VAT</th><th class="num">Tỷ trọng</th><th>Ghi chú</th><th></th>
+              <th class="num">Trước VAT</th><th class="num">Sau VAT</th><th class="num">Tỷ trọng</th><th>Ghi chú</th><th></th>
             </tr></thead>
             <tbody></tbody><tfoot></tfoot>
           </table>
