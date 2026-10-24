@@ -408,7 +408,7 @@ function bFinHtml(list, v) {
 // BÁO CÁO TỔNG HỢP (Ban TGĐ / Hội đồng)
 //  I.  Doanh thu theo hợp đồng: DT = HĐ + PL (đã QT theo QT) · CP = thầu phụ theo HĐ/QT + chi phí khác đã ghi nhận · LN = DT − CP (theo nút VAT)
 //  II. Dòng tiền thực tế (lũy kế, theo nút VAT: trước VAT quy đổi theo tỷ lệ): Dòng thu = tiền về · Dòng chi = chi phí đã chi + trả thầu phụ · Còn lại = thu − chi (không gồm vay / trả gốc)
-//  III. Doanh thu mới nhất (HĐ + PL, đã QT: TĐ3) · Còn lại = Doanh thu mới nhất − Thực chi
+//  III. Doanh thu (TĐ mới nhất) (HĐ + PL, đã QT: TĐ3) · Còn lại = Doanh thu (TĐ mới nhất) − Thực chi
 // ---------------------------------------------------------------------
 function bTongHopData(list, v, P) {
   const to = P.to < bNowYm() ? P.to : bNowYm();
@@ -483,12 +483,12 @@ function bTongHopHtml(list, v, P) {
 
     ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Doanh thu tại thời điểm mới nhất trừ tổng thực chi', ['Từ mục II và IV', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
-      ${card('dt', 'Doanh thu mới nhất', T.hd_sv, ['HĐ + phụ lục tại thời điểm mới nhất', 'HĐ đã quyết toán lấy theo quyết toán (TĐ3)'])}
-      ${card('cp', 'Thực chi', T.chi, [`${meter(T.chi, T.hd_sv, BCOL.chi)}`, `Bằng <b>${bpct(T.chi, T.hd_sv)}</b> doanh thu mới nhất`])}
-      ${card('ln', 'Còn lại', T.hd_sv - T.chi, ['Doanh thu mới nhất − Thực chi', `Bằng <b>${bpct(T.hd_sv - T.chi, T.hd_sv)}</b> doanh thu mới nhất`])}
+      ${card('dt', 'Doanh thu (TĐ mới nhất)', T.hd_sv, ['HĐ + phụ lục tại thời điểm mới nhất', 'HĐ đã quyết toán lấy theo quyết toán (TĐ3)'])}
+      ${card('cp', 'Thực chi', T.chi, [`${meter(T.chi, T.hd_sv, BCOL.chi)}`, `Bằng <b>${bpct(T.chi, T.hd_sv)}</b> doanh thu (TĐ mới nhất)`])}
+      ${card('ln', 'Còn lại', T.hd_sv - T.chi, ['Doanh thu (TĐ mới nhất) − Thực chi', `Bằng <b>${bpct(T.hd_sv - T.chi, T.hd_sv)}</b> doanh thu (TĐ mới nhất)`])}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Doanh thu mới nhất', 'Thực chi', 'Còn lại', '% thực chi / DT'])}
+      ${hd(['Doanh thu (TĐ mới nhất)', 'Thực chi', 'Còn lại', '% thực chi / DT'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.hd_sv)}</td><td class="num">${bTy(x.chi)}</td>
         <td class="num strong">${ty(x.hd_sv - x.chi)}</td><td class="f-pct">${meter(x.chi, x.hd_sv, BCOL.chi)}<b>${bpct(x.chi, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.hd_sv), bTy(T.chi), ty(T.hd_sv - T.chi), bpct(T.chi, T.hd_sv)])}
