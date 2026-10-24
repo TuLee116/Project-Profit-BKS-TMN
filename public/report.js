@@ -426,7 +426,8 @@ function bTongHopData(list, v, P) {
     // Tiền thật luôn sau VAT; xem trước VAT thì quy đổi theo tỷ lệ trước/sau VAT (thu theo DT, chi theo CP) để 4 mục cùng một nền VAT
     const dtSv = d.du_kien.doanh_thu.sv;
     const rT = v === 'sv' ? 1 : (dtSv ? d.du_kien.doanh_thu.gt / dtSv : 1 / 1.1), rC = v === 'sv' || !cpSv ? 1 : cpGt / cpSv;
-    const thu = Math.round(c.thu * rT), chi = Math.round(c.chi * rC);
+    const q01 = (x, r) => (r === 1 ? x : Math.round((x * r) / 1e8) * 1e8); // quy đổi trước VAT: làm tròn 0,1 tỷ
+    const thu = q01(c.thu, rT), chi = q01(c.chi, rC);
     // TĐ1 – ký hợp đồng (dự kiến): số đã chốt TĐ1 (nhập tay, trước VAT); chưa chốt thì lấy HĐ gốc + thầu phụ HĐ gốc + chi phí khác trên hệ thống
     const m = d.moc || {}, td1 = (d.thoi_diem || []).find((t) => t.td === 1);
     const g1 = td1 ? { dt: Number(td1.dt) || 0, cp: Number(td1.cp) || 0 } : bSysMoc(d, 1);
@@ -498,7 +499,7 @@ function bTongHopHtml(list, v, P) {
         <td class="num strong ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
       ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
     </table></div>
-    ${v === 'gt' ? '<p class="muted small f-note">Trước VAT: tiền thật (đã gồm VAT) được quy đổi theo tỷ lệ trước / sau VAT của doanh thu (dòng thu) và chi phí (dòng chi) từng dự án.</p>' : ''}
+    ${v === 'gt' ? '<p class="muted small f-note">Trước VAT: tiền thật (đã gồm VAT) được quy đổi theo tỷ lệ trước / sau VAT của doanh thu (dòng thu) và chi phí (dòng chi) từng dự án, làm tròn tới 0,1 tỷ.</p>' : ''}
 
     ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Doanh thu tại thời điểm mới nhất trừ tổng thực chi', ['Từ mục II và IV', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
@@ -535,8 +536,8 @@ function bMuc4Data(list, v) {
     const rDt = dt.qt;
     const cSv = cp.tp_qt.sv + cp.khac.sv, cGt = cp.tp_qt.gt + cp.khac.gt;
     const nhanSv = dt.da_nhan, chiSv = bThuc(d, to).chi;
-    const nhan = v === 'sv' || !rDt.sv ? nhanSv : Math.round(nhanSv * (rDt.gt / rDt.sv));
-    const chi = v === 'sv' || !cSv ? chiSv : Math.round(chiSv * (cGt / cSv));
+    const nhan = v === 'sv' || !rDt.sv ? nhanSv : Math.round((nhanSv * (rDt.gt / rDt.sv)) / 1e8) * 1e8; // quy đổi trước VAT: làm tròn 0,1 tỷ
+    const chi = v === 'sv' || !cSv ? chiSv : Math.round((chiSv * (cGt / cSv)) / 1e8) * 1e8;
     const b1 = (cp.khac_b1 || { gt: 0, sv: 0 })[v]; // giá vốn = thầu phụ cùng mốc + chi phí trực tiếp khác (B1)
     const g1 = t1 - cp.tp_goc[v] - b1, g2 = t2 - cp.tp_ps[v] - b1, g3 = t3 - cp.tp_qt[v] - b1;
     return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3, g1, g2, g3,
