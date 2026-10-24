@@ -454,18 +454,10 @@ function bTongHopHtml(list, v, P) {
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   return `
     ${thHead('I', 'Doanh thu theo hợp đồng', 'Tổng giá trị hợp đồng (HĐ + phụ lục) – chi phí – lợi nhuận', ['Toàn bộ hợp đồng', vt[0].toUpperCase() + vt.slice(1)])}
-    <div class="f-grid">
+    <div class="f-grid th-grid3">
       ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
       ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
       ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
-      ${(() => { // LN còn lại = LN kế hoạch (đã QT: TĐ3 · chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi); cùng nền VAT với các mục II–IV
-        const now = bNowYm();
-        const kh = T.ln; // cùng cách tính cột Lợi nhuận (gồm DT-CP dự kiến), theo nút VAT
-        const tt = bTongHopData(list, v, { ...P, to: now }).T.con;
-        return card('ts', `LN kế hoạch còn lại · ${vt}`, kh - tt, [
-          `Kế hoạch <b>${bTy(kh)}</b> − Thực tế <b class="${tt < 0 ? 'neg' : ''}">${bTy(tt)}</b> tỷ`,
-        ]);
-      })()}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN']).replace('</tr></thead>', `${can('ns') ? '<th class="no-print th-act" title="Nhập DT-CP dự kiến"></th>' : ''}</tr></thead>`)}
@@ -473,7 +465,7 @@ function bTongHopHtml(list, v, P) {
         <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td>${can('ns') ? `<td class="no-print th-act">${x.d.trang_thai !== 'Hoàn thành' ? `<button type="button" class="th-ns-edit" data-ivbh="${x.d.id}" title="Nhập DT-CP dự kiến">✎</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
       ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)]).replace('</tr></tfoot>', `${can('ns') ? '<td class="no-print th-act"></td>' : ''}</tr></tfoot>`)}
     </table></div>
-    <p class="muted small f-note">LN kế hoạch còn lại = LN kế hoạch (đã QT: TĐ3, chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi, không gồm vay, trả gốc), cùng nền VAT với nút trước / sau VAT. Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
