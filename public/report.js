@@ -466,6 +466,17 @@ function bTongHopHtml(list, v, P) {
       ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)]).replace('</tr></tfoot>', `${can('ns') ? '<td class="no-print th-act"></td>' : ''}</tr></tfoot>`)}
     </table></div>
     <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
+    ${(() => { // Thẻ DT – CP – LN tại thời điểm mới nhất (đã QT: TĐ3 · chưa QT: TĐ2), lấy cùng nguồn mục IV
+      const M = bMuc4Data(list, v), q = M.rows.filter((x) => x.qt), t = M.rows.filter((x) => !x.qt);
+      const S = (a, k) => a.reduce((s2, x) => s2 + x[k], 0);
+      const grp = (a, lab) => (a.length ? `${lab} (${a.length} DA): DT <b>${bTy(S(a, 't3'))}</b> · CP <b>${bTy(S(a, 'c3'))}</b> · LN <b class="${S(a, 'l3') < 0 ? 'neg' : ''}">${bTy(S(a, 'l3'))}</b> tỷ (${bpct(S(a, 'l3'), S(a, 't3'))})` : '');
+      const it = (lab, val, sub) => `<div class="th-moi-i"><div class="f-title">${lab}</div><div class="f-val ${val < 0 ? 'neg' : ''}">${bTy(val)} <small>tỷ</small></div><div class="th-moi-s">${sub}</div></div>`;
+      return `<div class="f-card f-ln th-moi"><div class="f-body">
+        <div class="f-title th-moi-t">Doanh thu – Chi phí tại thời điểm mới nhất · ${vt}</div>
+        <div class="th-moi-g">${it('Doanh thu', M.T.t3, `${M.rows.length} dự án`)}${it('Chi phí', M.T.c3, `Bằng <b>${bpct(M.T.c3, M.T.t3)}</b> doanh thu`)}${it('Lợi nhuận', M.T.l3, `Tỷ suất <b>${bpct(M.T.l3, M.T.t3)}</b>`)}</div>
+        <div class="f-lines th-moi-n">${[grp(q, 'Đã quyết toán – số thực'), grp(t, 'Chưa quyết toán – tạm tính theo TĐ2')].filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div>
+      </div></div>`;
+    })()}
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
