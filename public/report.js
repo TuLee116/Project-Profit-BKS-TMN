@@ -406,7 +406,7 @@ function bFinHtml(list, v) {
 
 // ---------------------------------------------------------------------
 // BÁO CÁO TỔNG HỢP (Ban TGĐ / Hội đồng)
-//  I.  Doanh thu theo hợp đồng: DT = HĐ + PL (đã QT theo QT) · CP = thầu phụ theo HĐ/QT + chi phí khác đã ghi nhận · LN = DT − CP (theo nút VAT)
+//  I.  DT – CP – LN dự kiến tại TĐ1 (ký HĐ) · thẻ TĐ mới nhất bên dưới · (cũ) Doanh thu theo hợp đồng: DT = HĐ + PL (đã QT theo QT) · CP = thầu phụ theo HĐ/QT + chi phí khác đã ghi nhận · LN = DT − CP (theo nút VAT)
 //  II. Dòng tiền thực tế (lũy kế, theo nút VAT: trước VAT quy đổi theo tỷ lệ): Dòng thu = tiền về · Dòng chi = chi phí đã chi + trả thầu phụ · Còn lại = thu − chi (không gồm vay / trả gốc)
 //  III. Doanh thu (TĐ mới nhất) (HĐ + PL, đã QT: TĐ3) · Còn lại = Doanh thu (TĐ mới nhất) − Thực chi
 // ---------------------------------------------------------------------
@@ -427,10 +427,16 @@ function bTongHopData(list, v, P) {
     const dtSv = d.du_kien.doanh_thu.sv;
     const rT = v === 'sv' ? 1 : (dtSv ? d.du_kien.doanh_thu.gt / dtSv : 1 / 1.1), rC = v === 'sv' || !cpSv ? 1 : cpGt / cpSv;
     const thu = Math.round(c.thu * rT), chi = Math.round(c.chi * rC);
-    return { d, dt, cp, ns: Boolean(nsGt), ns_v: nsV, cp_ghi: d.du_kien.chi_phi[v], vuot, ln: dt - cp, tp, hd_sv: dt, thu, chi, con: thu - chi, vay: c.vay, goc: c.goc, phai_thu: dt - thu };
+    // TĐ1 – ký hợp đồng (dự kiến): số đã chốt TĐ1 (nhập tay, trước VAT); chưa chốt thì lấy HĐ gốc + thầu phụ HĐ gốc + chi phí khác trên hệ thống
+    const m = d.moc || {}, td1 = (d.thoi_diem || []).find((t) => t.td === 1);
+    const g1 = td1 ? { dt: Number(td1.dt) || 0, cp: Number(td1.cp) || 0 } : bSysMoc(d, 1);
+    const rD = v === 'sv' && m.dt?.goc?.gt ? m.dt.goc.sv / m.dt.goc.gt : v === 'sv' ? 1.1 : 1;
+    const rCp = v === 'sv' ? (cpGt ? cpSv / cpGt : 1.1) : 1;
+    const dt1 = Math.round(g1.dt * rD), cp1 = Math.round(g1.cp * rCp);
+    return { d, dt1, cp1, ln1: dt1 - cp1, td1: Boolean(td1), dt, cp, ns: Boolean(nsGt), ns_v: nsV, cp_ghi: d.du_kien.chi_phi[v], vuot, ln: dt - cp, tp, hd_sv: dt, thu, chi, con: thu - chi, vay: c.vay, goc: c.goc, phai_thu: dt - thu };
   });
-  const T = rows.reduce((a, x) => { for (const k of ['dt', 'cp', 'ln', 'tp', 'hd_sv', 'thu', 'chi', 'con', 'vay', 'goc', 'phai_thu']) a[k] += x[k]; return a; },
-    { dt: 0, cp: 0, ln: 0, tp: 0, hd_sv: 0, thu: 0, chi: 0, con: 0, vay: 0, goc: 0, phai_thu: 0 });
+  const T = rows.reduce((a, x) => { for (const k of ['dt1', 'cp1', 'ln1', 'dt', 'cp', 'ln', 'tp', 'hd_sv', 'thu', 'chi', 'con', 'vay', 'goc', 'phai_thu']) a[k] += x[k]; return a; },
+    { dt1: 0, cp1: 0, ln1: 0, dt: 0, cp: 0, ln: 0, tp: 0, hd_sv: 0, thu: 0, chi: 0, con: 0, vay: 0, goc: 0, phai_thu: 0 });
   return { to, rows, T };
 }
 // Tiêu đề mục báo cáo tổng hợp: số La Mã · tên mục · mô tả · nhãn phạm vi / đơn vị
@@ -453,19 +459,19 @@ function bTongHopHtml(list, v, P) {
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   return `
-    ${thHead('I', 'Doanh thu theo hợp đồng', 'Tổng giá trị hợp đồng (HĐ + phụ lục) – chi phí – lợi nhuận', ['Toàn bộ hợp đồng', vt[0].toUpperCase() + vt.slice(1)])}
+    ${thHead('I', 'Doanh thu – Chi phí – Lợi nhuận dự kiến', 'Tại thời điểm ký hợp đồng (TĐ1)', ['TĐ1 – Ký hợp đồng', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
-      ${card('dt', 'Doanh thu', T.dt, [`${rows.length} dự án · HĐ + phụ lục`, 'HĐ đã quyết toán lấy theo quyết toán'])}
-      ${card('cp', 'Chi phí', T.cp, [`Bằng <b>${bpct(T.cp, T.dt)}</b> doanh thu`, `Thầu phụ <b>${bTy(T.tp)}</b> · Chi phí khác <b>${bTy(T.cp - T.tp)}</b> tỷ`])}
-      ${card('ln', 'Lợi nhuận', T.ln, ['Doanh thu − Chi phí', `Bình quân <b>${rows.length ? bTy(T.ln / rows.length) : '0'}</b> tỷ / dự án`])}
+      ${card('dt', 'Doanh thu dự kiến', T.dt1, [`${rows.length} dự án · giá trị HĐ khi ký`, `${rows.filter((x) => x.td1).length}/${rows.length} dự án đã chốt TĐ1`])}
+      ${card('cp', 'Chi phí dự kiến', T.cp1, [`Bằng <b>${bpct(T.cp1, T.dt1)}</b> doanh thu`, 'Dự toán chi phí khi ký HĐ'])}
+      ${card('ln', 'Lợi nhuận dự kiến', T.ln1, [`Tỷ suất <b>${bpct(T.ln1, T.dt1)}</b>`, `Bình quân <b>${rows.length ? bTy(T.ln1 / rows.length) : '0'}</b> tỷ / dự án`])}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN']).replace('</tr></thead>', `${can('ns') ? '<th class="no-print th-act" title="Nhập DT-CP dự kiến"></th>' : ''}</tr></thead>`)}
-      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt)}</td><td class="num ${x.vuot ? 'th-vuot' : ''}"${x.ns ? ` title="DT-CP dự kiến ${bTy(x.ns_v)} tỷ · Đã ghi nhận ${bTy(x.cp_ghi)} tỷ${x.vuot ? ` · VƯỢT DT-CP dự kiến ${bTy(x.cp_ghi - x.ns_v)} tỷ` : ''}"` : ''}>${bTy(x.cp)}</td>
-        <td class="num strong ${x.ln < 0 ? 'neg' : 'pos'}">${bTy(x.ln)}</td><td class="f-pct">${meter(x.dt ? x.ln / x.dt : 0, 0.3, BCOL.dk)}<b class="${x.ln < 0 ? 'neg' : ''}">${bpct(x.ln, x.dt)}${x.d.trang_thai === 'Hoàn thành' ? '' : '<sup class="th-tt" title="Tạm tính: chi phí chưa phát sinh hết">*</sup>'}</b></td>${can('ns') ? `<td class="no-print th-act">${x.d.trang_thai !== 'Hoàn thành' ? `<button type="button" class="th-ns-edit" data-ivbh="${x.d.id}" title="Nhập DT-CP dự kiến">✎</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
-      ${foot([bTy(T.dt), bTy(T.cp), ty(T.ln), bpct(T.ln, T.dt)]).replace('</tr></tfoot>', `${can('ns') ? '<td class="no-print th-act"></td>' : ''}</tr></tfoot>`)}
+      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
+      <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt1)}</td><td class="num">${bTy(x.cp1)}</td>
+        <td class="num strong ${x.ln1 < 0 ? 'neg' : 'pos'}">${bTy(x.ln1)}</td><td class="f-pct">${meter(x.dt1 ? x.ln1 / x.dt1 : 0, 0.3, BCOL.dk)}<b class="${x.ln1 < 0 ? 'neg' : ''}">${bpct(x.ln1, x.dt1)}${x.td1 ? '' : '<sup class="th-tt" title="Chưa chốt TĐ1: lấy HĐ gốc và chi phí trên hệ thống">*</sup>'}</b></td></tr>`).join('')}</tbody>
+      ${foot([bTy(T.dt1), bTy(T.cp1), ty(T.ln1), bpct(T.ln1, T.dt1)])}
     </table></div>
-    <p class="muted small f-note">Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">Số dự kiến theo TĐ1 đã chốt (Doanh thu, Chi phí khi ký HĐ – nhập ở bảng TĐ của từng dự án). <b>(*)</b> Dự án chưa chốt TĐ1: lấy HĐ gốc với CĐT, thầu phụ theo HĐ gốc và chi phí khác đã ghi nhận trên hệ thống. Xem sau VAT: doanh thu quy đổi theo VAT của HĐ gốc, chi phí theo tỷ lệ VAT của chi phí dự án. Thanh tỷ lệ: đầy = 30%.</p>
     ${(() => { // Thẻ DT – CP – LN tại thời điểm mới nhất (đã QT: TĐ3 · chưa QT: TĐ2), lấy cùng nguồn mục IV
       const M = bMuc4Data(list, v), q = M.rows.filter((x) => x.qt), t = M.rows.filter((x) => !x.qt);
       const S = (a, k) => a.reduce((s2, x) => s2 + x[k], 0);
