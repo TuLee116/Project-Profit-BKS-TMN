@@ -476,11 +476,10 @@ function bTongHopHtml(list, v, P) {
     <p class="muted small f-note">LN kế hoạch còn lại = LN kế hoạch (đã QT: TĐ3, chưa QT: TĐ2) − LN thực tế (tiền về − tiền chi, không gồm vay, trả gốc), cùng nền VAT với nút trước / sau VAT. Chi phí = thầu phụ theo HĐ (đã quyết toán theo QT) + chi phí khác đã ghi nhận đến nay; dự án chưa quyết toán có <b>DT-CP dự kiến</b> (nhập ở nút ✎) thì lấy chi phí theo DT-CP dự kiến, chi phí ghi nhận <b class="th-vuot">vượt DT-CP dự kiến</b> thì lấy theo thực tế và báo đỏ; không gồm trả nợ gốc vay. <b>(*) Tạm tính</b> – dự án chưa hoàn thành: chi phí mới ghi nhận đến nay, lợi nhuận sẽ giảm khi chi phí tiếp tục phát sinh; số chính xác khi quyết toán. Thanh tỷ lệ: đầy = 30%.</p>
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)])}
-    <div class="f-grid">
+    <div class="f-grid th-grid3">
       ${card('dt', 'Dòng thu', T.thu, ['Tạm ứng + thanh toán + QT', `Đạt <b>${bpct(T.thu, T.hd_sv)}</b> DT hợp đồng`])}
       ${card('cp', 'Dòng chi', T.chi, ['Chi phí đã chi + đã trả thầu phụ', `Bằng <b>${bpct(T.chi, T.thu)}</b> dòng thu`])}
       ${card('ln', 'Còn lại (thu − chi)', T.con, [T.con < 0 ? 'Đang chi nhiều hơn thu' : 'Tiền dự án đang có', 'Không gồm tiền vay, trả nợ gốc'])}
-      ${card('dong', 'Sau vay & trả nợ', T.con + T.vay - T.goc, [`Nhận vay <b>${bTy(T.vay)}</b> · Trả gốc <b>${bTy(T.goc)}</b> tỷ`, `Dư nợ vay: <b>${bTy(T.vay - T.goc)}</b> tỷ`])}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Dòng thu', 'Dòng chi', 'Còn lại (Thu − Chi)'])}
@@ -488,7 +487,7 @@ function bTongHopHtml(list, v, P) {
         <td class="num strong ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
       ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
     </table></div>
-    ${v === 'gt' ? '<p class="muted small f-note">Trước VAT: tiền thật (đã gồm VAT) được quy đổi theo tỷ lệ trước / sau VAT của doanh thu (dòng thu) và chi phí (dòng chi) từng dự án; tiền vay, trả gốc không có VAT.</p>' : ''}
+    ${v === 'gt' ? '<p class="muted small f-note">Trước VAT: tiền thật (đã gồm VAT) được quy đổi theo tỷ lệ trước / sau VAT của doanh thu (dòng thu) và chi phí (dòng chi) từng dự án.</p>' : ''}
 
     ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Thực thu = giá trị HĐ tại thời điểm mới nhất − dòng thu thực tế', ['Từ mục II và IV', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
