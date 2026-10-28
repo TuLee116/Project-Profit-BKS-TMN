@@ -172,19 +172,19 @@
             <h2>1. Hợp đồng đầu vào <span class="muted small">thầu phụ · vật tư · MMTB · nhân công</span></h2>
             <div class="tv-total">Còn lại: <b id="tp-total">0</b></div>
           </div>
-          <div class="toolbar tp-filter">
-            <button type="button" class="sm" id="tp-toggle-all">Mở tất cả</button>
-            <input id="tp-q" type="search" placeholder="Tìm số HĐ, đối tác, ghi chú (HĐ CĐT)..." aria-label="Tìm hợp đồng đầu vào">
-            <div class="seg" id="tp-nhom" role="group" aria-label="Lọc theo loại hợp đồng"></div>
-            <div class="seg" id="tp-loc" role="group" aria-label="Lọc theo quyết toán">
+          <div class="tp-filter">
+            <input id="tp-q" type="search" placeholder="Tìm số HĐ, đối tác, ghi chú, HĐ CĐT…" aria-label="Tìm hợp đồng đầu vào">
+            <div class="tp-fg"><span class="tp-fl">Loại</span><div class="seg" id="tp-nhom" role="group" aria-label="Lọc theo loại hợp đồng"></div></div>
+            <div class="tp-fg"><span class="tp-fl">Quyết toán</span><div class="seg" id="tp-loc" role="group" aria-label="Lọc theo quyết toán">
               <button type="button" data-v="" class="on">Tất cả</button><button type="button" data-v="chua">Chưa QT</button><button type="button" data-v="da">Đã QT</button>
-            </div>
+            </div></div>
+            <button type="button" class="sm tp-tg" id="tp-toggle-all">Mở tất cả</button>
           </div>
           <div class="table-wrap">
             <table class="tp-table">
               <thead><tr>
-                <th class="num">#</th><th>Số hợp đồng</th><th>Đối tác</th>
-                <th class="num">Tổng giá trị HĐ</th><th class="num">Tổng giá trị HT/QT</th><th class="num">Giá trị thanh toán</th><th class="num">Giá trị còn lại</th><th>Ghi chú</th><th></th>
+                <th class="num">#</th><th>Hợp đồng</th><th>Đối tác</th>
+                <th class="num">Giá trị HĐ</th><th class="num">Giá trị HT/QT</th><th class="num">Đã thanh toán</th><th class="num">Còn lại</th><th>Ghi chú</th><th></th>
               </tr></thead>
               <tbody id="tp-tbody"></tbody>
               <tfoot id="tp-tfoot"></tfoot>

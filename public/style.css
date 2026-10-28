@@ -1309,3 +1309,32 @@ body.as-on .as-fab { display: none; }
   background-position: calc(100% - 8px) 55%, calc(100% - 4px) 55%; background-size: 4px 4px; background-repeat: no-repeat; box-shadow: none; }
 .tp-kind-sel:hover, .tp-kind-sel:focus { border-color: currentColor; outline: none; box-shadow: none; }
 .tp-kind-sel option { color: #1e293b; background: #fff; font-weight: 600; }
+/* ---- Bảng Hợp đồng đầu vào: bố cục gọn ---- */
+#tp-card .tp-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 4px 0 14px; }
+#tp-card .tp-filter input { flex: 1 1 260px; width: auto; max-width: 380px; margin: 0; }
+.tp-fg { display: inline-flex; align-items: center; gap: 8px; }
+.tp-fl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+.tp-filter .seg button { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.tp-filter .seg .cnt { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: #e3e9f2; color: #475569; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; }
+.tp-filter .seg button.on .cnt { background: var(--navy); color: #fff; }
+.tp-filter .seg button.zero { opacity: .55; }
+.tp-filter .tp-tg { margin-left: auto; }
+.tp-table th { white-space: nowrap; }
+.tp-table td.tp-hd { padding-left: 30px; min-width: 190px; }
+.tp-l1 { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tp-l1 b { font-size: 13.5px; }
+.tp-l2 { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.tp-st { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #eef2f7; color: #475569; font-size: 10.5px; font-weight: 700; }
+.tp-st-ok { background: #dcf3ef; color: #0f6f66; }
+.tp-st-lock { background: #1f3a6e; color: #fff; }
+.tp-table td.tp-dt { min-width: 170px; max-width: 240px; line-height: 1.35; }
+.tp-table td.tp-note { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-table td.tp-act { white-space: nowrap; text-align: right; }
+.tp-table td.tp-act button { padding: 4px 10px; }
+@media (max-width: 760px) {
+  .tp-filter .tp-tg { margin-left: 0; }
+  .tp-fg { flex-wrap: wrap; max-width: 100%; }
+  .tp-fg .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .tp-fg .seg::-webkit-scrollbar { display: none; }
+  .tp-fg .seg button { flex: none; }
+}

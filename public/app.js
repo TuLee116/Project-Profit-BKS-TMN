@@ -1547,14 +1547,14 @@ function renderTpCard() {
   const tatCa = costData.thau_phu;
   // Lọc theo loại HĐ: luôn hiện đủ 4 loại (kèm số lượng) để người dùng biết có thể tạo / chuyển loại
   const nhoms = HDV;
-  $('#tp-nhom').innerHTML = [['', `Tất cả (${tatCa.length})`], ...nhoms.map((k) => [k, `${TPN()[k]} (${tatCa.filter((c) => (c.nhom || 'thau_phu') === k).length})`])]
-    .map(([k, t]) => `<button type="button" data-v="${k}" class="${tpFilter.nhom === k ? 'on' : ''}">${esc(t)}</button>`).join('');
+  const dem = (k) => (k ? tatCa.filter((c) => (c.nhom || 'thau_phu') === k).length : tatCa.length);
+  $('#tp-nhom').innerHTML = ['', ...nhoms].map((k) => `<button type="button" data-v="${k}" class="${tpFilter.nhom === k ? 'on' : ''} ${dem(k) ? '' : 'zero'}" title="${k ? esc(TPN()[k]) : 'Tất cả loại'}">${k ? TP_NGAN[k] : 'Tất cả'} <span class="cnt">${dem(k)}</span></button>`).join('');
   const all = tpFilter.nhom ? tatCa.filter((c) => (c.nhom || 'thau_phu') === tpFilter.nhom) : tatCa;
   const edit = can('hd');
   const nDa = all.filter(tpDaQt).length;
   $$('#tp-loc button').forEach((b) => {
     b.classList.toggle('on', b.dataset.v === tpFilter.loc);
-    b.textContent = { '': `Tất cả (${all.length})`, chua: `Chưa QT (${all.length - nDa})`, da: `Đã QT (${nDa})` }[b.dataset.v];
+    b.innerHTML = { '': `Tất cả <span class="cnt">${all.length}</span>`, chua: `Chưa QT <span class="cnt">${all.length - nDa}</span>`, da: `Đã QT <span class="cnt">${nDa}</span>` }[b.dataset.v];
   });
   const q = normVn(tpFilter.q);
   const list = all.filter((c) =>
@@ -1570,16 +1570,15 @@ function renderTpCard() {
   const childRow = (c, stt) => `
     <tr class="tv-child" data-tpid="${c.id}">
       <td class="num muted">${stt}</td>
-      <td class="indent"><span class="tree">└</span>${tpKindCell(c, edit)} <b class="tp-open so-ma-pick" data-tp="${c.id}" title="Nhấp đúp để mở bảng nhập chi tiết">${esc(c.so_ma)}</b>
-        ${c.so_pl ? `<span class="muted small">(+${c.so_pl} PL)</span>` : ''}
-        ${c.khoa ? '<span class="st st-lock" title="Đã quyết toán – khóa số">🔒 Đã QT</span>' : c.da_qt ? '<span class="st st-hoan-thanh">Đã QT</span>' : '<span class="st">Chưa QT</span>'}</td>
-      <td class="c-dt">${esc(c.doi_tac)}</td>
+      <td class="indent tp-hd"><div class="tp-l1">${tpKindCell(c, edit)}<b class="tp-open so-ma-pick" data-tp="${c.id}" title="Nhấp đúp để mở bảng nhập chi tiết">${esc(c.so_ma)}</b></div>
+        <div class="tp-l2">${c.khoa ? '<span class="tp-st tp-st-lock" title="Đã quyết toán – khóa số">🔒 Đã QT</span>' : c.da_qt ? '<span class="tp-st tp-st-ok">Đã QT</span>' : '<span class="tp-st">Chưa QT</span>'}${c.so_pl ? `<span>${c.so_pl} phụ lục</span>` : '<span>Không phụ lục</span>'}</div></td>
+      <td class="c-dt tp-dt">${esc(c.doi_tac)}</td>
       <td class="num">${money(c.hd_sau_vat)}</td>
       <td class="num">${money(c.qt_sau_vat)}</td>
       <td class="num">${money(c.da_tt)}</td>
       <td class="num strong ${c.con_lai < 0 ? 'neg' : ''}">${money(c.con_lai)}</td>
-      <td class="c-note">${esc(c.ghi_chu)}</td>
-      <td class="row-actions"><button class="sm" data-tpopen="${c.id}">Chi tiết</button>${edit ? `<button class="danger sm" data-tpdel="${c.id}">Xóa</button>` : ''}</td>
+      <td class="c-note tp-note" title="${esc(c.ghi_chu)}">${esc(c.ghi_chu)}</td>
+      <td class="row-actions tp-act"><button class="sm" data-tpopen="${c.id}">Chi tiết</button>${edit ? `<button class="danger sm" data-tpdel="${c.id}" title="Xóa hợp đồng">Xóa</button>` : ''}</td>
     </tr>`;
   $('#tp-tbody').innerHTML = list.length ? groups.map((g, gi) => {
     const n = gi + 1;
