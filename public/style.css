@@ -1492,3 +1492,44 @@ tr.tp-grand td { font-weight: 800; color: var(--navy); background: #e9f1fb; bord
 .tdc-xt { fill: #334155; font-weight: 600; }
 .tdc-hit { cursor: default; }
 @media print { .tdc { break-inside: avoid; } }
+
+/* =====================================================================
+   Mục I – khối gộp: biểu đồ dải lợi nhuận + bảng số canh thẳng theo thời điểm
+   ===================================================================== */
+.tdx { margin: 0 0 16px; padding: 18px 20px 14px; border: 1px solid #e5eaf1; border-radius: 16px; background: #fff;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 12px 32px -24px rgba(15,27,51,.35); }
+.tdx-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 18px; margin-bottom: 2px; }
+.tdx-top b { display: block; font-size: 14px; color: #0f1b33; letter-spacing: .1px; }
+.tdx-top span { font-size: 11.5px; color: #6b7a90; }
+.tdx .tdc-lg { margin-top: 2px; }
+.tdc-sel { fill: #f3f6fb; }
+.tdx-tb { display: grid; align-items: stretch; margin-top: 2px; border-top: 1px solid #e5eaf1; }
+.tdx-c { padding: 8px 10px; text-align: center; cursor: pointer; transition: background .15s ease; min-width: 0; }
+.tdx-c.on { background: #f3f6fb; }
+.tdx-c:not(.on):hover { background: #fafbfd; }
+.tdx-hd { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 12px; border-radius: 10px 10px 0 0; outline: none; }
+.tdx-hd:focus-visible { box-shadow: inset 0 0 0 2px rgba(31,58,110,.35); }
+.tdx-hd b { font-size: 13px; color: #0f1b33; }
+.tdx-hd small { font-size: 11px; color: #6b7a90; }
+.tdx-hd .tdp-n { margin-bottom: 2px; }
+.tdx-hd.on .tdp-n { background: #0f1b33; color: #fff; }
+.tdx-v { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-top: 1px dashed #edf1f6; }
+.tdx-num { display: inline-flex; align-items: baseline; gap: 8px; }
+.tdx-v b { font-size: 18px; font-weight: 600; color: #0f1b33; letter-spacing: -.3px; }
+.tdx-v em { font-style: normal; font-size: 11.5px; font-weight: 600; color: #6b7a90; }
+.tdx-v .tdp-d { margin: 0; }
+.tdx-ln b { font-size: 22px; }
+.tdx-ln.on:last-of-type { border-radius: 0 0 10px 10px; }
+.tdx-lb { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 2px; font-size: 12.5px; font-weight: 600; color: #334155; border-top: 1px dashed #edf1f6; }
+.tdx-lb.tdx-dt .tdp-sw { background: #2c5fa3; } .tdx-lb.tdx-cp .tdp-sw { background: #c27a3e; } .tdx-lb.tdx-ln .tdp-sw { background: #16968a; }
+.tdx .tdc-hit { cursor: pointer; }
+@media (max-width: 640px) {
+  .tdx { padding: 14px 10px 10px; }
+  .tdx-c { padding: 6px 4px; }
+  .tdx-v b { font-size: 14.5px; } .tdx-ln b { font-size: 16px; }
+  .tdx-v em { display: none; }
+  .tdx-v .tdp-d { font-size: 10px; padding: 1px 4px; }
+  .tdx-hd b { font-size: 11px; } .tdx-hd small { display: none; }
+  .tdx-lb { font-size: 11px; gap: 5px; padding-left: 0; }
+}
+@media print { .tdx { box-shadow: none; break-inside: avoid; } }
