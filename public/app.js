@@ -1543,6 +1543,9 @@ function tpKindCell(c, edit) {
   return `<select class="tp-kind tp-kind-sel tp-k-${k}" data-tpkind="${c.id}" title="Loại hợp đồng: ${esc(TPN()[k])} – chọn để chuyển loại" aria-label="Loại hợp đồng ${esc(c.so_ma)}">${HDV.map((x) =>
     `<option value="${x}" ${x === k ? 'selected' : ''}>${TP_NGAN[x]}</option>`).join('')}</select>`;
 }
+// Bảng HĐ đầu vào: số gọn theo triệu đồng (giữ phần lẻ nghìn nếu có), rê chuột xem số đồng đầy đủ
+const mtrF = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 3 });
+const mtr = (n) => `<span title="${money(n)} đồng">${mtrF.format((n || 0) / 1e6)}</span>`;
 function renderTpCard() {
   const tatCa = costData.thau_phu;
   // Lọc theo loại HĐ: luôn hiện đủ 4 loại (kèm số lượng) để người dùng biết có thể tạo / chuyển loại
@@ -1563,7 +1566,7 @@ function renderTpCard() {
   const filtered = list.length !== tatCa.length;
   const sumOf = (rows, f) => rows.reduce((s, c) => s + c[f], 0);
   const T = filtered ? { so_hd: list.length, hd_sau_vat: sumOf(list, 'hd_sau_vat'), qt_sau_vat: sumOf(list, 'qt_sau_vat'), da_tt: sumOf(list, 'da_tt'), con_lai: sumOf(list, 'con_lai') } : costData.tong_tp;
-  $('#tp-total').textContent = money(costData.tong_tp.con_lai);
+  $('#tp-total').innerHTML = `${mtr(costData.tong_tp.con_lai)} <small>triệu</small>`;
 
   const groups = tpGroups(list);
   const autoOpen = Boolean(q) || Boolean(tpFilter.loc) || groups.length === 1;
@@ -1573,10 +1576,10 @@ function renderTpCard() {
       <td class="indent tp-hd"><div class="tp-l1">${tpKindCell(c, edit)}<b class="tp-open so-ma-pick" data-tp="${c.id}" title="Nhấp đúp để mở bảng nhập chi tiết">${esc(c.so_ma)}</b></div>
         <div class="tp-l2">${c.khoa ? '<span class="tp-st tp-st-lock" title="Đã quyết toán – khóa số">🔒 Đã QT</span>' : c.da_qt ? '<span class="tp-st tp-st-ok">Đã QT</span>' : '<span class="tp-st">Chưa QT</span>'}${c.so_pl ? `<span>${c.so_pl} phụ lục</span>` : '<span>Không phụ lục</span>'}</div></td>
       <td class="c-dt tp-dt">${esc(c.doi_tac)}</td>
-      <td class="num">${money(c.hd_sau_vat)}</td>
-      <td class="num">${money(c.qt_sau_vat)}</td>
-      <td class="num">${money(c.da_tt)}</td>
-      <td class="num strong ${c.con_lai < 0 ? 'neg' : ''}">${money(c.con_lai)}</td>
+      <td class="num">${mtr(c.hd_sau_vat)}</td>
+      <td class="num">${mtr(c.qt_sau_vat)}</td>
+      <td class="num">${mtr(c.da_tt)}</td>
+      <td class="num strong ${c.con_lai < 0 ? 'neg' : ''}">${mtr(c.con_lai)}</td>
       <td class="c-note tp-note" title="${esc(c.ghi_chu)}">${esc(c.ghi_chu)}</td>
       <td class="row-actions tp-act"><button class="sm" data-tpopen="${c.id}">Chi tiết</button>${edit ? `<button class="danger sm" data-tpdel="${c.id}" title="Xóa hợp đồng">Xóa</button>` : ''}</td>
     </tr>`;
@@ -1590,16 +1593,16 @@ function renderTpCard() {
       <td colspan="2"><button class="grp-toggle" data-tpgrp="${g.k}" title="${open ? 'Thu gọn' : 'Mở chi tiết'}">${open ? '▾' : '▸'}</button>
         ${g.k ? `<span class="kind-tag kind-hd">HĐ CĐT</span> <b>${esc(hdCdtName(g.k).replace(/^HĐ\s+/, ''))}</b>` : '<span class="st st-tam-tinh">Chưa gắn HĐ CĐT</span>'}
         <span class="muted small">(${g.rows.length} HĐ · ${nQt} đã QT)</span></td>
-      <td class="num strong">${money(sumOf(g.rows, 'hd_sau_vat'))}</td>
-      <td class="num strong">${money(sumOf(g.rows, 'qt_sau_vat'))}</td>
-      <td class="num strong">${money(sumOf(g.rows, 'da_tt'))}</td>
-      <td class="num tv-head-sum ${cl < 0 ? 'neg' : ''}">${money(cl)}</td>
+      <td class="num strong">${mtr(sumOf(g.rows, 'hd_sau_vat'))}</td>
+      <td class="num strong">${mtr(sumOf(g.rows, 'qt_sau_vat'))}</td>
+      <td class="num strong">${mtr(sumOf(g.rows, 'da_tt'))}</td>
+      <td class="num tv-head-sum ${cl < 0 ? 'neg' : ''}">${mtr(cl)}</td>
       <td colspan="2" class="muted small">${g.k ? '' : 'Mở chi tiết HĐ để gắn'}</td>
     </tr>` + (open ? g.rows.map((c, i) => childRow(c, `${n}.${i + 1}`)).join('') : '');
   }).join('') : `<tr><td colspan="9" class="empty">${all.length ? 'Không có hợp đồng phù hợp bộ lọc' : `Chưa có hợp đồng. ${edit ? 'Ở form trên chọn nhóm Thầu phụ, hoặc Vật tư / MMTB / Nhân công với Hình thức = Hợp đồng để tạo.' : ''}`}</td></tr>`;
   $('#tp-tfoot').innerHTML = `<tr><td></td><td colspan="2">${filtered ? `TỔNG ĐANG LỌC (${T.so_hd}/${tatCa.length} HĐ)` : `TỔNG HĐ ĐẦU VÀO (${T.so_hd} HĐ)`}</td>
-    <td class="num">${money(T.hd_sau_vat)}</td><td class="num">${money(T.qt_sau_vat)}</td><td class="num">${money(T.da_tt)}</td>
-    <td class="num ${T.con_lai < 0 ? 'neg' : ''}">${money(T.con_lai)}</td><td colspan="2"></td></tr>`;
+    <td class="num">${mtr(T.hd_sau_vat)}</td><td class="num">${mtr(T.qt_sau_vat)}</td><td class="num">${mtr(T.da_tt)}</td>
+    <td class="num ${T.con_lai < 0 ? 'neg' : ''}">${mtr(T.con_lai)}</td><td colspan="2"></td></tr>`;
   const btn = $('#tp-toggle-all');
   btn.hidden = autoOpen || !list.length;
   btn.textContent = groups.some((g) => !tpOpen.has(g.k)) ? 'Mở tất cả' : 'Thu gọn tất cả';
