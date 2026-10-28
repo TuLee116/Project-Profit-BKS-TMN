@@ -470,6 +470,45 @@ const KX_IC = {
   cp: KX_SVG('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   ln: KX_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/>'),
 };
+// Biểu đồ "dải lợi nhuận": đường doanh thu & chi phí qua TĐ1 → TĐ3, phần tô giữa 2 đường = lợi nhuận
+function bTdBand(TV) {
+  const P3 = [1, 2, 3].map((n) => TV[n]);
+  if (!P3.some((t) => t.dt || t.cp)) return '';
+  const W = Math.round(Math.min(1100, Math.max(340, (document.querySelector('#b-report')?.clientWidth || 1100) - 40)));
+  const small = W < 600, H = small ? 240 : 270;
+  const L = small ? 42 : 58, R = W - (small ? 16 : 24), T = 34, B = H - (small ? 46 : 50);
+  // Thang dọc "đẹp": bắt đầu gần chi phí thấp nhất (đường, không phải cột – không cần từ 0)
+  const vals = P3.flatMap((t) => [t.dt, t.cp]), mn = Math.min(...vals), mx = Math.max(...vals);
+  const raw = Math.max(mx - mn, Math.abs(mx) * 0.05, 1e9) / 4, mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((x) => x >= raw);
+  const lo = Math.floor((mn - step * 0.6) / step) * step, hi = Math.ceil((mx + step * 0.6) / step) * step;
+  const Y = (v) => B - ((v - lo) / (hi - lo)) * (B - T);
+  const X = (i) => L + (small ? 34 : 70) + (i * (R - L - (small ? 68 : 140))) / 2;
+  const curve = (pts) => pts.reduce((d, [x, y], i) => (i ? `${d} C${((pts[i - 1][0] + x) / 2).toFixed(1)},${pts[i - 1][1].toFixed(1)} ${((pts[i - 1][0] + x) / 2).toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}` : `M${x.toFixed(1)},${y.toFixed(1)}`), '');
+  const dt = P3.map((t, i) => [X(i), Y(t.dt)]), cp = P3.map((t, i) => [X(i), Y(t.cp)]);
+  const back = curve([...cp].reverse());
+  const band = `${curve(dt)} L${back.slice(1)} Z`;
+  const neg = P3.some((t) => t.ln < 0);
+  const ticks = []; for (let v = lo; v <= hi + 1; v += step) ticks.push(v);
+  const TEN = ['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'];
+  const fs = small ? 11 : 13;
+  const tip = (t, i) => `TĐ${i + 1} – ${TEN[i]}\nDoanh thu: ${bTy(t.dt)} tỷ\nChi phí: ${bTy(t.cp)} tỷ (${bpct(t.cp, t.dt)})\nLợi nhuận: ${bTy(t.ln)} tỷ (${bpct(t.ln, t.dt)})`;
+  return `<div class="tdc">
+    <div class="tdc-h"><b>Biến động qua các thời điểm</b><span class="tdc-lg"><i class="tdc-k-dt"></i>Doanh thu<i class="tdc-k-cp"></i>Chi phí<i class="tdc-k-ln"></i>Lợi nhuận (khoảng giữa 2 đường)</span></div>
+    <svg class="tdc-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Doanh thu, chi phí, lợi nhuận qua TĐ1, TĐ2, TĐ3">
+      <defs><linearGradient id="tdc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${neg ? '#d92d35' : '#16968a'}" stop-opacity=".28"/><stop offset="1" stop-color="${neg ? '#d92d35' : '#16968a'}" stop-opacity=".06"/></linearGradient></defs>
+      ${ticks.map((v) => `<line x1="${L}" x2="${R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="tdc-grid"/><text x="${L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="tdc-ax">${(v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</text>`).join('')}
+      <path d="${band}" fill="url(#tdc-g)"/>
+      <path d="${curve(dt)}" class="tdc-ldt"/><path d="${curve(cp)}" class="tdc-lcp"/>
+      ${P3.map((t, i) => { const x = X(i), yd = Y(t.dt), yc = Y(t.cp), ym = (yd + yc) / 2, pw = small ? 62 : 76;
+        return `<line x1="${x}" x2="${x}" y1="${T - 6}" y2="${B}" class="tdc-vx"/>
+        <circle cx="${x}" cy="${yd.toFixed(1)}" r="${small ? 4.5 : 5.5}" class="tdc-pdt"/><text x="${x}" y="${(yd - 12).toFixed(1)}" text-anchor="middle" font-size="${fs}" class="tdc-vdt">${bTy(t.dt)}</text>
+        <circle cx="${x}" cy="${yc.toFixed(1)}" r="${small ? 4.5 : 5.5}" class="tdc-pcp"/><text x="${x}" y="${(yc + (small ? 18 : 22)).toFixed(1)}" text-anchor="middle" font-size="${fs - 0.5}" class="tdc-vcp">${bTy(t.cp)}</text>
+        ${Math.abs(yc - yd) > 26 ? `<rect x="${x - pw / 2}" y="${(ym - 11).toFixed(1)}" width="${pw}" height="22" rx="11" class="tdc-pill ${t.ln < 0 ? 'neg' : ''}"/><text x="${x}" y="${(ym + 4).toFixed(1)}" text-anchor="middle" font-size="${fs - 1}" class="tdc-vln ${t.ln < 0 ? 'neg' : ''}">LN ${bTy(t.ln)}</text>` : ''}
+        <text x="${x}" y="${B + (small ? 20 : 24)}" text-anchor="middle" font-size="${fs - 1}" class="tdc-xt"><tspan font-weight="700">TĐ${i + 1}</tspan>${small ? '' : ` · ${TEN[i]}`}</text>
+        <rect x="${x - (small ? 40 : 70)}" y="${T - 10}" width="${small ? 80 : 140}" height="${B - T + 10}" fill="transparent" class="tdc-hit" data-tip="${esc(tip(t, i))}" data-tdtip="${i}"/>`; }).join('')}
+    </svg></div>`;
+}
 function bTongHopHtml(list, v, P) {
   const { to, rows, T } = bTongHopData(list, v, P);
   const vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
@@ -506,12 +545,11 @@ function bTongHopHtml(list, v, P) {
           ${row('dt', 'Doanh thu', t.dt, '<em></em>', true)}
           ${row('cp', 'Chi phí', t.cp, `<em>${bpct(t.cp, t.dt)}</em>`, false)}
           ${row('ln', 'Lợi nhuận', t.ln, `<em>${bpct(t.ln, t.dt)}</em>`, true)}
-          <div class="tdp-bar" aria-hidden="true"><i class="tdp-bcp" style="width:${pc * 100}%"></i><i class="tdp-bln"></i></div>
         </div>`; };
       const R = rows.map((x) => ({ x, t: x.tdv[sel] }));
       const TS = T.tdv[sel];
       const star = (t) => (sel === 3 ? (t.tam ? '<sup class="th-tt" title="Chưa quyết toán: tạm tính theo TĐ2">*</sup>' : '') : !t.chot ? `<sup class="th-tt" title="Chưa chốt TĐ${sel}: lấy theo số hệ thống">*</sup>` : '');
-      return `<div class="tdp-g">${[1, 2, 3].map(panel).join('')}</div>
+      return `<div class="tdp-g">${[1, 2, 3].map(panel).join('')}</div>${bTdBand(T.tdv)}
       <div class="tdp-cap">Chi tiết theo dự án · <b>TĐ${sel} – ${TEN[sel]}</b> <span class="muted">(bấm khối TĐ1 / TĐ2 / TĐ3 ở trên để đổi)</span></div>
       <div class="table-wrap"><table class="b-table th-table">
         ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
@@ -1335,6 +1373,14 @@ $('#b-report').addEventListener('click', (e) => {
   const w = e.target.closest('[data-wlink]');
   if (w) bGoWarn(Number(w.dataset.wda), JSON.parse(w.dataset.wlink)).catch((err) => alert(err.message));
 });
+// Biểu đồ dải lợi nhuận: rê chuột vào cột thời điểm -> khung số liệu (điện thoại: chạm, qua tapTips)
+$('#b-report').addEventListener('mousemove', (e) => {
+  const h = e.target.closest('[data-tdtip]');
+  if (!h) return;
+  const [t0, ...ls] = h.dataset.tip.split('\n');
+  showTip(`<b>${esc(t0)}</b><table>${ls.map((l) => { const [k, v] = l.split(': '); return `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`; }).join('')}</table>`, e.clientX, e.clientY);
+});
+$('#b-report').addEventListener('mouseout', (e) => { if (e.target.closest('[data-tdtip]')) hideTip(); });
 $('#b-report').addEventListener('keydown', (e) => {
   const w = e.target.closest('[data-wlink]');
   if (w && e.key === 'Enter') bGoWarn(Number(w.dataset.wda), JSON.parse(w.dataset.wlink));

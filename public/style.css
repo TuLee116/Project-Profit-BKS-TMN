@@ -1469,3 +1469,26 @@ tr.tp-grand td { font-weight: 800; color: var(--navy); background: #e9f1fb; bord
 .tdp { display: flex; flex-direction: column; }
 .tdp-bar { margin-top: auto; padding-top: 0; }
 .tdp-r:last-of-type { margin-bottom: 10px; }
+
+/* Mục I – biểu đồ dải lợi nhuận TĐ1 → TĐ3 */
+.tdc { margin: 0 0 14px; padding: 16px 18px 10px; border: 1px solid #e5eaf1; border-radius: 14px; background: #fff; }
+.tdc-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; margin-bottom: 4px; }
+.tdc-h b { font-size: 13.5px; color: #0f1b33; }
+.tdc-lg { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; color: #334155; }
+.tdc-lg i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin: 0 2px 0 10px; }
+.tdc-lg i:first-child { margin-left: 0; }
+.tdc-k-dt { background: #2c5fa3; } .tdc-k-cp { background: #c27a3e; } .tdc-k-ln { height: 10px !important; background: rgba(22,150,138,.3); }
+.tdc-svg { display: block; width: 100%; height: auto; font-family: inherit; overflow: visible; }
+.tdc-grid { stroke: #eef2f7; }
+.tdc-ax { font-size: 10.5px; fill: #94a3b8; }
+.tdc-vx { stroke: #e5eaf1; stroke-dasharray: 3 4; }
+.tdc-ldt, .tdc-lcp { fill: none; stroke-width: 3; stroke-linecap: round; }
+.tdc-ldt { stroke: #2c5fa3; } .tdc-lcp { stroke: #c27a3e; }
+.tdc-pdt, .tdc-pcp { stroke: #fff; stroke-width: 2.5; }
+.tdc-pdt { fill: #2c5fa3; } .tdc-pcp { fill: #c27a3e; }
+.tdc-vdt { font-weight: 700; fill: #0f1b33; } .tdc-vcp { font-weight: 600; fill: #334155; }
+.tdc-pill { fill: #fff; stroke: #9fe0d6; } .tdc-pill.neg { stroke: #f2b8b8; }
+.tdc-vln { font-weight: 700; fill: #0f7f75; } .tdc-vln.neg { fill: #d92d35; }
+.tdc-xt { fill: #334155; font-weight: 600; }
+.tdc-hit { cursor: default; }
+@media print { .tdc { break-inside: avoid; } }
