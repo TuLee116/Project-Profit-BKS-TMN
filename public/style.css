@@ -1343,3 +1343,9 @@ body.as-on .as-fab { display: none; }
 .tp-filter .tp-unit + .tp-tg { margin-left: 0; }
 #tp-total small { font-size: 12px; color: var(--muted); font-weight: 600; }
 @media (max-width: 760px) { .tp-unit { margin-left: 0; width: 100%; } }
+/* Nhóm chi phí mua lẻ (không HĐ) trong bảng HĐ đầu vào */
+tr.tp-le-head td { background: #f7f5ef; border-top: 2px dashed #e6dcc4; }
+.tp-le-tag { background: #efe6cf; color: #7a5a12; }
+tr.tp-le-row td { background: #fffdf8; }
+tr.tp-grand td { font-weight: 800; color: var(--navy); background: #e9f1fb; border-top: 1px solid #c9d8ee; }
+.tp-filter .seg .cnt i { font-style: normal; font-weight: 600; margin-left: 2px; opacity: .8; }
