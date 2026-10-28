@@ -487,29 +487,42 @@ function bLnBridge(TV) {
   let run = 0;
   for (const x of st) { if (x.k === 'tot') { x.y0 = 0; x.y1 = x.v; run = x.v; } else { x.y0 = run; x.y1 = run + x.v; run = x.y1; } }
   const all = st.flatMap((x) => [x.y0, x.y1, 0]), mx = Math.max(...all), mn = Math.min(...all);
-  const W = Math.round(Math.min(820, Math.max(320, ((document.querySelector('#b-report')?.clientWidth || 1180) > 1100 ? (document.querySelector('#b-report').clientWidth - 470) : (document.querySelector('#b-report')?.clientWidth || 360) - 40))));
-  const small = W < 560, H = small ? 200 : 220, T = 26, B = H - (small ? 40 : 44), Lp = 6, Rp = 6;
-  const Y = (v) => B - ((v - mn) / ((mx - mn) || 1)) * (B - T) * 0.94;
-  const slot = (W - Lp - Rp) / st.length, bw = Math.min(small ? 30 : 52, slot * 0.62), fs = small ? 10 : 11.5;
+  const rep = document.querySelector('#b-report')?.clientWidth || 1180;
+  const W = Math.round(Math.min(820, Math.max(320, rep > 1100 ? rep - 470 : rep - 40)));
+  const small = W < 560, H = small ? 222 : 244, T = 56, B = H - (small ? 26 : 30), Lp = 4, Rp = 4;
+  const Y = (v) => B - ((v - mn) / ((mx - mn) || 1)) * (B - T);
+  const slot = (W - Lp - Rp) / st.length, fs = small ? 10 : 11.5;
+  const bwT = Math.min(small ? 26 : 40, slot * 0.5), bwD = Math.min(small ? 20 : 30, slot * 0.4);
+  const cxOf = (i) => Lp + slot * (i + 0.5);
   const tipOf = (x) => (x.k === 'tot' ? `${x.lb} (${x.sub})\nLợi nhuận: ${bTy(x.v)} tỷ` : `${x.lb} ${x.sub}\nTác động đến LN: ${x.v >= 0 ? '+' : '−'}${bTy(Math.abs(x.v))} tỷ\n${x.why}`);
+  // Dải nền theo giai đoạn: Điều chỉnh (cột 2–3) · Quyết toán (cột 5–6)
+  const phase = (i0, lab) => `<rect x="${(Lp + slot * i0 + 3).toFixed(1)}" y="2" width="${(slot * 2 - 6).toFixed(1)}" height="${(B - 2).toFixed(1)}" rx="10" class="lb-ph"/>
+    <text x="${(Lp + slot * (i0 + 1)).toFixed(1)}" y="17" text-anchor="middle" font-size="${small ? 9.5 : 10.5}" class="lb-pht">${lab}</text>`;
   const bars = st.map((x, i) => {
-    const cx = Lp + slot * (i + 0.5), top = Y(Math.max(x.y0, x.y1)), bot = Y(Math.min(x.y0, x.y1)), h = Math.max(2, bot - top), zero = Math.abs(x.v) < 5e6;
-    const cls = x.k === 'tot' ? 'lb-tot' : zero ? 'lb-0' : x.v > 0 ? 'lb-up' : 'lb-dn';
-    const val = x.k === 'tot' ? bTy(x.v) : zero ? '0' : `${x.v > 0 ? '+' : '−'}${bTy(Math.abs(x.v))}`;
-    const nx = i < st.length - 1 ? `<line x1="${(cx + bw / 2).toFixed(1)}" x2="${(cx + slot - bw / 2).toFixed(1)}" y1="${Y(x.y1).toFixed(1)}" y2="${Y(x.y1).toFixed(1)}" class="lb-link"/>` : '';
-    return `${nx}<rect x="${(cx - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" class="${cls}"/>
-      <text x="${cx.toFixed(1)}" y="${(top - 7).toFixed(1)}" text-anchor="middle" font-size="${fs}" class="lb-v ${cls}">${val}</text>
-      <text x="${cx.toFixed(1)}" y="${B + (small ? 15 : 17)}" text-anchor="middle" font-size="${fs - 0.5}" class="lb-x ${x.k === 'tot' ? 'lb-xt' : ''}">${small ? (x.k === 'tot' ? `LN ${x.sub}` : x.lb.slice(0, 2)) : x.lb}</text>
-      <text x="${cx.toFixed(1)}" y="${B + (small ? 28 : 31)}" text-anchor="middle" font-size="${fs - 1.5}" class="lb-xs">${small ? (x.k === 'tot' ? '' : x.lb.includes('tăng') ? 'tăng' : 'giảm') : x.sub}</text>
+    const cx = cxOf(i), tot = x.k === 'tot', bw = tot ? bwT : bwD;
+    const top = Y(Math.max(x.y0, x.y1)), bot = Y(Math.min(x.y0, x.y1)), h = Math.max(3, bot - top), zero = Math.abs(x.v) < 5e6;
+    const cls = tot ? 'lb-tot' : zero ? 'lb-0' : x.v > 0 ? 'lb-up' : 'lb-dn';
+    const val = tot ? bTy(x.v) : zero ? '0' : `${x.v > 0 ? '+' : '−'}${bTy(Math.abs(x.v))}`;
+    const nx = i < st.length - 1 ? `<line x1="${(cx + bw / 2 + 2).toFixed(1)}" x2="${(cxOf(i + 1) - (st[i + 1].k === 'tot' ? bwT : bwD) / 2 - 2).toFixed(1)}" y1="${Y(x.y1).toFixed(1)}" y2="${Y(x.y1).toFixed(1)}" class="lb-link"/>` : '';
+    const lw = Math.max(small ? 34 : 44, String(val).length * (small ? 6.2 : 7.2) + 12), ly = top - (small ? 22 : 24);
+    const lab = tot ? `<text x="${cx.toFixed(1)}" y="${(top - 8).toFixed(1)}" text-anchor="middle" font-size="${fs + 1}" class="lb-vt">${val}</text>`
+      : `<rect x="${(cx - lw / 2).toFixed(1)}" y="${ly.toFixed(1)}" width="${lw.toFixed(1)}" height="${small ? 16 : 18}" rx="${small ? 8 : 9}" class="lb-chip ${cls}"/><text x="${cx.toFixed(1)}" y="${(ly + (small ? 11.5 : 12.8)).toFixed(1)}" text-anchor="middle" font-size="${fs - 0.5}" class="lb-vc ${cls}">${val}</text>`;
+    return `${nx}<rect x="${(cx - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${tot ? 7 : 5}" class="lb-b ${cls}"/>${lab}
+      <text x="${cx.toFixed(1)}" y="${B + (small ? 16 : 19)}" text-anchor="middle" font-size="${fs - 0.5}" class="lb-x ${tot ? 'lb-xt' : ''}">${tot ? (small ? `LN ${x.sub}` : `LN ${x.sub}`) : (x.lb.startsWith('DT') ? (small ? 'DT' : 'Doanh thu') : (small ? 'CP' : 'Chi phí'))}</text>
       <rect x="${(Lp + slot * i).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H}" fill="transparent" data-tip="${esc(tipOf(x))}" data-tdtip="b"/>`;
   }).join('');
+  const defs = `<defs>
+    <linearGradient id="lb-gt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a5d9c"/><stop offset="1" stop-color="#1f3a6e"/></linearGradient>
+    <linearGradient id="lb-gu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5cc9a0"/><stop offset="1" stop-color="#22a274"/></linearGradient>
+    <linearGradient id="lb-gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f09a76"/><stop offset="1" stop-color="#d9673f"/></linearGradient></defs>`;
   // Câu kết luận: LN đổi bao nhiêu và yếu tố chính
   const dLn = c.ln - a.ln, dDt = c.dt - a.dt, dCp = c.cp - a.cp;
   const ty2 = (x) => `${bTy(Math.abs(x))} tỷ`;
   const ket = Math.abs(dLn) < 5e6 ? `Lợi nhuận từ lúc ký đến quyết toán <b>không đổi</b>` : `Lợi nhuận ${dLn > 0 ? '<b class="tdk-up">tăng' : '<b class="tdk-dn">giảm'} ${ty2(dLn)}</b> từ lúc ký đến quyết toán`;
   const ly = [Math.abs(dDt) >= 5e6 ? `doanh thu ${dDt > 0 ? 'tăng' : 'giảm'} ${ty2(dDt)}` : '', Math.abs(dCp) >= 5e6 ? `chi phí ${dCp > 0 ? 'tăng' : 'giảm'} ${ty2(dCp)}` : ''].filter(Boolean).join(', ');
   return `<div class="lb-box"><div class="lb-h"><b>Vì sao lợi nhuận thay đổi?</b><span class="lb-lg"><i class="lb-up"></i>Làm tăng LN<i class="lb-dn"></i>Làm giảm LN<i class="lb-tot"></i>LN tại mốc</span></div>
-    <svg class="lb-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cầu lợi nhuận từ lúc ký đến quyết toán">
+    <svg class="lb-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cầu lợi nhuận từ lúc ký đến quyết toán">${defs}
+      ${phase(1, small ? 'Điều chỉnh' : 'Điều chỉnh · TĐ1→TĐ2')}${phase(4, small ? 'Quyết toán' : 'Quyết toán · TĐ2→TĐ3')}
       <line x1="0" x2="${W}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="lb-base"/>${bars}</svg>
     <p class="lb-k">${ket}${ly ? `: ${ly}.` : '.'} Tỷ suất ${bpct(a.ln, a.dt)} → ${bpct(c.ln, c.dt)}.</p></div>`;
 }
