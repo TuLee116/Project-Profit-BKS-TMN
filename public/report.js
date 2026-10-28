@@ -448,15 +448,27 @@ const thHead = (no, title, desc, tags, extra = '') => `<div class="th-head">
       <div class="th-ttl"><h3>${title}</h3><p>${desc}</p></div>
       <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}<span>Đơn vị: tỷ đồng</span>${extra}</div>
     </div>`;
+// Biểu tượng thẻ chỉ tiêu (SVG nét, theo màu chỉ tiêu)
+const KX_SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const KX_IC = {
+  dt: KX_SVG('<path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/>'),
+  cp: KX_SVG('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  ln: KX_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/>'),
+};
 function bTongHopHtml(list, v, P) {
   const { to, rows, T } = bTongHopData(list, v, P);
   const vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
   const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
   const meter = (a, b, color) => `<span class="f-meter"><i style="width:${b > 0 ? Math.max(0, Math.min(100, (a / b) * 100)) : 0}%;background:${a < 0 ? '#d92d35' : color}"></i></span>`;
-  const card = (k, title, val, lines, unit = 'tỷ') => `<div class="f-card f-${k}" title="${unit === '%' ? '' : bn(val) + ' đ'}">
-      <div class="f-body"><div class="f-title">${title}</div>
+  // Thẻ chỉ tiêu: biểu tượng + nền chuyển màu theo chỉ tiêu + biểu đồ nhỏ (viz) + dòng diễn giải
+  const card = (k, title, val, lines, unit = 'tỷ', viz = '') => `<div class="f-card f-${k} kx" title="${unit === '%' ? '' : bn(val) + ' đ'}">
+      <div class="f-body"><div class="kx-top"><span class="kx-ic" aria-hidden="true">${KX_IC[k] || KX_IC.dt}</span><div class="f-title">${title}</div></div>
         <div class="f-val ${val < 0 ? 'neg' : ''}">${unit === '%' ? bpct(val, 1) : `${bTy(val)} <small>tỷ</small>`}</div>
+        ${viz}
         <div class="f-lines">${lines.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div></div></div>`;
+  const kxBar = (p, label) => `<div class="kx-bar" role="img" aria-label="${label}"><i style="width:${Math.max(0, Math.min(100, p * 100))}%"></i></div>`;
+  const kxRing = (p) => { const c = 2 * Math.PI * 15, f = Math.max(0, Math.min(1, p / 0.3)); // vòng đầy = 30%
+    return `<svg class="kx-ring" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" class="kx-ring-bg"/><circle cx="20" cy="20" r="15" class="kx-ring-fg" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 20 20)"/></svg>`; };
   const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-prj" title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="th-name">${esc(x.d.ten_du_an)}</span> <span class="st st-${slug(x.d.trang_thai)} th-st">${esc(x.d.trang_thai)}</span></td>`;
   const dTo = to === bNowYm() ? new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : `${lastDay(to)}/${to.slice(5)}/${to.slice(0, 4)}`;
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
@@ -464,10 +476,15 @@ function bTongHopHtml(list, v, P) {
   return `
     ${thHead('I', 'Doanh thu – Chi phí – Lợi nhuận dự kiến', 'Tại thời điểm ký hợp đồng (TĐ1)', ['TĐ1 – Ký hợp đồng', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
-      ${card('dt', 'Doanh thu dự kiến', T.dt1, [`${rows.length} dự án · giá trị HĐ khi ký`, `${rows.filter((x) => x.td1).length}/${rows.length} dự án đã chốt TĐ1`])}
-      ${card('cp', 'Chi phí dự kiến', T.cp1, [`Bằng <b>${bpct(T.cp1, T.dt1)}</b> doanh thu`, 'Dự toán chi phí khi ký HĐ'])}
-      ${card('ln', 'Lợi nhuận dự kiến', T.ln1, [`Tỷ suất <b>${bpct(T.ln1, T.dt1)}</b>`, `Bình quân <b>${rows.length ? bTy(T.ln1 / rows.length) : '0'}</b> tỷ / dự án`])}
+      ${(() => { const nTd = rows.filter((x) => x.td1).length; return card('dt', 'Doanh thu dự kiến', T.dt1, [`${rows.length} dự án · giá trị HĐ khi ký`, `<b>${nTd}/${rows.length}</b> dự án đã chốt TĐ1`], 'tỷ', kxBar(rows.length ? nTd / rows.length : 0, 'Tỷ lệ dự án đã chốt TĐ1')); })()}
+      ${card('cp', 'Chi phí dự kiến', T.cp1, [`Bằng <b>${bpct(T.cp1, T.dt1)}</b> doanh thu`, 'Dự toán chi phí khi ký HĐ'], 'tỷ', kxBar(T.dt1 ? T.cp1 / T.dt1 : 0, 'Chi phí trên doanh thu'))}
+      ${card('ln', 'Lợi nhuận dự kiến', T.ln1, [`Bình quân <b>${rows.length ? bTy(T.ln1 / rows.length) : '0'}</b> tỷ / dự án`], 'tỷ',
+        `<div class="kx-rate">${kxRing(T.dt1 ? T.ln1 / T.dt1 : 0)}<div><b class="${T.ln1 < 0 ? 'neg' : ''}">${bpct(T.ln1, T.dt1)}</b><span>Tỷ suất lợi nhuận</span></div></div>`)}
     </div>
+    ${T.dt1 > 0 ? (() => { const pc = Math.max(0, Math.min(1, T.cp1 / T.dt1)); return `<div class="kx-mix" role="img" aria-label="Cơ cấu doanh thu dự kiến">
+      <div class="kx-mix-h"><b>Cơ cấu doanh thu dự kiến</b><span>${bTy(T.dt1)} tỷ = Chi phí ${bTy(T.cp1)} + Lợi nhuận ${bTy(T.ln1)}</span></div>
+      <div class="kx-mix-bar"><i class="kx-mix-cp" style="width:${pc * 100}%"><span>Chi phí ${bpct(T.cp1, T.dt1)}</span></i><i class="kx-mix-ln" style="width:${(1 - pc) * 100}%"><span>LN ${bpct(T.ln1, T.dt1)}</span></i></div>
+    </div>`; })() : ''}
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt1)}</td><td class="num">${bTy(x.cp1)}</td>
