@@ -1179,6 +1179,7 @@ const HDV = ['thau_phu', 'vat_tu', 'may_moc', 'nhan_cong'];
 const TPN = () => META.tp_nhom || { thau_phu: 'Thầu phụ', vat_tu: 'Vật tư', may_moc: 'Máy móc thiết bị', nhan_cong: 'Nhân công giao khoán' };
 const TP_DT = { thau_phu: 'Nhà thầu phụ', vat_tu: 'Nhà cung cấp', may_moc: 'Đơn vị cho thuê / cung cấp', nhan_cong: 'Tổ đội / nhà thầu nhân công' };
 const TP_TAG = { thau_phu: 'TP', vat_tu: 'VT', may_moc: 'MMTB', nhan_cong: 'NC' };
+const TP_NGAN = { thau_phu: 'Thầu phụ', vat_tu: 'Vật tư', may_moc: 'MMTB', nhan_cong: 'Nhân công' };
 const tpTen = (c) => (TPN()[c?.nhom || 'thau_phu'] || 'Thầu phụ').toLowerCase();
 const costTpMode = () => {
   const e = cForm.elements;
@@ -1535,12 +1536,17 @@ function tpGroups(list) {
   }
   return [...map.values()].sort((a, b) => (a.k ? order.get(a.k) : 1e6) - (b.k ? order.get(b.k) : 1e6));
 }
+// Ô loại HĐ trên từng dòng: người được sửa HĐ chọn đổi loại ngay tại bảng; người khác chỉ thấy nhãn
+function tpKindCell(c, edit) {
+  const k = c.nhom || 'thau_phu';
+  if (!edit) return `<span class="tp-kind tp-k-${k}" title="${esc(TPN()[k])}">${TP_TAG[k]}</span>`;
+  return `<select class="tp-kind tp-kind-sel tp-k-${k}" data-tpkind="${c.id}" title="Loại hợp đồng: ${esc(TPN()[k])} – chọn để chuyển loại" aria-label="Loại hợp đồng ${esc(c.so_ma)}">${HDV.map((x) =>
+    `<option value="${x}" ${x === k ? 'selected' : ''}>${TP_NGAN[x]}</option>`).join('')}</select>`;
+}
 function renderTpCard() {
   const tatCa = costData.thau_phu;
-  // Lọc theo loại HĐ (chỉ hiện loại đang có HĐ)
-  const nhoms = HDV.filter((k) => tatCa.some((c) => (c.nhom || 'thau_phu') === k));
-  if (tpFilter.nhom && !nhoms.includes(tpFilter.nhom)) tpFilter.nhom = '';
-  $('#tp-nhom').hidden = nhoms.length < 2;
+  // Lọc theo loại HĐ: luôn hiện đủ 4 loại (kèm số lượng) để người dùng biết có thể tạo / chuyển loại
+  const nhoms = HDV;
   $('#tp-nhom').innerHTML = [['', `Tất cả (${tatCa.length})`], ...nhoms.map((k) => [k, `${TPN()[k]} (${tatCa.filter((c) => (c.nhom || 'thau_phu') === k).length})`])]
     .map(([k, t]) => `<button type="button" data-v="${k}" class="${tpFilter.nhom === k ? 'on' : ''}">${esc(t)}</button>`).join('');
   const all = tpFilter.nhom ? tatCa.filter((c) => (c.nhom || 'thau_phu') === tpFilter.nhom) : tatCa;
@@ -1564,7 +1570,7 @@ function renderTpCard() {
   const childRow = (c, stt) => `
     <tr class="tv-child" data-tpid="${c.id}">
       <td class="num muted">${stt}</td>
-      <td class="indent"><span class="tree">└</span>${nhoms.length > 1 ? `<span class="tp-kind tp-k-${c.nhom || 'thau_phu'}" title="${esc(TPN()[c.nhom || 'thau_phu'])}">${TP_TAG[c.nhom || 'thau_phu']}</span> ` : ''}<b class="tp-open so-ma-pick" data-tp="${c.id}" title="Nhấp đúp để mở bảng nhập chi tiết">${esc(c.so_ma)}</b>
+      <td class="indent"><span class="tree">└</span>${tpKindCell(c, edit)} <b class="tp-open so-ma-pick" data-tp="${c.id}" title="Nhấp đúp để mở bảng nhập chi tiết">${esc(c.so_ma)}</b>
         ${c.so_pl ? `<span class="muted small">(+${c.so_pl} PL)</span>` : ''}
         ${c.khoa ? '<span class="st st-lock" title="Đã quyết toán – khóa số">🔒 Đã QT</span>' : c.da_qt ? '<span class="st st-hoan-thanh">Đã QT</span>' : '<span class="st">Chưa QT</span>'}</td>
       <td class="c-dt">${esc(c.doi_tac)}</td>
@@ -1617,6 +1623,21 @@ $('#tp-tbody').addEventListener('click', (e) => {
   renderTpCard();
 });
 $('#tp-q').addEventListener('input', (e) => { tpFilter.q = e.target.value; if (costData) renderTpCard(); });
+// Đổi loại HĐ ngay trên bảng
+$('#tp-tbody').addEventListener('change', async (e) => {
+  const sel = e.target.closest('[data-tpkind]');
+  if (!sel) return;
+  const c = costData.thau_phu.find((x) => x.id === Number(sel.dataset.tpkind));
+  if (!c) return;
+  const cu = c.nhom || 'thau_phu';
+  sel.disabled = true;
+  try {
+    await api(`/api/thau-phu/${c.id}`, { method: 'PUT', body: JSON.stringify({ nhom: sel.value, so_ma: c.so_ma, doi_tac: c.doi_tac, ghi_chu: c.ghi_chu, hd_cdt_id: c.hd_cdt_id ?? '' }) });
+    showMsg($('#c-msg'), `Đã chuyển HĐ ${c.so_ma} từ ${TPN()[cu]} sang ${TPN()[sel.value]}.`);
+    costOpen.add(sel.value);
+    await loadCost();
+  } catch (err) { sel.value = cu; sel.disabled = false; alert(err.message); }
+});
 $('#tp-nhom').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
