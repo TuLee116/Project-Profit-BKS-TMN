@@ -145,9 +145,10 @@
           <form id="c-form" class="grid-form" novalidate>
             <input type="hidden" name="id">
             <label>Nhóm chi phí *<select name="nhom"></select></label>
+            <label id="c-ht-wrap" hidden>Hình thức *<select name="hinh_thuc"><option value="le">Dòng chi phí (mua lẻ, không có HĐ)</option><option value="hd">Hợp đồng (HĐ, PL, quyết toán, thanh toán)</option></select></label>
             <label id="c-sub-wrap">Hạng mục *<select name="nhom_con"></select></label>
             <label class="c-tp">Thuộc HĐ chủ đầu tư<select name="hd_cdt"></select></label>
-            <label class="c-tp">Số HĐ thầu phụ *<input name="so_tp" maxlength="120" placeholder="Số mới: gõ · Số đã có: nhấp đúp" title="Số HĐ mới: gõ trực tiếp. Số đã có: nhấp đúp để mở bảng chi tiết"></label>
+            <label class="c-tp"><span id="c-so-label">Số HĐ thầu phụ *</span><input name="so_tp" maxlength="120" placeholder="Số mới: gõ · Số đã có: nhấp đúp" title="Số HĐ mới: gõ trực tiếp. Số đã có: nhấp đúp để mở bảng chi tiết"></label>
             <label class="span-2 c-gen">Nội dung *<input name="noi_dung" maxlength="300"></label>
             <label><span id="c-dt-label">Đối tác / Nhà cung cấp</span><input name="doi_tac" maxlength="200"></label>
             <datalist id="bank-list"></datalist>
@@ -161,19 +162,20 @@
               <button type="submit" class="primary">Thêm dòng</button>
               <button type="button" id="c-cancel">Hủy</button>
             </div>
-            <div class="c-tp tp-hint span-2 muted small">Sau khi tạo: <b>HT/QT</b> = giá trị HĐ (chưa quyết toán) · <b>Đã thanh toán</b> = 0 · <b>Còn lại</b> = HT/QT. Nhấp đúp vào Số HĐ thầu phụ ở bảng bên dưới để nhập PL, HT/QT và thanh toán.</div>
+            <div class="c-tp tp-hint span-2 muted small">Sau khi tạo: <b>HT/QT</b> = giá trị HĐ (chưa quyết toán) · <b>Đã thanh toán</b> = 0 · <b>Còn lại</b> = HT/QT. Nhấp đúp vào Số HĐ ở bảng "1. Hợp đồng đầu vào" để nhập PL, HT/QT và thanh toán.</div>
             <div class="msg" id="c-msg" role="alert"></div>
           </form>
         </div>
 
         <div class="card" id="tp-card">
           <div class="toolbar tv-head">
-            <h2>1. Thầu phụ – theo hợp đồng</h2>
+            <h2>1. Hợp đồng đầu vào <span class="muted small">thầu phụ · vật tư · MMTB · nhân công</span></h2>
             <div class="tv-total">Còn lại: <b id="tp-total">0</b></div>
           </div>
           <div class="toolbar tp-filter">
             <button type="button" class="sm" id="tp-toggle-all">Mở tất cả</button>
-            <input id="tp-q" type="search" placeholder="Tìm số HĐ, nhà thầu, ghi chú (HĐ CĐT)..." aria-label="Tìm hợp đồng thầu phụ">
+            <input id="tp-q" type="search" placeholder="Tìm số HĐ, đối tác, ghi chú (HĐ CĐT)..." aria-label="Tìm hợp đồng đầu vào">
+            <div class="seg" id="tp-nhom" role="group" aria-label="Lọc theo loại hợp đồng"></div>
             <div class="seg" id="tp-loc" role="group" aria-label="Lọc theo quyết toán">
               <button type="button" data-v="" class="on">Tất cả</button><button type="button" data-v="chua">Chưa QT</button><button type="button" data-v="da">Đã QT</button>
             </div>
@@ -181,14 +183,14 @@
           <div class="table-wrap">
             <table class="tp-table">
               <thead><tr>
-                <th class="num">#</th><th>Số HĐ thầu phụ</th><th>Nhà thầu phụ</th>
+                <th class="num">#</th><th>Số hợp đồng</th><th>Đối tác</th>
                 <th class="num">Tổng giá trị HĐ</th><th class="num">Tổng giá trị HT/QT</th><th class="num">Giá trị thanh toán</th><th class="num">Giá trị còn lại</th><th>Ghi chú</th><th></th>
               </tr></thead>
               <tbody id="tp-tbody"></tbody>
               <tfoot id="tp-tfoot"></tfoot>
             </table>
           </div>
-          <p class="muted small">Nhấp đúp vào <b>Số HĐ thầu phụ</b> (hoặc bấm Chi tiết) để nhập HĐ/PL, giá trị HT/QT và thanh toán. Các giá trị hiển thị sau VAT; HT/QT chưa nhập = bằng giá trị HĐ/PL (chưa quyết toán).</p>
+          <p class="muted small">Nhấp đúp vào <b>Số hợp đồng</b> (hoặc bấm Chi tiết) để nhập HĐ/PL, giá trị HT/QT và thanh toán. Các giá trị hiển thị sau VAT; HT/QT chưa nhập = bằng giá trị HĐ/PL (chưa quyết toán).</p>
         </div>
 
         <!-- B1 / B2 / B3: dựng từ danh mục khối chi phí -->

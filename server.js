@@ -5,7 +5,7 @@ const store = require('./lib/db');
 const auth = require('./lib/auth');
 const security = require('./lib/security');
 const audit = require('./lib/audit');
-const { TRANG_THAI, ROLES, QUYEN, validateProject, validateUser, validateSettings, validateContact, validateTarget, validateRevenue, validateTienVe, validateCost, validateTp, validateTpLine, validateTpPay, passwordErrors, passcodeErrors } = require('./lib/validate');
+const { TP_NHOM, TRANG_THAI, ROLES, QUYEN, validateProject, validateUser, validateSettings, validateContact, validateTarget, validateRevenue, validateTienVe, validateCost, validateTp, validateTpLine, validateTpPay, passwordErrors, passcodeErrors } = require('./lib/validate');
 const { buildContracts, summarizeContracts } = require('./lib/subcontract');
 const { KHOI_CHI_PHI, NHOM_CHI_PHI, summarizeCost, sortCost, costLine } = require('./lib/cost');
 const { summarizeProject } = require('./lib/dashboard');
@@ -106,7 +106,7 @@ api.get('/meta', wrap(async (_req, res) => {
     loai_doanh_thu: LOAI_DOANH_THU,
     nhom_chi_phi: NHOM_CHI_PHI,
     khoi_chi_phi: KHOI_CHI_PHI,
-    roles: ROLES, quyen: QUYEN,
+    roles: ROLES, quyen: QUYEN, tp_nhom: TP_NHOM,
     db: store.kind,
     ten_cong_ty: s.ten_cong_ty,
     ten_he_thong: s.ten_he_thong,
@@ -824,7 +824,7 @@ api.get('/du-an/:id/chi-phi', wrap(async (req, res) => {
   const items = sortCost(await store.listCost(id)).map(costLine);
   const thau_phu = buildContracts(await store.listTp(id));
   // Nhóm 1 Thầu phụ = giá trị HT/QT của các HĐTP (+ dòng thầu phụ nhập kiểu cũ nếu có)
-  const tpAsCost = thau_phu.map((c) => ({ nhom: 'thau_phu', gia_tri: c.qt_gia_tri, tien_vat: c.qt_tien_vat, sau_vat: c.qt_sau_vat, tam_tinh: c.tam_tinh }));
+  const tpAsCost = thau_phu.map((c) => ({ nhom: c.nhom || 'thau_phu', gia_tri: c.qt_gia_tri, tien_vat: c.qt_tien_vat, sau_vat: c.qt_sau_vat, tam_tinh: c.tam_tinh }));
   // Danh sách HĐ chủ đầu tư (HĐ gốc) để gộp / gắn thầu phụ, theo thứ tự như tab Doanh thu
   const hd_cdt = sortRevenue((await store.listRevenue(id)).filter((r) => r.loai === 'hd' && r.ma_loai === 'HĐ'))
     .map((r) => ({ id: r.id, so_ma: r.so_ma, so_hieu: r.so_hieu, ngay: r.ngay }));
@@ -975,7 +975,7 @@ app.use('/api', (_req, res) => bad(res, 'Không tìm thấy API', 404));
 // Xử lý lỗi chung
 app.use((err, req, res, _next) => {
   if (err.code === '23505') {
-    const msg = /thau-phu$|thau-phu\/\d+$/.test(req.path) ? 'Số HĐ thầu phụ này đã có trong công trình'
+    const msg = /thau-phu$|thau-phu\/\d+$/.test(req.path) ? 'Số hợp đồng này đã có trong công trình (thầu phụ, vật tư, MMTB, nhân công dùng chung danh sách số HĐ)'
       : req.path.includes('hd-pl') ? 'Loại HĐ/PL này đã có trong hợp đồng thầu phụ'
       : req.path.includes('thanh-toan') ? 'Trùng dữ liệu: số đợt thanh toán đã có, hoặc đã có dòng Quyết toán'
       : req.path.includes('tien-ve')

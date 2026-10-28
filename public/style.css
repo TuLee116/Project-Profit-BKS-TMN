@@ -1296,3 +1296,10 @@ body.as-on .as-fab { display: none; }
   .as-foot { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
 }
 @media print { .as-fab, .as-panel { display: none !important; } }
+/* Hợp đồng đầu vào: nhãn loại HĐ */
+.tp-kind { display: inline-block; min-width: 34px; text-align: center; padding: 1px 6px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: .3px; vertical-align: 1px; }
+.tp-k-thau_phu { background: #e3ecfa; color: #1f3a6e; }
+.tp-k-vat_tu { background: #fdeedd; color: #9a4d0e; }
+.tp-k-may_moc { background: #ece6f7; color: #5b3e94; }
+.tp-k-nhan_cong { background: #dcf3ef; color: #0f6f66; }
+#tp-nhom[hidden] { display: none; }

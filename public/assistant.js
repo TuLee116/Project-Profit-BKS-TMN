@@ -193,7 +193,7 @@ function asOneProject(id) {
       ['Tỷ suất', bpct(x.ln1, x.dt1), bpct(x.l2, x.t2), bpct(x.l3, x.t3)],
     ])}
     <div class="as-kvs">${asKv('Đã thu', asTy(x.thu) + ' tỷ', `${bpct(x.thu, x.hd_sv)} doanh thu`)}${asKv('Đã chi', asTy(x.chi) + ' tỷ', `Thu − chi: ${asTy(x.con)} tỷ`)}${asKv('Còn phải thu', asTy(x.phai_thu) + ' tỷ')}
-      ${asKv('Thầu phụ', `${tp.n || 0} HĐ`, `${tp.n_qt || 0} đã QT · đã trả ${bTy(tp.da_tt || 0)} · còn nợ ${bTy(tp.con_lai || 0)} tỷ`)}${d.bh_khac ? asKv('Bảo hành CĐT giữ', asTy(d.bh_khac) + ' tỷ') : ''}${asKv('Cảnh báo dữ liệu', String(d.canh_bao.length))}</div>
+      ${asKv('HĐ đầu vào', `${tp.n || 0} HĐ`, `${tp.n_qt || 0} đã QT · đã trả ${bTy(tp.da_tt || 0)} · còn nợ ${bTy(tp.con_lai || 0)} tỷ`)}${d.bh_khac ? asKv('Bảo hành CĐT giữ', asTy(d.bh_khac) + ' tỷ') : ''}${asKv('Cảnh báo dữ liệu', String(d.canh_bao.length))}</div>
     ${asNote(`${x.qt ? 'Đã quyết toán – số thực' : 'Chưa quyết toán – mới nhất lấy theo TĐ2 (tạm tính)'} · ${asVt()} · thầu phụ sau VAT.`)}
     <button type="button" class="as-go" data-asprj="${d.id}">Mở thẻ dự án →</button>`;
 }
