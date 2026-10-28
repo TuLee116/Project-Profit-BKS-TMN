@@ -1585,7 +1585,7 @@ tr.tp-grand td { font-weight: 800; color: var(--navy); background: #e9f1fb; bord
 .tdk-hv small { font-size: 16px; font-weight: 500; letter-spacing: 0; color: #6b7a90; margin-left: 6px; }
 .tdk-hp { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; font-size: 12.5px; color: #334155; }
 .tdk-pill { background: #e8f5ee; color: #0f7a4f; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
-.tdk-hg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid #eef2f7; }
+.tdk-hg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid #eef2f7; }
 .tdk-hg span { display: block; font-size: 11px; color: #6b7a90; }
 .tdk-hg b { display: block; font-size: 18px; font-weight: 600; color: #0f1b33; margin: 2px 0 1px; }
 .tdk-hg em, .tdk-hg > div > span:last-child { font-style: normal; font-size: 11.5px; }
@@ -1626,3 +1626,25 @@ tr.tp-grand td { font-weight: 800; color: var(--navy); background: #e9f1fb; bord
 .tdk-hg span.tdk-up, .tdk-hg span.tdk-dn, .tdk-hg span.tdk-eq { display: inline; font-size: 11.5px; }
 .tdk-hg span.tdk-up { color: #0f7a4f; } .tdk-hg span.tdk-dn { color: #b4471c; } .tdk-hg span.tdk-eq { color: #94a3b8; }
 @media (max-width: 640px) { .tdk-t .tdk-tn { display: none; } .tdk-t td:first-child { white-space: nowrap; } }
+
+/* Mục I – cầu lợi nhuận (vì sao LN thay đổi) */
+.lb-box { margin-bottom: 12px; }
+.lb-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; margin-bottom: 2px; }
+.lb-h b { font-size: 13px; color: #0f1b33; }
+.lb-lg { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 11.5px; color: #334155; }
+.lb-lg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 2px 0 10px; }
+.lb-lg i:first-child { margin-left: 0; }
+.lb-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: inherit; }
+.lb-base { stroke: #cbd5e1; }
+.lb-link { stroke: #94a3b8; stroke-dasharray: 3 3; }
+rect.lb-tot, .lb-lg i.lb-tot { fill: #334155; background: #334155; }
+rect.lb-up, .lb-lg i.lb-up { fill: #1f9d6b; background: #1f9d6b; }
+rect.lb-dn, .lb-lg i.lb-dn { fill: #d0603a; background: #d0603a; }
+rect.lb-0 { fill: #cbd5e1; }
+.lb-v { font-weight: 700; }
+text.lb-tot { fill: #0f1b33; } text.lb-up { fill: #0f7a4f; } text.lb-dn { fill: #b4471c; } text.lb-0 { fill: #94a3b8; }
+.lb-x { fill: #334155; font-weight: 600; } .lb-xt { fill: #0f1b33; font-weight: 700; }
+.lb-xs { fill: #94a3b8; }
+.lb-k { margin: 4px 0 0; padding: 8px 12px; border-radius: 8px; background: #f7f9fc; font-size: 12.5px; color: #334155; line-height: 1.5; }
+
+.tdk-hero { justify-content: center; }
