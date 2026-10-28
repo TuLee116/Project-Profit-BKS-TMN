@@ -500,27 +500,28 @@ function bTdBand(TV, sel, rows) {
       ${Math.abs(yc - yd) > 24 ? `<rect x="${(x - pw / 2).toFixed(1)}" y="${(ym - 11).toFixed(1)}" width="${pw}" height="22" rx="11" class="tdc-pill ${t.ln < 0 ? 'neg' : ''}"/><text x="${x.toFixed(1)}" y="${(ym + 4).toFixed(1)}" text-anchor="middle" font-size="${small ? 10.5 : 12}" class="tdc-vln ${t.ln < 0 ? 'neg' : ''}">LN ${bTy(t.ln)}</text>` : ''}
       <rect x="${(L + cw * i).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H}" fill="transparent" class="tdc-hit" data-tip="${esc(tip(t, i))}" data-tdtip="${i}" data-thtd="${i + 1}"/>`; }).join('')}
   </svg>`;
-  // Bảng số canh thẳng cột theo đúng vị trí điểm trên biểu đồ
+  // Dưới biểu đồ: mỗi thời điểm 1 cột gọn – lợi nhuận là số chính; DT · CP một dòng; thay đổi LN so với TĐ trước
   const gl = `${((L / W) * 100).toFixed(3)}%`, gr = `${(((W - R) / W) * 100).toFixed(3)}%`;
-  const dl = (cur, prev, good) => { const d0 = cur - prev; if (Math.abs(d0) < 5e6) return '<span class="tdp-d tdp-eq">không đổi</span>';
-    const up = d0 > 0, ok = up === good;
-    return `<span class="tdp-d ${ok ? 'tdp-ok' : 'tdp-bad'}">${up ? '▲' : '▼'} ${bTy(Math.abs(d0))}${prev ? ` · ${(Math.abs(d0 / prev) * 100).toFixed(1).replace('.', ',')}%` : ''}</span>`; };
   const n0 = rows.length;
-  const head = (n) => `<div class="tdx-c tdx-hd ${sel === n ? 'on' : ''}" role="button" tabindex="0" data-thtd="${n}" aria-pressed="${sel === n}" title="Bấm để xem chi tiết theo dự án tại TĐ${n}">
-      <span class="tdp-n">TĐ${n}</span><b>${TEN[n - 1]}</b><small>${n === 3 ? `${TV[3].qt}/${n0} đã quyết toán` : `${TV[n].chot}/${n0} đã chốt`}</small></div>`;
-  const cell = (n, k, good, pct) => { const t = TV[n], p = n > 1 ? TV[n - 1] : null;
-    return `<div class="tdx-c tdx-v tdx-${k} ${sel === n ? 'on' : ''}" data-thtd="${n}"><span class="tdx-num"><b class="${t[k] < 0 ? 'neg' : ''}" title="${bn(t[k])} đ">${bTy(t[k])}</b>${pct ? `<em>${bpct(t[k], t.dt)}</em>` : ''}</span>${p ? dl(t[k], p[k], good) : ''}</div>`; };
-  const lab = (k, t) => `<div class="tdx-lb tdx-${k}"><i class="tdp-sw"></i>${t}</div>`;
+  const chg = (cur, prev, good, short) => { const d0 = cur - prev;
+    if (Math.abs(d0) < 5e6) return `<span class="tdx-ch tdx-eq">— không đổi${short ? '' : ' so với trước'}</span>`;
+    const up = d0 > 0, ok = up === good;
+    return `<span class="tdx-ch ${ok ? 'tdx-up' : 'tdx-dn'}">${up ? '▲' : '▼'} ${bTy(Math.abs(d0))}${prev ? ` (${up ? '+' : '−'}${(Math.abs(d0 / prev) * 100).toFixed(1).replace('.', ',')}%)` : ''}</span>`; };
+  const col = (n) => { const t = TV[n], p = n > 1 ? TV[n - 1] : null;
+    return `<div class="tdx-col ${sel === n ? 'on' : ''}" role="button" tabindex="0" data-thtd="${n}" aria-pressed="${sel === n}" title="Bấm để xem chi tiết theo dự án tại TĐ${n}">
+      <div class="tdx-k"><span class="tdp-n">TĐ${n}</span>${TEN[n - 1]}</div>
+      <div class="tdx-ln"><b class="${t.ln < 0 ? 'neg' : ''}" title="${bn(t.ln)} đ">${bTy(t.ln)}</b><span>${bpct(t.ln, t.dt)}</span></div>
+      <div class="tdx-sub"><span><i class="tdp-sw tdx-sdt"></i>DT ${bTy(t.dt)}</span><span><i class="tdp-sw tdx-scp"></i>CP ${bTy(t.cp)}</span></div>
+      <div class="tdx-foot">${p ? chg(t.ln, p.ln, true, small) : `<span class="tdx-ch tdx-eq">Lợi nhuận dự kiến</span>`}<small>${n === 3 ? `${TV[3].qt}/${n0} đã QT` : `${TV[n].chot}/${n0} đã chốt`}</small></div>
+    </div>`; };
+  const a = TV[1], z = TV[3];
+  const net = (k, lab, good) => `<span><i class="tdp-sw tdx-s${k}"></i>${lab} ${chg(z[k], a[k], good, true)}</span>`;
   return `<div class="tdx">
     <div class="tdx-top"><div><b>Doanh thu – Chi phí – Lợi nhuận qua các thời điểm</b><span>Bấm vào một thời điểm để xem chi tiết theo dự án bên dưới</span></div>
       <span class="tdc-lg"><i class="tdc-k-dt"></i>Doanh thu<i class="tdc-k-cp"></i>Chi phí<i class="tdc-k-ln"></i>Lợi nhuận</span></div>
     ${svg}
-    <div class="tdx-tb" style="grid-template-columns:${gl} repeat(3, minmax(0, 1fr)) ${gr}">
-      <div></div>${[1, 2, 3].map(head).join('')}<div></div>
-      ${lab('dt', 'Doanh thu')}${[1, 2, 3].map((n) => cell(n, 'dt', true, false)).join('')}<div></div>
-      ${lab('cp', 'Chi phí')}${[1, 2, 3].map((n) => cell(n, 'cp', false, true)).join('')}<div></div>
-      ${lab('ln', 'Lợi nhuận')}${[1, 2, 3].map((n) => cell(n, 'ln', true, true)).join('')}<div></div>
-    </div>
+    <div class="tdx-cols" style="grid-template-columns:${gl} repeat(3, minmax(0, 1fr)) ${gr}"><div></div>${[1, 2, 3].map(col).join('')}<div></div></div>
+    <div class="tdx-net"><b>Từ lúc ký đến quyết toán</b>${net('dt', 'Doanh thu', true)}${net('cp', 'Chi phí', false)}${net('ln', 'Lợi nhuận', true)}</div>
   </div>`;
 }
 function bTongHopHtml(list, v, P) {
