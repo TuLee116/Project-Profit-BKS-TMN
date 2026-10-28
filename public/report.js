@@ -475,7 +475,7 @@ function bTdBand(TV, sel, rows) {
   const P3 = [1, 2, 3].map((n) => TV[n]);
   const W = Math.round(Math.min(1180, Math.max(320, (document.querySelector('#b-report')?.clientWidth || 1180) - 4)));
   const small = W < 640, H = small ? 190 : 230;
-  const L = small ? 84 : 150, R = W - (small ? 6 : 20), T = 30, B = H - 14;
+  const L = small ? 38 : 56, R = W - L, T = 30, B = H - 14; // lề trái (trục) = lề phải -> cân đối
   const cw = (R - L) / 3, X = (i) => L + cw * (i + 0.5);
   const vals = P3.flatMap((t) => [t.dt, t.cp]), mn = Math.min(...vals), mx = Math.max(...vals);
   const raw = Math.max(mx - mn, Math.abs(mx) * 0.05, 1e9) / 4, mag = 10 ** Math.floor(Math.log10(raw));
@@ -491,7 +491,7 @@ function bTdBand(TV, sel, rows) {
   const tip = (t, i) => `TĐ${i + 1} – ${TEN[i]}\nDoanh thu: ${bTy(t.dt)} tỷ\nChi phí: ${bTy(t.cp)} tỷ (${bpct(t.cp, t.dt)})\nLợi nhuận: ${bTy(t.ln)} tỷ (${bpct(t.ln, t.dt)})`;
   const svg = `<svg class="tdc-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Doanh thu, chi phí, lợi nhuận qua TĐ1, TĐ2, TĐ3">
     <defs><linearGradient id="tdc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${neg ? '#d92d35' : '#16968a'}" stop-opacity=".26"/><stop offset="1" stop-color="${neg ? '#d92d35' : '#16968a'}" stop-opacity=".05"/></linearGradient></defs>
-    <rect x="${(L + cw * (sel - 1) + 2).toFixed(1)}" y="0" width="${(cw - 4).toFixed(1)}" height="${H}" rx="10" class="tdc-sel"/>
+    <path d="M${(L + cw * (sel - 1) + 2).toFixed(1)},${H} V10 a10,10 0 0 1 10,-10 H${(L + cw * sel - 12).toFixed(1)} a10,10 0 0 1 10,10 V${H} Z" class="tdc-sel"/>
     ${ticks.map((v) => `<line x1="${L}" x2="${R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="tdc-grid"/><text x="${L - 10}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="tdc-ax">${(v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</text>`).join('')}
     <path d="${band}" fill="url(#tdc-g)"/>
     <path d="${curve(dt)}" class="tdc-ldt"/><path d="${curve(cp)}" class="tdc-lcp"/>
