@@ -1433,3 +1433,39 @@ tr.tp-grand td { font-weight: 800; color: var(--navy); background: #e9f1fb; bord
   .kh-v { font-size: 30px; }
 }
 @media print { .kh { background: #1f3a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none; } }
+
+/* =====================================================================
+   Mục I – 3 khối thời điểm TĐ1 · TĐ2 · TĐ3 (phong cách tối giản)
+   ===================================================================== */
+.tdp-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.tdp { position: relative; padding: 16px 18px 14px; border-radius: 14px; background: #fff; border: 1px solid #e5eaf1; cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease; outline: none; }
+.tdp:hover { border-color: #c8d4e4; }
+.tdp:focus-visible { box-shadow: 0 0 0 3px rgba(31,58,110,.18); }
+.tdp.on { border-color: #1f3a6e; box-shadow: 0 0 0 1px #1f3a6e, 0 10px 24px -16px rgba(15,27,51,.45); }
+.tdp-h { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid #eef2f7; }
+.tdp-n { flex: none; padding: 3px 8px; border-radius: 6px; background: #eef2f7; color: #0f1b33; font-size: 11.5px; font-weight: 700; letter-spacing: .3px; }
+.tdp.on .tdp-n { background: #0f1b33; color: #fff; }
+.tdp-t { font-size: 13.5px; font-weight: 700; color: #0f1b33; }
+.tdp-s { margin-left: auto; font-size: 11.5px; color: #6b7a90; white-space: nowrap; }
+.tdp-r { display: grid; grid-template-columns: minmax(0, 1fr) auto 52px; grid-template-areas: 'lb v em' 'lb d d'; align-items: baseline; column-gap: 8px; padding: 9px 0 7px; }
+.tdp-r + .tdp-r { border-top: 1px dashed #edf1f6; }
+.tdp-lb { grid-area: lb; display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #334155; align-self: center; }
+.tdp-sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.tdp-dt .tdp-sw { background: #2c5fa3; } .tdp-cp .tdp-sw { background: #c27a3e; } .tdp-ln .tdp-sw { background: #16968a; }
+.tdp-r > b { grid-area: v; text-align: right; font-size: 19px; font-weight: 600; color: #0f1b33; letter-spacing: -.3px; white-space: nowrap; }
+.tdp-ln > b { font-size: 24px; }
+.tdp-r > em { grid-area: em; text-align: right; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7a90; }
+.tdp-d { grid-area: d; justify-self: end; margin-top: 2px; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 5px; white-space: nowrap; }
+.tdp-d.tdp-ok { color: #0f7a4f; background: #e8f5ee; }
+.tdp-d.tdp-bad { color: #b4471c; background: #fbeee6; }
+.tdp-d.tdp-eq { color: #6b7a90; background: #f1f4f8; }
+.tdp-bar { display: flex; gap: 2px; height: 6px; margin-top: 10px; }
+.tdp-bar i { display: block; border-radius: 3px; }
+.tdp-bcp { background: #c27a3e; } .tdp-bln { flex: 1; background: #16968a; }
+.tdp-cap { margin: 4px 0 8px; font-size: 12.5px; color: #334155; }
+@media (max-width: 1100px) { .tdp-g { grid-template-columns: minmax(0, 1fr); } }
+@media print { .tdp { break-inside: avoid; } .tdp.on { box-shadow: none; } }
+.tdp { display: flex; flex-direction: column; }
+.tdp-bar { margin-top: auto; padding-top: 0; }
+.tdp-r:last-of-type { margin-bottom: 10px; }
