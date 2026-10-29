@@ -1695,23 +1695,24 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .th-dl { font-size: 11px; margin-right: 6px; cursor: help; }
 .th-dl.ok { color: #0f7a4f; } .th-dl.bad { color: #b4471c; }
 
-/* Mục II – vành khuyên lợi nhuận TĐ3 */
-.tdk-donut { display: flex; align-items: center; gap: 20px; margin: 18px 0 6px; }
-.tdk-dnc { width: 160px; height: 160px; flex: 0 0 160px; }
-.tdk-dnv { font-size: 28px; font-weight: 700; fill: #0f1b33; letter-spacing: -.8px; font-variant-numeric: tabular-nums; }
-.tdk-dnv.neg { fill: #b4471c; }
-.tdk-dnu { font-size: 11.5px; fill: #6b7a90; font-weight: 600; }
-.tdk-dnl { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
-.tdk-dli { display: flex; flex-direction: column; gap: 1px; font-variant-numeric: tabular-nums; }
-.tdk-dli > span { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #64748b; }
-.tdk-dli i { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
-.tdk-dli em { font-style: normal; color: #94a3b8; }
-.tdk-dli > div { display: flex; align-items: baseline; gap: 8px; padding-left: 14px; }
-.tdk-dli b { font-size: 17px; font-weight: 600; color: #0f1b33; }
-.tdk-dli b.neg { color: #b4471c; }
-.tdk-dli > div > span { font-size: 11px; }
-.tdk-dli.ln { padding-top: 7px; border-top: 1px solid #eef2f7; } .tdk-dli.ln b { font-weight: 700; }
-.tdk-cmp { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef2f7; font-size: 12px; color: #475569; line-height: 1.5; }
-.tdk-cmp b { color: #0f1b33; }
-.tdk-mk { display: inline-block; width: 3px; height: 11px; background: #0f1b33; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
-@media (max-width: 760px) { .tdk-donut { gap: 12px; } .tdk-dnc { width: 124px; height: 124px; flex-basis: 124px; } }
+/* Mục I-B – lợi nhuận TĐ3: 2 thanh so lúc ký với quyết toán */
+.tdk-hv2 { display: flex; align-items: baseline; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
+.tdk-hv2 b { font-size: 46px; font-weight: 600; letter-spacing: -1.4px; line-height: 1.05; color: #0f1b33; font-variant-numeric: tabular-nums; }
+.tdk-hv2 b.neg { color: #b4471c; }
+.tdk-hv2 small { font-size: 15px; color: #6b7a90; margin-right: 8px; }
+.tdk-hc { font-size: 12.5px; color: #334155; }
+.tdk-bars { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.tdk-bl { display: flex; justify-content: space-between; font-size: 11.5px; color: #64748b; margin-bottom: 4px; }
+.tdk-bl b { color: #0f1b33; font-weight: 600; }
+.tdk-bt { display: flex; align-items: center; gap: 8px; }
+.tdk-bf { display: flex; height: 26px; border-radius: 6px; overflow: hidden; background: #eef2f7; }
+.tdk-bf i { display: flex; align-items: center; height: 100%; }
+.tdk-bf i.cp { background: #c27a3e; } .tdk-bf i.ln { background: #16968a; }
+.tdk-bf em { font-style: normal; font-size: 11px; font-weight: 600; color: #fff; padding-left: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tdk-bv { flex: 0 0 auto; font-size: 14px; font-weight: 700; color: #0f766e; font-variant-numeric: tabular-nums; }
+.tdk-bv small { font-size: 11px; font-weight: 500; color: #6b7a90; }
+.tdk-blg { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: #64748b; }
+.tdk-blg span { display: inline-flex; align-items: center; gap: 5px; } .tdk-blg i { width: 8px; height: 8px; border-radius: 2px; }
+.tdk-hg2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #eef2f7; }
+.tdk-hg2 > div > span:first-child { display: block; font-size: 11px; color: #6b7a90; margin-bottom: 2px; }
+.tdk-hg2 > div > span:last-child { font-size: 13px; }
