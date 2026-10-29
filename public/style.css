@@ -1688,3 +1688,24 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 /* ▲▼ so với TĐ trước trong bảng chi tiết theo dự án (mục II) */
 .th-dl { font-size: 11px; margin-right: 6px; cursor: help; }
 .th-dl.ok { color: #0f7a4f; } .th-dl.bad { color: #b4471c; }
+
+/* Mục II – vành khuyên lợi nhuận TĐ3 */
+.tdk-donut { display: flex; align-items: center; gap: 20px; margin: 18px 0 6px; }
+.tdk-dnc { width: 160px; height: 160px; flex: 0 0 160px; }
+.tdk-dnv { font-size: 28px; font-weight: 700; fill: #0f1b33; letter-spacing: -.8px; font-variant-numeric: tabular-nums; }
+.tdk-dnv.neg { fill: #b4471c; }
+.tdk-dnu { font-size: 11.5px; fill: #6b7a90; font-weight: 600; }
+.tdk-dnl { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+.tdk-dli { display: flex; flex-direction: column; gap: 1px; font-variant-numeric: tabular-nums; }
+.tdk-dli > span { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #64748b; }
+.tdk-dli i { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
+.tdk-dli em { font-style: normal; color: #94a3b8; }
+.tdk-dli > div { display: flex; align-items: baseline; gap: 8px; padding-left: 14px; }
+.tdk-dli b { font-size: 17px; font-weight: 600; color: #0f1b33; }
+.tdk-dli b.neg { color: #b4471c; }
+.tdk-dli > div > span { font-size: 11px; }
+.tdk-dli.ln { padding-top: 7px; border-top: 1px solid #eef2f7; } .tdk-dli.ln b { font-weight: 700; }
+.tdk-cmp { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef2f7; font-size: 12px; color: #475569; line-height: 1.5; }
+.tdk-cmp b { color: #0f1b33; }
+.tdk-mk { display: inline-block; width: 3px; height: 11px; background: #0f1b33; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+@media (max-width: 760px) { .tdk-donut { gap: 12px; } .tdk-dnc { width: 124px; height: 124px; flex-basis: 124px; } }

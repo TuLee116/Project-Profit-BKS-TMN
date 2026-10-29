@@ -585,13 +585,26 @@ function bTdBand(TV, sel, rows) {
   return `<div class="tdk">
     <div class="tdk-hero">
       <div class="tdk-hl">Lợi nhuận quyết toán <span>(TĐ3${z.qt < n0 ? ' · dự án chưa QT tạm tính theo TĐ2' : ''})</span></div>
-      <div class="tdk-hv ${z.ln < 0 ? 'neg' : ''}" title="${bn(z.ln)} đ">${bTy(z.ln)}<small>tỷ</small></div>
-      <div class="tdk-hp"><span class="tdk-pill">Tỷ suất ${bpct(z.ln, z.dt)}</span><span>${chg(z.ln, a.ln, true)} so với lúc ký</span></div>
-      <div class="tdk-hg">
-        <div><span>Doanh thu</span><b>${bTy(z.dt)}</b>${chg(z.dt, a.dt, true, false)}</div>
-        <div><span>Chi phí</span><b>${bTy(z.cp)}</b>${chg(z.cp, a.cp, false, false)}</div>
-        <div><span>LN lúc ký</span><b>${bTy(a.ln)}</b><em>${bpct(a.ln, a.dt)}</em></div>
-      </div>
+      ${(() => { // Vành khuyên: 100% doanh thu TĐ3 = chi phí (cam) + lợi nhuận (xanh ngọc); vạch đen = tỷ suất lúc ký (TĐ1)
+        const R0 = 62, C = 2 * Math.PI * R0, cl = (x) => Math.max(0, Math.min(1, x));
+        const s3 = z.dt ? cl(z.ln / z.dt) : 0, s1 = a.dt ? cl(a.ln / a.dt) : 0, ang = s1 * 2 * Math.PI;
+        const mx = (r) => (80 + r * Math.sin(ang)).toFixed(1), my = (r) => (80 - r * Math.cos(ang)).toFixed(1);
+        const cpP = z.dt ? z.cp / z.dt : 0;
+        return `<div class="tdk-donut">
+        <svg class="tdk-dnc" viewBox="0 0 160 160" role="img" aria-label="Lợi nhuận ${bTy(z.ln)} tỷ, tỷ suất ${bpct(z.ln, z.dt)}">
+          <circle cx="80" cy="80" r="${R0}" fill="none" stroke="${BCOL.chi}" stroke-width="18" opacity=".85"/>
+          <circle cx="80" cy="80" r="${R0}" fill="none" stroke="${BCOL.dk || '#16968a'}" stroke-width="18" stroke-dasharray="${(C * s3).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 80 80)"/>
+          ${a.dt ? `<line x1="${mx(R0 - 13)}" y1="${my(R0 - 13)}" x2="${mx(R0 + 13)}" y2="${my(R0 + 13)}" stroke="#0f1b33" stroke-width="2.5" stroke-linecap="round"><title>Lúc ký (TĐ1): tỷ suất ${bpct(a.ln, a.dt)}</title></line>` : ''}
+          <text x="80" y="80" text-anchor="middle" class="tdk-dnv ${z.ln < 0 ? 'neg' : ''}" style="font-size:${bTy(z.ln).length > 5 ? 22 : 28}px">${bTy(z.ln)}</text>
+          <text x="80" y="99" text-anchor="middle" class="tdk-dnu">tỷ · ${bpct(z.ln, z.dt)}</text>
+        </svg>
+        <div class="tdk-dnl">
+          ${[['Doanh thu', BCOL.dt, z.dt, chg(z.dt, a.dt, true, false), ''], ['Chi phí', BCOL.chi, z.cp, chg(z.cp, a.cp, false, false), `${(cpP * 100).toFixed(1).replace('.', ',')}%`],
+            ['Lợi nhuận', BCOL.dk, z.ln, chg(z.ln, a.ln, true, false), bpct(z.ln, z.dt)]].map(([lab, col, val, ch, pc], i) =>
+            `<div class="tdk-dli ${i === 2 ? 'ln' : ''}"><span><i style="background:${col}"></i>${lab}${pc ? ` <em>${pc}</em>` : ''}</span><div><b title="${bn(val)} đ" class="${val < 0 ? 'neg' : ''}">${bTy(val)}</b>${ch}</div></div>`).join('')}
+        </div></div>`;
+      })()}
+      <div class="tdk-cmp"><span class="tdk-mk"></span>Vạch đen = lúc ký (TĐ1): lợi nhuận <b>${bTy(a.ln)}</b> tỷ · tỷ suất <b>${bpct(a.ln, a.dt)}</b>. ▲▼ so với lúc ký.</div>
     </div>
     <div class="tdk-side">
       ${bTdCols(TV, sel)}
