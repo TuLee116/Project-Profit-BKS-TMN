@@ -46,7 +46,7 @@ const AS_Q = [
     const nQt = M.rows.filter((x) => x.qt).length;
     return `<div class="as-kvs">${asKv('Doanh thu (TĐ mới nhất)', asTy(t3) + ' tỷ', `${M.rows.length} dự án · ${nQt} đã quyết toán`)}${asKv('Chi phí', asTy(c3) + ' tỷ', `Bằng ${bpct(c3, t3)} doanh thu`)}
       ${asKv('Lợi nhuận', asTy(l3) + ' tỷ', `Tỷ suất ${bpct(l3, t3)}`)}${asKv('Đã thu', asTy(thu) + ' tỷ', `Đạt ${bpct(thu, t3)} doanh thu`)}
-      ${asKv('Đã chi', asTy(chi) + ' tỷ', `Thu − chi: ${asTy(thu - chi)} tỷ`)}${asKv('Còn phải thu', asTy(t3 - thu) + ' tỷ', 'Doanh thu − đã thu')}</div>${asGo('I')}`;
+      ${asKv('Đã chi', asTy(chi) + ' tỷ', `Thu − chi: ${asTy(thu - chi)} tỷ`)}${asKv('Còn phải thu', asTy(t3 - thu) + ' tỷ', 'Doanh thu − đã thu')}</div>${asGo('II')}`;
   } },
   { id: 2, g: 'tq', q: 'LN dự kiến lúc ký so với hiện tại', f: () => {
     const M = asModel(), a = M.S('ln1'), b = M.S('l3');
@@ -54,7 +54,7 @@ const AS_Q = [
     return `<div class="as-kvs">${asKv('LN dự kiến lúc ký (TĐ1)', asTy(a) + ' tỷ', `Tỷ suất ${bpct(a, M.S('dt1'))}`)}${asKv('LN hiện tại (TĐ mới nhất)', asTy(b) + ' tỷ', `Tỷ suất ${bpct(b, M.S('t3'))}`)}
       ${asKv('Chênh lệch', `<span class="${b - a < 0 ? 'neg' : 'pos'}">${b - a >= 0 ? '▲ +' : '▼ −'}${bTy(Math.abs(b - a))}</span> tỷ`, b - a >= 0 ? 'Tăng so với lúc ký' : 'Giảm so với lúc ký')}</div>
       ${asTbl(['Dự án', 'LN lúc ký', 'LN hiện tại', 'Chênh lệch'], rows.map((x) => [asPrj(x.d), asTy(x.ln1), asTy(x.l3) + (x.qt ? '' : '<sup title="Tạm tính – chưa quyết toán">*</sup>'), `<span class="${x.l3 - x.ln1 < 0 ? 'neg' : 'pos'}">${x.l3 - x.ln1 >= 0 ? '+' : ''}${bTy(x.l3 - x.ln1)}</span>`]))}
-      ${asNote('(*) Chưa quyết toán – số tạm tính. LN lúc ký theo TĐ1 đã chốt; dự án chưa chốt TĐ1 lấy theo HĐ gốc trên hệ thống.')}${asGo('I')}`;
+      ${asNote('(*) Chưa quyết toán – số tạm tính. LN lúc ký theo TĐ1 đã chốt; dự án chưa chốt TĐ1 lấy theo HĐ gốc trên hệ thống.')}${asGo('II')}`;
   } },
   { id: 3, g: 'tq', q: 'Số dự án theo trạng thái', f: () => {
     const L = BC.du_an, tts = (typeof META !== 'undefined' && META.trang_thai) || [...new Set(L.map((d) => d.trang_thai))];
@@ -67,7 +67,7 @@ const AS_Q = [
     const ts = (l, t) => bpct(M.S(l), M.S(t));
     return `<div class="as-kvs">${asKv('Lúc ký (TĐ1)', ts('ln1', 'dt1'), `LN ${bTy(M.S('ln1'))} / DT ${bTy(M.S('dt1'))} tỷ`)}${asKv('Điều chỉnh (TĐ2)', ts('l2', 't2'), `LN ${bTy(M.S('l2'))} / DT ${bTy(M.S('t2'))} tỷ`)}
       ${asKv('Mới nhất', ts('l3', 't3'), `LN ${bTy(M.S('l3'))} / DT ${bTy(M.S('t3'))} tỷ`)}</div>
-      ${asTbl(['Dự án', 'TĐ1', 'TĐ2', 'Mới nhất'], M.rows.map((x) => [asPrj(x.d), bpct(x.ln1, x.dt1), bpct(x.l2, x.t2), bpct(x.l3, x.t3)]))}${asGo('IV')}`;
+      ${asTbl(['Dự án', 'TĐ1', 'TĐ2', 'Mới nhất'], M.rows.map((x) => [asPrj(x.d), bpct(x.ln1, x.dt1), bpct(x.l2, x.t2), bpct(x.l3, x.t3)]))}${asGo('I')}`;
   } },
   { id: 5, g: 'tq', q: 'Cơ cấu chi phí toàn công ty', f: () => {
     const v = BST.vat, m = new Map();
@@ -89,7 +89,7 @@ const AS_Q = [
     const M = asModel(), r = M.rows.filter((x) => x.l3 < 0 || (x.t3 && x.l3 / x.t3 < 0.1));
     if (!r.length) return asOk('Không có dự án lỗ hoặc tỷ suất LN dưới 10% (theo TĐ mới nhất).');
     return `${asTbl(['Dự án', 'Doanh thu', 'Lợi nhuận', 'Tỷ suất'], r.map((x) => [asPrj(x.d), asTy(x.t3), asTy(x.l3), `<b class="${x.l3 < 0 ? 'neg' : 'warn-text'}">${bpct(x.l3, x.t3)}</b>${x.qt ? '' : '<sup title="Tạm tính">*</sup>'}`]))}
-      ${asNote('Theo TĐ mới nhất (đã quyết toán: số thực; (*) chưa quyết toán: tạm tính).')}${asGo('IV')}`;
+      ${asNote('Theo TĐ mới nhất (đã quyết toán: số thực; (*) chưa quyết toán: tạm tính).')}${asGo('I')}`;
   } },
   { id: 8, g: 'cb', q: 'Chi phí vượt dự kiến', f: () => {
     // So trước VAT: số TĐ chốt nhập tay là trước VAT
@@ -106,7 +106,7 @@ const AS_Q = [
   { id: 9, g: 'cb', q: 'Dự án đang chi nhiều hơn thu', f: () => {
     const M = asModel(), r = M.rows.filter((x) => x.con < 0).sort((a, b) => a.con - b.con);
     if (!r.length) return asOk('Không có dự án nào đang chi nhiều hơn thu.');
-    return `${asTbl(['Dự án', 'Đã thu', 'Đã chi', 'Thu − chi'], r.map((x) => [asPrj(x.d), asTy(x.thu), asTy(x.chi), asTy(x.con)]))}${asNote(`Tiền thật lũy kế đến nay, không gồm tiền vay, trả nợ gốc · ${asVt()}.`)}${asGo('II')}`;
+    return `${asTbl(['Dự án', 'Đã thu', 'Đã chi', 'Thu − chi'], r.map((x) => [asPrj(x.d), asTy(x.thu), asTy(x.chi), asTy(x.con)]))}${asNote(`Tiền thật lũy kế đến nay, không gồm tiền vay, trả nợ gốc · ${asVt()}.`)}${asGo('III')}`;
   } },
   { id: 10, g: 'cb', q: 'Hoàn thành nhưng chưa chốt quyết toán', f: () => {
     const r = BC.du_an.filter((d) => d.trang_thai === 'Hoàn thành' && (!d.moc?.da_qt || !asTd(d, 3)));
@@ -121,7 +121,7 @@ const AS_Q = [
   { id: 12, g: 'cb', q: 'Dự án chưa chốt TĐ1 (thiếu dự toán lúc ký)', f: () => {
     const r = BC.du_an.filter((d) => !asTd(d, 1));
     if (!r.length) return asOk('Tất cả dự án đã chốt TĐ1.');
-    return `${asTbl(['Dự án', 'Trạng thái'], r.map((d) => [asPrj(d), esc(d.trang_thai)]))}${asNote('Mục I báo cáo đang lấy tạm theo HĐ gốc trên hệ thống cho các dự án này.')}`;
+    return `${asTbl(['Dự án', 'Trạng thái'], r.map((d) => [asPrj(d), esc(d.trang_thai)]))}${asNote('Mục II báo cáo đang lấy tạm theo HĐ gốc trên hệ thống cho các dự án này.')}`;
   } },
   { id: 13, g: 'cb', q: 'Dữ liệu cần kiểm tra', f: () => {
     const all = BC.du_an.flatMap((d) => d.canh_bao.map((w) => ({ d, ...w })));
@@ -136,7 +136,7 @@ const AS_Q = [
     const M = asModel(), r = M.rows.filter((x) => Math.abs(x.phai_thu) >= 1e6).sort((a, b) => b.phai_thu - a.phai_thu);
     if (!r.length) return asOk('Đã thu đủ theo doanh thu của tất cả dự án.');
     return `${asTbl(['Dự án', 'Doanh thu', 'Đã thu', 'Còn phải thu'], r.map((x) => [asPrj(x.d), asTy(x.hd_sv), asTy(x.thu), `<b>${asTy(x.phai_thu)}</b>`]), ['Tổng', asTy(M.S('hd_sv')), asTy(M.S('thu')), `<b>${asTy(M.S('phai_thu'))}</b>`])}
-      ${asNote(`Doanh thu theo TĐ mới nhất (đã quyết toán lấy quyết toán) − tiền đã về · ${asVt()}. Gồm cả phần chưa nghiệm thu.`)}${asGo('III')}`;
+      ${asNote(`Doanh thu theo TĐ mới nhất (đã quyết toán lấy quyết toán) − tiền đã về · ${asVt()}. Gồm cả phần chưa nghiệm thu.`)}${asGo('IV')}`;
   } },
   { id: 15, g: 'thu', q: 'Đã thu bao nhiêu % giá trị HĐ', f: () => {
     const M = asModel(), r = [...M.rows].sort((a, b) => (a.hd_sv ? a.thu / a.hd_sv : 0) - (b.hd_sv ? b.thu / b.hd_sv : 0));
@@ -169,7 +169,7 @@ const AS_Q = [
   { id: 19, g: 'thu', q: 'Bảo hành CĐT đang giữ', f: () => {
     const r = BC.du_an.filter((d) => d.bh_khac > 0);
     if (!r.length) return asOk('Chưa ghi nhận khoản bảo hành / giữ lại nào.');
-    return `${asTbl(['Dự án', 'Số tiền', 'Ghi chú'], r.map((d) => [asPrj(d), asTy(d.bh_khac), `<span class="as-gc">${esc(d.ghi_chu_bh)}</span>`]), ['Tổng', asTy(r.reduce((a, d) => a + d.bh_khac, 0)), ''])}${asNote('Nhập ở mục IV – Chi tiết doanh thu – cột BH/Khác.')}`;
+    return `${asTbl(['Dự án', 'Số tiền', 'Ghi chú'], r.map((d) => [asPrj(d), asTy(d.bh_khac), `<span class="as-gc">${esc(d.ghi_chu_bh)}</span>`]), ['Tổng', asTy(r.reduce((a, d) => a + d.bh_khac, 0)), ''])}${asNote('Nhập ở mục I – Chi tiết doanh thu – cột BH/Khác.')}`;
   } },
 
   { id: 33, g: 'tra', q: 'Tra 1 dự án', pick: 'prj' },
