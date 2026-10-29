@@ -395,10 +395,6 @@ function bFinHtml(list, v) {
 
   return `
   <section class="card b-sec f-sec">
-    <div class="f-head">
-      <span></span>
-      <button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range}${P.prev ? ` <span class="muted">· so với ${ymTxt(P.prev.from)}${P.prev.from !== P.prev.to ? ' – ' + ymTxt(P.prev.to) : ''}</span>` : ''} <span class="f-caret">▾</span></button>
-    </div>
     ${bTongHopHtml(list, v, P)}
 
   </section>`;
@@ -633,7 +629,8 @@ function bTongHopHtml(list, v, P) {
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   return `
-    ${thHead('I', 'Bảng tổng hợp theo dõi thời điểm', 'TĐ1 ký hợp đồng · TĐ2 điều chỉnh · TĐ3 quyết toán', [vt[0].toUpperCase() + vt.slice(1)])}
+    ${thHead('I', 'Bảng tổng hợp theo dõi thời điểm', 'TĐ1 ký hợp đồng · TĐ2 điều chỉnh · TĐ3 quyết toán', [vt[0].toUpperCase() + vt.slice(1)],
+      `<button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range} <span class="f-caret">▾</span></button>`)}
     ${bMuc4Html(list, v, 'A')}
 
     ${thSub('B', 'Doanh thu – Chi phí theo thời điểm', 'Số đã chốt ở bảng TĐ của từng dự án · bấm TĐ1 / TĐ2 / TĐ3 để xem chi tiết', [])}
