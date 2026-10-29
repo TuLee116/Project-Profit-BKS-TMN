@@ -1684,3 +1684,7 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .tc-v { font-weight: 600; fill: #94a3b8; } .tc-v.on { font-weight: 700; fill: #0f1b33; }
 .tc-x { fill: #6b7a90; } .tc-x.on { fill: #0f1b33; }
 .tc-hit { cursor: pointer; }
+
+/* ▲▼ so với TĐ trước trong bảng chi tiết theo dự án (mục II) */
+.th-dl { font-size: 11px; margin-right: 6px; cursor: help; }
+.th-dl.ok { color: #0f7a4f; } .th-dl.bad { color: #b4471c; }

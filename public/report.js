@@ -627,14 +627,18 @@ function bTongHopHtml(list, v, P) {
       const TEN = { 1: 'Ký hợp đồng', 2: 'Điều chỉnh', 3: 'Quyết toán' };
       const R = rows.map((x) => ({ x, t: x.tdv[sel] }));
       const TS = T.tdv[sel];
+      // ▲▼ so với thời điểm trước (TĐ2 so TĐ1, TĐ3 so TĐ2): DT tăng = có lợi, CP tăng = bất lợi
+      const dl = (cur, pt, k, good) => { if (sel === 1 || !pt) return ''; const d = cur - pt[k]; if (Math.abs(d) < 1e6) return '';
+        const tip = `${k === 'dt' ? 'Doanh thu' : 'Chi phí'} – so với TĐ${sel - 1}\nTĐ${sel - 1}: ${bTy(pt[k])} tỷ\nTĐ${sel}: ${bTy(cur)} tỷ\n${d > 0 ? 'Tăng' : 'Giảm'}: ${bTy(Math.abs(d))} tỷ${pt[k] ? ` (${bpct(Math.abs(d), pt[k])})` : ''}`;
+        return `<span class="th-dl ${(d > 0) === good ? 'ok' : 'bad'}" data-tdtip="d" data-tip="${esc(tip)}" aria-label="${esc(tip.replace(/\n/g, ' · '))}">${d > 0 ? '▲' : '▼'}</span>`; };
       const star = (t) => (sel === 3 ? (t.tam ? '<sup class="th-tt" title="Chưa quyết toán: tạm tính theo TĐ2">*</sup>' : '') : !t.chot ? `<sup class="th-tt" title="Chưa chốt TĐ${sel}: lấy theo số hệ thống">*</sup>` : '');
       return `${bTdBand(T.tdv, sel, rows)}
       <div class="tdp-cap">Chi tiết theo dự án · <b>TĐ${sel} – ${TEN[sel]}</b> <span class="muted">(bấm dòng TĐ1 / TĐ2 / TĐ3 ở bảng trên để đổi)</span></div>
       <div class="table-wrap"><table class="b-table th-table">
         ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỷ lệ LN'])}
-        <tbody>${R.map(({ x, t }, i) => `<tr>${prj(x, i)}<td class="num">${bTy(t.dt)}</td><td class="num">${bTy(t.cp)}</td>
+        <tbody>${R.map(({ x, t }, i) => `<tr>${prj(x, i)}<td class="num">${dl(t.dt, x.tdv[sel - 1], 'dt', true)}${bTy(t.dt)}</td><td class="num">${dl(t.cp, x.tdv[sel - 1], 'cp', false)}${bTy(t.cp)}</td>
           <td class="num strong ${t.ln < 0 ? 'neg' : 'pos'}">${bTy(t.ln)}</td><td class="f-pct">${meter(t.dt ? t.ln / t.dt : 0, 0.3, BCOL.dk)}<b class="${t.ln < 0 ? 'neg' : ''}">${bpct(t.ln, t.dt)}${star(t)}</b></td></tr>`).join('')}</tbody>
-        ${foot([bTy(TS.dt), bTy(TS.cp), ty(TS.ln), bpct(TS.ln, TS.dt)])}
+        ${foot([dl(TS.dt, T.tdv[sel - 1], 'dt', true) + bTy(TS.dt), dl(TS.cp, T.tdv[sel - 1], 'cp', false) + bTy(TS.cp), ty(TS.ln), bpct(TS.ln, TS.dt)])}
       </table></div>
       <p class="muted small f-note">Mỗi thời điểm ưu tiên số đã chốt ở bảng TĐ của từng dự án. Chưa chốt: TĐ1 lấy HĐ gốc + thầu phụ / HĐ đầu vào gốc + chi phí khác; TĐ2 lấy HĐ + phụ lục; TĐ3 lấy giá trị quyết toán, dự án chưa quyết toán tạm tính bằng TĐ2 <b>(*)</b>. Tăng / giảm so với thời điểm trước: xanh = có lợi, đỏ = bất lợi (chi phí tăng là bất lợi). Xem sau VAT: số chốt nhập trước VAT được quy đổi, làm tròn 0,1 tỷ.</p>`;
     })()}
