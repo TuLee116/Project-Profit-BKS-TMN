@@ -1724,3 +1724,7 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .tdk-hg2 > div > span:last-child { font-size: 13px; }
 .f-sec > .th-head:first-child { margin-top: 0; }
 .th-tags .f-range-btn span { padding: 0; border: 0; background: none; font-size: 10px; }
+
+/* Trợ lý đợt 2 */
+.as-chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.as-win { color: #0f7a4f; font-weight: 700; background: #e9f6ef; padding: 1px 5px; border-radius: 4px; }
