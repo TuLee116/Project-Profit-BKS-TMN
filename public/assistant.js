@@ -412,12 +412,8 @@ function asSearchHtml(key) {
 // ---------------------------------------------------------------------
 // Giao diện khung chat
 // ---------------------------------------------------------------------
-const asUse = () => { try { return JSON.parse(localStorage.getItem('tro_ly_dung') || '{}'); } catch { return {}; } };
-const asCount = (id) => { try { const u = asUse(); u[id] = (u[id] || 0) + 1; localStorage.setItem('tro_ly_dung', JSON.stringify(u)); } catch {} };
 function asMenuHtml() {
-  const u = asUse(), hay = AS_Q.filter((q) => u[q.id]).sort((a, b) => u[b.id] - u[a.id]).slice(0, 5);
   return `<p>Chào ${esc(ME.full_name || ME.username || 'anh/chị')}, em là trợ lý số liệu của hệ thống. Chọn nhóm câu hỏi hoặc gõ vào ô tìm bên dưới.</p>
-    ${hay.length ? `<div class="as-h">★ Câu hay dùng</div><div class="as-qs">${hay.map((q) => `<button type="button" class="as-q" data-asq="${q.id}">${esc(q.q)}</button>`).join('')}</div>` : ''}
     <div class="as-chips">${AS_GRP.map((g) => `<button type="button" class="as-chip as-grp" data-asg="${g.k}">${g.ic} ${g.ten}</button>`).join('')}</div>`;
 }
 const asGroupHtml = (k) => `<div class="as-qs">${AS_Q.filter((q) => q.g === k).map((q) => `<button type="button" class="as-q" data-asq="${q.id}">${esc(q.q)}</button>`).join('')}</div>`;
@@ -513,7 +509,7 @@ function asInit() {
     }
     if (ds.asg) { const g = AS_GRP.find((x) => x.k === ds.asg); asBubble(esc(`${g.ic} ${g.ten}`), 'user'); return asBubble(asGroupHtml(ds.asg)); }
     if (ds.asq) {
-      const q = AS_Q.find((x) => x.id === Number(ds.asq)); asCount(q.id);
+      const q = AS_Q.find((x) => x.id === Number(ds.asq));
       if (q.pick) { asBubble(esc(q.q), 'user'); await asLoad(); return asBubble(asPickHtml(q.pick)); }
       return asAsk(q.q, q.f);
     }
