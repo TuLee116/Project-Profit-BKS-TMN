@@ -396,7 +396,7 @@ function bFinHtml(list, v) {
   return `
   <section class="card b-sec f-sec">
     <div class="f-head">
-      <h2>Tổng quan tài chính · ${esc(P.label)}</h2>
+      <h2>BẢNG TỔNG HỢP THEO DÕI THỜI ĐIỂM</h2>
       <button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range}${P.prev ? ` <span class="muted">· so với ${ymTxt(P.prev.from)}${P.prev.from !== P.prev.to ? ' – ' + ymTxt(P.prev.to) : ''}</span>` : ''} <span class="f-caret">▾</span></button>
     </div>
     ${bTongHopHtml(list, v, P)}
@@ -499,7 +499,7 @@ function bTdCols(TV, sel) {
   const a = TV[1], c = TV[3], dLn = c.ln - a.ln, dDt = c.dt - a.dt, dCp = c.cp - a.cp, t2 = (x) => `${bTy(Math.abs(x))} tỷ`;
   const ket = Math.abs(dLn) < 5e6 ? 'Lợi nhuận quyết toán <b>bằng</b> lúc ký' : `Lợi nhuận quyết toán ${dLn > 0 ? '<b class="tdk-up">tăng' : '<b class="tdk-dn">giảm'} ${t2(dLn)}</b> so với lúc ký`;
   const ly = [Math.abs(dDt) >= 5e6 ? `doanh thu ${dDt > 0 ? 'tăng' : 'giảm'} ${t2(dDt)}` : '', Math.abs(dCp) >= 5e6 ? `chi phí ${dCp > 0 ? 'tăng' : 'giảm'} ${t2(dCp)}` : ''].filter(Boolean).join(', ');
-  return `<div class="tc-box"><div class="lb-h"><b>Doanh thu – Chi phí – Lợi nhuận theo thời điểm</b><span class="tc-lg">${K.map(([, lab, col]) => `<span><i style="background:${col}"></i>${lab}</span>`).join('')}</span></div>
+  return `<div class="tc-box"><div class="lb-h"><b>Doanh thu – Chi phí theo thời điểm</b><span class="tc-lg">${K.map(([, lab, col]) => `<span><i style="background:${col}"></i>${lab}</span>`).join('')}</span></div>
     <svg class="lb-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Biểu đồ cột doanh thu, chi phí, lợi nhuận theo TĐ1, TĐ2, TĐ3">
       ${ticks.map((v) => `<line x1="${L}" x2="${R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="tc-grid ${v === 0 ? 'z' : ''}"/><text x="${L - 7}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end" class="tc-ax">${(v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</text>`).join('')}
       ${groups}</svg>
