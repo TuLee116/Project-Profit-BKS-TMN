@@ -1264,7 +1264,6 @@ function renderReport() {
   const v = BST.vat, vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
   const T = bTotals(list);
   const lnDk = T.dk.dt[v] - T.dk.cp[v], lnTh = T.th.dt[v] - T.th.cp[v];
-  const lap = new Date(BC.lap_luc);
   const scope = one ? `${one.ma_du_an} – ${one.ten_du_an}` : `Tất cả dự án (${list.length})`;
   const warnN = list.reduce((s2, d) => s2 + d.canh_bao.length, 0);
 
@@ -1277,7 +1276,7 @@ function renderReport() {
       <div class="b-company">${esc(BC.ten_cong_ty || '')}</div>
       <h1>BÁO CÁO TỔNG QUAN TÀI CHÍNH DỰ ÁN</h1>
       <div class="b-tag">Theo dõi nhanh hiệu quả kinh doanh và tình hình tài chính</div>
-      <div class="b-meta">Phạm vi: <b>${esc(scope)}</b> · Đơn vị: VNĐ (${vt} trừ khi ghi khác) · Lập lúc ${lap.toLocaleString('vi-VN')} · Người lập: ${esc(BC.nguoi_lap)} · ${esc(BC.phien_ban)}</div>
+      <div class="b-meta">Phạm vi: <b>${esc(scope)}</b> · Đơn vị: VNĐ (${vt} trừ khi ghi khác)</div>
     </div></div>
     ${(() => { // Dòng tiền lũy kế (khớp mục III): thu − chi, không gồm vay / trả gốc
       const { T: C } = bTongHopData(list, v, bPeriod(list));
