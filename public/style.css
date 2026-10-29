@@ -484,7 +484,9 @@ dialog.pass-dlg.f-dlg h3 { color: var(--navy); }
 .f-range-btn { cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; color: var(--navy); box-shadow: none; }
 .f-range-btn:hover { border-color: var(--teal); background: #eefaf8; }
 .f-caret { font-size: 10px; color: var(--muted); margin-left: 2px; }
-.ky-pop { position: absolute; z-index: 60; width: 340px; max-width: calc(100vw - 16px); padding: 14px; border-radius: 14px; background: #fff; border: 1px solid var(--border); box-shadow: 0 12px 32px rgba(15,23,42,.18); display: grid; gap: 10px; }
+.ky-pop { position: absolute; z-index: 60; width: 380px; max-width: calc(100vw - 16px); box-sizing: border-box; padding: 14px; border-radius: 14px; background: #fff; border: 1px solid var(--border); box-shadow: 0 12px 32px rgba(15,23,42,.18); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.ky-pop > *, .ky-range label, .ky-range input { min-width: 0; }
+.ky-pop .ky-quick button { white-space: normal; line-height: 1.25; min-width: 0; }
 .ky-pop-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
 .ky-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .ky-quick button { padding: 7px 6px; font-size: 12px; }
