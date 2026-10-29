@@ -318,6 +318,7 @@ function asInit() {
       <header class="as-head">
         <div class="as-ttl"><b>Trợ lý BKS</b><small>Số liệu khớp báo cáo · không dùng AI</small></div>
         <div class="seg as-vat" id="as-vat"><button type="button" data-v="gt">Trước VAT</button><button type="button" data-v="sv">Sau VAT</button></div>
+        <button type="button" class="as-clr" data-asclear title="Xóa lịch sử hỏi đáp, bắt đầu yêu cầu mới" aria-label="Xóa lịch sử">↺</button>
         <button type="button" class="as-x" data-asclose title="Đóng (Esc)">×</button>
       </header>
       <nav class="as-nav">${AS_GRP.map((g) => `<button type="button" data-asg="${g.k}">${g.ic} ${g.ten}</button>`).join('')}<button type="button" data-asmenu title="Về đầu">⌂</button></nav>
@@ -345,6 +346,7 @@ function asInit() {
     const ds = b.dataset;
     if ('asclose' in ds) return asToggle(false);
     if ('asmenu' in ds) return asBubble(asMenuHtml());
+    if ('asclear' in ds) { $('#as-log').innerHTML = ''; AS.last = null; $('#as-q').value = ''; return asBubble(asMenuHtml()); }
     if (b.closest('#as-vat')) {
       BST.vat = ds.v; bSave(); asVatSync();
       if (AS.last?.el?.isConnected) AS.last.el.innerHTML = AS.last.rerun();
