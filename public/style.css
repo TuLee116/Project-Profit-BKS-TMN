@@ -982,6 +982,12 @@ dialog.tt-dlg { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 
 .th-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .th-tags span { font-size: 11.5px; font-weight: 600; color: #334155; padding: 3px 10px; border-radius: 99px; background: #fff; border: 1px solid #dbe4f0; white-space: nowrap; }
 @media (max-width: 760px) { .th-head { flex-wrap: wrap; } .th-tags { justify-content: flex-start; width: 100%; } }
+.th-sub { display: flex; align-items: center; gap: 12px; margin: 22px 0 12px; padding: 4px 0 8px; border-bottom: 1px solid #e5eaf1; }
+.th-head + .th-sub { margin-top: 4px; }
+.th-sno { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid var(--navy); color: var(--navy); font-size: 13px; font-weight: 800; }
+.th-sub h4 { margin: 0; font-size: 13.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--navy); }
+.th-sub .th-ttl p { font-size: 12px; }
+@media (max-width: 760px) { .th-sub { flex-wrap: wrap; } }
 .th-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
 .f-card .f-lines .f-meter { margin-top: 4px; }
 .f-grid + .table-wrap { margin-top: 18px; }

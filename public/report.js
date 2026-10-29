@@ -412,7 +412,7 @@ function bFinHtml(list, v) {
 // ---------------------------------------------------------------------
 function bTongHopData(list, v, P) {
   const to = P.to < bNowYm() ? P.to : bNowYm();
-  const m4 = new Map(bMuc4Data(list, v).rows.map((x) => [x.d.id, x])); // số hệ thống theo mốc (mục I)
+  const m4 = new Map(bMuc4Data(list, v).rows.map((x) => [x.d.id, x])); // số hệ thống theo mốc (mục I-A)
   const rows = list.map((d) => {
     const c = bThuc(d, to);
     const dt = d.du_kien.doanh_thu[v];
@@ -463,6 +463,10 @@ const thHead = (no, title, desc, tags, extra = '') => `<div class="th-head">
       <div class="th-ttl"><h3>${title}</h3><p>${desc}</p></div>
       <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}<span>Đơn vị: tỷ đồng</span>${extra}</div>
     </div>`;
+// Tiêu đề phần con (A, B…) trong một mục lớn
+const thSub = (no, title, desc, tags) => `<div class="th-sub"><span class="th-sno">${no}</span>
+      <div class="th-ttl"><h4>${title}</h4><p>${desc}</p></div>
+      <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}</div></div>`;
 // Biểu tượng thẻ chỉ tiêu (SVG nét, theo màu chỉ tiêu)
 const KX_SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const KX_IC = {
@@ -632,9 +636,10 @@ function bTongHopHtml(list, v, P) {
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Tên dự án</th>${cols.map((c) => `<th class="num">${c}</th>`).join('')}</tr></thead>`;
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   return `
-    ${bMuc4Html(list, v, 'I')}
+    ${thHead('I', 'Doanh thu – Chi phí – Lợi nhuận theo thời điểm', 'TĐ1 ký hợp đồng · TĐ2 điều chỉnh · TĐ3 quyết toán', [vt[0].toUpperCase() + vt.slice(1)])}
+    ${bMuc4Html(list, v, 'A')}
 
-    ${thHead('II', 'Doanh thu – Chi phí – Lợi nhuận theo thời điểm', 'TĐ1 ký hợp đồng · TĐ2 điều chỉnh · TĐ3 quyết toán', [vt[0].toUpperCase() + vt.slice(1)])}
+    ${thSub('B', 'Doanh thu – Chi phí theo thời điểm', 'Số đã chốt ở bảng TĐ của từng dự án · bấm TĐ1 / TĐ2 / TĐ3 để xem chi tiết', [])}
     ${(() => { // 3 khối TĐ1 – TĐ2 – TĐ3; bấm khối nào thì bảng dự án bên dưới theo thời điểm đó
       const sel = [1, 2, 3].includes(BST.th_td) ? BST.th_td : 1;
       const TEN = { 1: 'Ký hợp đồng', 2: 'Điều chỉnh', 3: 'Quyết toán' };
@@ -656,7 +661,7 @@ function bTongHopHtml(list, v, P) {
       <p class="muted small f-note">Mỗi thời điểm ưu tiên số đã chốt ở bảng TĐ của từng dự án. Chưa chốt: TĐ1 lấy HĐ gốc + thầu phụ / HĐ đầu vào gốc + chi phí khác; TĐ2 lấy HĐ + phụ lục; TĐ3 lấy giá trị quyết toán, dự án chưa quyết toán tạm tính bằng TĐ2 <b>(*)</b>. Tăng / giảm so với thời điểm trước: xanh = có lợi, đỏ = bất lợi (chi phí tăng là bất lợi). Xem sau VAT: số chốt nhập trước VAT được quy đổi, làm tròn 0,1 tỷ.</p>`;
     })()}
 
-    ${thHead('III', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)])}
+    ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
       ${card('dt', 'Dòng thu', T.thu, ['Tạm ứng + thanh toán + QT', `Đạt <b>${bpct(T.thu, T.hd_sv)}</b> DT hợp đồng`])}
       ${card('cp', 'Dòng chi', T.chi, ['Chi phí đã chi + đã trả HĐ đầu vào', `Bằng <b>${bpct(T.chi, T.thu)}</b> dòng thu`])}
@@ -670,7 +675,7 @@ function bTongHopHtml(list, v, P) {
     </table></div>
     ${v === 'gt' ? '<p class="muted small f-note">Trước VAT: tiền thật (đã gồm VAT) được quy đổi theo tỷ lệ trước / sau VAT của doanh thu (dòng thu) và chi phí (dòng chi) từng dự án, làm tròn tới 0,1 tỷ.</p>' : ''}
 
-    ${thHead('IV', 'Dòng tiền còn lại phải thu – chi', 'Doanh thu tại thời điểm mới nhất trừ tổng thực chi', ['Từ mục I và III', vt[0].toUpperCase() + vt.slice(1)])}
+    ${thHead('III', 'Dòng tiền còn lại phải thu – chi', 'Doanh thu tại thời điểm mới nhất trừ tổng thực chi', ['Từ mục I và II', vt[0].toUpperCase() + vt.slice(1)])}
     <div class="f-grid th-grid3">
       ${card('dt', 'Doanh thu (TĐ mới nhất)', T.hd_sv, ['HĐ + phụ lục tại thời điểm mới nhất', 'HĐ đã quyết toán lấy theo quyết toán (TĐ3)'])}
       ${card('cp', 'Thực chi', T.chi, [`${meter(T.chi, T.hd_sv, BCOL.chi)}`, `Bằng <b>${bpct(T.chi, T.hd_sv)}</b> doanh thu (TĐ mới nhất)`])}
@@ -697,7 +702,7 @@ function bMuc4Data(list, v) {
     const dt = d.moc?.dt, cp = d.moc?.cp;
     if (!dt || !cp) return null;
     const qt = Boolean(d.moc.da_qt);
-    // TĐ3: HĐ / HĐTP đã quyết toán lấy giá trị QT, phần chưa QT giữ theo TĐ2 (khớp số Doanh thu – Chi phí mục II)
+    // TĐ3: HĐ / HĐTP đã quyết toán lấy giá trị QT, phần chưa QT giữ theo TĐ2 (khớp số Doanh thu – Chi phí mục I-B)
     const t1 = dt.goc[v], t2 = dt.ps[v], t3 = dt.qt[v];
     const c1 = cp.tp_goc[v] + cp.khac[v], c2 = cp.tp_ps[v] + cp.khac[v], c3 = cp.tp_qt[v] + cp.khac[v];
     // Tiền thật (sau VAT); xem trước VAT thì quy đổi theo tỷ lệ trước/sau VAT của giá trị đối chiếu
@@ -804,7 +809,7 @@ function bMuc4Html(list, v, no = 'IV') {
       foot([bTy(T.l1), pctT(tsF(T.l1, T.t1)), bTy(T.l2), pctT(tsF(T.l2, T.t2)), '__L3__', pctT(tsF(T.l3, T.t3)), `${T.l3 - T.l1 >= 0 ? '+' : '−'}${bTy(Math.abs(T.l3 - T.l1))}`, bTy(T.thuc)]).replace('<td class="num">__L3__</td>', tipCell('l3', 'Lợi nhuận TĐ3 – Quyết toán', bTy(T.l3))),
       'Lợi nhuận = Doanh thu − Chi phí tại từng thời điểm · Số mờ = chưa quyết toán, lấy theo TĐ2 · Thực tế = tiền đã nhận − tiền đã chi (không gồm vay, trả gốc)');
   }
-  return `${thHead(no, 'Doanh thu hoàn thành – quyết toán', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · tự tính theo dữ liệu hệ thống', ['Theo dữ liệu hệ thống', vt])}
+  return `${(no === 'A' ? thSub : thHead)(no, 'Doanh thu hoàn thành – quyết toán', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · tự tính theo dữ liệu hệ thống', ['Theo dữ liệu hệ thống'].concat(no === 'A' ? [] : [vt]))}
     ${sum}${!gop ? '' : `<p class="muted small f-note">LN gộp = Doanh thu − Giá vốn (HĐ đầu vào + chi phí trực tiếp: vật tư, nhân công, máy, tổ chức thi công, khác); Lợi nhuận = LN gộp − chi phí gián tiếp (lương, tiện ích, ngoại giao) − chi phí tài chính (lãi vay, phí, phạt).</p>`}${det}`;
 }
 // Sửa BH/Khác + ghi chú (nhập tay) của 1 dự án
