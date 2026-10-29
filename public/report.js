@@ -1262,10 +1262,10 @@ function renderReport() {
     </div></div>
     ${(() => { // Dòng tiền lũy kế (khớp mục III): thu − chi, không gồm vay / trả gốc
       const { T: C } = bTongHopData(list, v, bPeriod(list));
-      const it = (k, lab, x) => `<div class="b-cash-i ${k}"><span>${lab}</span><b class="${x < 0 ? 'neg' : ''}">${bTy(x)}</b></div>`;
+      const it = (k, lab, x) => `<div class="b-cash-i ${k}"><span><i></i>${lab}</span><b class="${x < 0 ? 'neg' : ''}">${bTy(x)}</b></div>`;
       return `<div class="b-cash" title="Lũy kế · ${vt} · không gồm tiền vay, trả nợ gốc">
         ${it('thu', 'Dòng thu', C.thu)}${it('chi', 'Thực chi', C.chi)}${it('con', 'Còn lại', C.con)}
-        <div class="b-cash-u">Tỷ đồng · ${vt} · lũy kế</div></div>`;
+        <div class="b-cash-u">tỷ đồng · ${vt} · lũy kế</div></div>`;
     })()}
   </div>
 

@@ -344,13 +344,16 @@ tr.ngoai-cp td { color: var(--muted); font-style: italic; }
 .b-head { padding: 22px 24px; background: linear-gradient(120deg, #f2f7fd 0%, #eaf8f6 100%); }
 .b-brand { display: flex; gap: 16px; align-items: center; flex: 1 1 auto; min-width: 0; }
 .b-head { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-.b-cash { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, auto); column-gap: 22px; row-gap: 4px; padding: 10px 18px; background: #fff; border: 1px solid #dbe4ef; border-radius: 12px; }
-.b-cash-i { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid #2c5fa3; }
-.b-cash-i.chi { border-color: #c27a3e; } .b-cash-i.con { border-color: #16968a; }
-.b-cash-i span { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
-.b-cash-i b { font-size: 20px; color: var(--navy); font-variant-numeric: tabular-nums; }
-.b-cash-u { grid-column: 1 / -1; font-size: 11px; color: var(--muted); text-align: right; }
-@media (max-width: 760px) { .b-cash { width: 100%; column-gap: 10px; padding: 10px 12px; } .b-cash-i b { font-size: 16px; } }
+.b-cash { flex: 0 0 auto; min-width: 230px; font-variant-numeric: tabular-nums; }
+.b-cash-i { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 3px 0; }
+.b-cash-i span { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+.b-cash-i i { width: 8px; height: 8px; border-radius: 2px; background: #2c5fa3; }
+.b-cash-i.chi i { background: #c27a3e; } .b-cash-i.con i { background: #16968a; }
+.b-cash-i b { font-size: 16px; color: var(--navy); }
+.b-cash-i.con { border-top: 1px solid #cdd8e5; margin-top: 3px; padding-top: 6px; }
+.b-cash-i.con span { color: var(--navy); font-weight: 700; } .b-cash-i.con b { font-size: 18px; }
+.b-cash-u { font-size: 11px; color: var(--muted); text-align: right; }
+@media (max-width: 760px) { .b-cash { width: 100%; min-width: 0; } }
 .b-brand img { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 12px; padding: 6px; box-shadow: 0 2px 8px rgba(15,23,42,.12); }
 .b-company { font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--teal); }
 .b-head h1 { margin: 2px 0 6px; font-size: 22px; color: var(--navy); letter-spacing: .3px; }
