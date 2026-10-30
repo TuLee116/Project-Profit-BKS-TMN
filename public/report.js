@@ -660,7 +660,7 @@ function bDoiChieu(list, v, TV0, prj = []) {
         <span class="muted small">· Số kế hoạch: bảng Thời điểm trong thẻ từng dự án.</span></div></div>`;
   }
   const same = [1, 2, 3].every((k) => Math.abs(TV[k].dt - TH[k][0]) < 1e6 && Math.abs(TV[k].cp - TH[k][1]) < 1e6);
-  return `<details class="dc" ${same ? '' : 'open'}><summary><b>Đối chiếu kế hoạch đã chốt (B) với thực tế (A)</b> <span class="muted">${same ? '· khớp hoàn toàn' : '· vì sao số ở phần A và B khác nhau?'}</span></summary>
+  return `<details class="dc" ${BST.dc_open ? 'open' : ''}><summary><b>Đối chiếu kế hoạch đã chốt (B) với thực tế (A)</b> <span class="muted">${same ? '· khớp hoàn toàn' : '· vì sao số ở phần A và B khác nhau?'}</span></summary>
     <div class="dc-why">Hai phần dùng <b>hai nguồn khác nhau</b>, nên khác số là bình thường, <b>không phải số liệu sai</b>:
       <b>A – Thực tế</b> là số máy tự tính từ hợp đồng, phụ lục, quyết toán và chi phí đã ghi nhận đến nay;
       <b>B – Kế hoạch</b> là dự toán được duyệt khi chốt từng thời điểm. Cột <b>Chênh</b> = Thực tế − Kế hoạch:
@@ -1560,6 +1560,8 @@ $('#b-report').addEventListener('mousemove', (e) => {
   showTip(`<b>${esc(t0)}</b><table>${ls.map((l) => { const [k, v] = l.split(': '); return `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`; }).join('')}</table>`, e.clientX, e.clientY);
 });
 $('#b-report').addEventListener('mouseout', (e) => { if (e.target.closest('[data-tdtip]')) hideTip(); });
+// Bảng đối chiếu: mặc định thu gọn, chỉ mở khi người dùng bấm; nhớ trạng thái khi vẽ lại trang
+$('#b-report').addEventListener('toggle', (e) => { if (e.target.classList?.contains('dc')) BST.dc_open = e.target.open; }, true);
 $('#b-report').addEventListener('keydown', (e) => {
   const w = e.target.closest('[data-wlink]');
   if (w && e.key === 'Enter') bGoWarn(Number(w.dataset.wda), JSON.parse(w.dataset.wlink));
