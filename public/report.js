@@ -409,6 +409,8 @@ function bFinHtml(list, v) {
 function bTongHopData(list, v, P) {
   const to = P.to < bNowYm() ? P.to : bNowYm();
   const m4 = new Map(bMuc4Data(list, v).rows.map((x) => [x.d.id, x])); // số hệ thống theo mốc (mục I-A)
+  // Quy đổi số chốt (nhập trước VAT) sang sau VAT: dùng tỷ lệ VAT của số hệ thống cùng thời điểm, cùng chỉ tiêu
+  const m4g = v === 'sv' ? new Map(bMuc4Data(list, 'gt').rows.map((x) => [x.d.id, x])) : null;
   const rows = list.map((d) => {
     const c = bThuc(d, to);
     const dt = d.du_kien.doanh_thu[v];
@@ -430,15 +432,20 @@ function bTongHopData(list, v, P) {
     const g1 = td1 ? { dt: Number(td1.dt) || 0, cp: Number(td1.cp) || 0 } : bSysMoc(d, 1);
     const rD = v === 'sv' && m.dt?.goc?.gt ? m.dt.goc.sv / m.dt.goc.gt : v === 'sv' ? 1.1 : 1;
     const rCp = v === 'sv' ? (cpGt ? cpSv / cpGt : 1.1) : 1;
-    // Số TĐ1 nhập tay là trước VAT; xem sau VAT thì quy đổi và làm tròn tới 0,1 tỷ (số ước tính, tránh số lẻ)
-    const r01 = (x) => (v === 'sv' ? Math.round(x / 1e8) * 1e8 : bR(x));
-    const dt1 = r01(g1.dt * rD), cp1 = r01(g1.cp * rCp);
+    // Số chốt nhập tay là trước VAT. Xem sau VAT: nhân tỷ lệ sau/trước VAT của số hệ thống cùng TĐ, cùng chỉ tiêu;
+    // số chốt bằng số hệ thống (trước VAT) thì lấy đúng số hệ thống sau VAT -> không sinh chênh lệch giả do quy đổi
+    const sy = m4.get(d.id), sg = m4g?.get(d.id);
+    const toSv = (x, k, f, rDef) => { if (v !== 'sv') return bR(x);
+      const g = sg?.[`${f}${k}`], sv = sy?.[`${f}${k}`];
+      if (g && Math.abs(x - g) < 1e6) return sv;
+      return bR(x * (g ? sv / g : rDef)); };
+    const conv = (t, k) => ({ dt: toSv(Number(t.dt) || 0, k, 't', rD), cp: toSv(Number(t.cp) || 0, k, 'c', rCp) });
+    const c1 = conv(g1, 1), dt1 = c1.dt, cp1 = c1.cp;
     // 3 thời điểm: số đã chốt (nhập tay) ưu tiên; chưa chốt -> số hệ thống. TĐ3: dự án chưa quyết toán tạm lấy bằng TĐ2
-    const conv = (t) => ({ dt: r01((Number(t.dt) || 0) * rD), cp: r01((Number(t.cp) || 0) * rCp) });
-    const sy = m4.get(d.id), td2 = (d.thoi_diem || []).find((t) => t.td === 2), td3 = (d.thoi_diem || []).find((t) => t.td === 3);
-    const v2 = td2 ? conv(td2) : sy ? { dt: sy.t2, cp: sy.c2 } : { dt: bR(dt), cp: bR(d.du_kien.chi_phi[v]) };
+    const td2 = (d.thoi_diem || []).find((t) => t.td === 2), td3 = (d.thoi_diem || []).find((t) => t.td === 3);
+    const v2 = td2 ? conv(td2, 2) : sy ? { dt: sy.t2, cp: sy.c2 } : { dt: bR(dt), cp: bR(d.du_kien.chi_phi[v]) };
     const qt = Boolean(d.moc?.da_qt);
-    const v3 = td3 ? conv(td3) : qt && sy ? { dt: sy.t3, cp: sy.c3 } : { ...v2 };
+    const v3 = td3 ? conv(td3, 3) : qt && sy ? { dt: sy.t3, cp: sy.c3 } : { ...v2 };
     const tdv = {
       1: { dt: dt1, cp: cp1, chot: Boolean(td1), tam: !td1 },
       2: { ...v2, chot: Boolean(td2), tam: !td2 },
@@ -658,7 +665,7 @@ function bDoiChieu(list, v, TV, prj = []) {
       <tbody>${rowsH}</tbody></table></div>
     <p class="muted small dc-hint">👆 Bấm vào số bất kỳ để xem chi tiết theo từng dự án và nguồn của số đó.</p>
     ${det}
-    ${v === 'sv' ? '<p class="muted small f-note">Đang xem sau VAT: số kế hoạch chốt trước VAT được quy đổi ước tính và làm tròn 0,1 tỷ, nên có thể chênh thêm vài chục triệu. Đối chiếu chính xác nên xem <b>Trước VAT</b>.</p>' : ''}
+    ${v === 'sv' ? '<p class="muted small f-note">Đang xem sau VAT: số kế hoạch chốt trước VAT được quy đổi theo tỷ lệ VAT của số thực tế cùng thời điểm; số chốt bằng số thực tế (trước VAT) thì hiện “khớp”.</p>' : ''}
   </details>`;
 }
 function bTongHopHtml(list, v, P) {
@@ -708,7 +715,7 @@ function bTongHopHtml(list, v, P) {
         <tfoot><tr><td></td><td colspan="3">Tổng cộng (${R.length} dự án)</td><td class="num">${dl(TS.dt, T.tdv[sel - 1], 'dt', true)}${bTy(TS.dt)}</td><td class="num">${dl(TS.cp, T.tdv[sel - 1], 'cp', false)}${bTy(TS.cp)}</td>
           <td class="num">${ty(TS.ln)}</td><td></td><td class="num">${bpct(TS.ln, TS.dt)}</td></tr></tfoot>
       </table></div>
-      <p class="muted small f-note">Mỗi thời điểm ưu tiên số đã chốt ở bảng TĐ của từng dự án. Chưa chốt: TĐ1 lấy HĐ gốc + thầu phụ / HĐ đầu vào gốc + chi phí khác; TĐ2 lấy HĐ + phụ lục; TĐ3 lấy giá trị quyết toán, dự án chưa quyết toán tạm tính bằng TĐ2 <b>(*)</b>. Tăng / giảm so với thời điểm trước: xanh = có lợi, đỏ = bất lợi (chi phí tăng là bất lợi). Xem sau VAT: số chốt nhập trước VAT được quy đổi, làm tròn 0,1 tỷ.</p>`;
+      <p class="muted small f-note">Mỗi thời điểm ưu tiên số đã chốt ở bảng TĐ của từng dự án. Chưa chốt: TĐ1 lấy HĐ gốc + thầu phụ / HĐ đầu vào gốc + chi phí khác; TĐ2 lấy HĐ + phụ lục; TĐ3 lấy giá trị quyết toán, dự án chưa quyết toán tạm tính bằng TĐ2 <b>(*)</b>. Tăng / giảm so với thời điểm trước: xanh = có lợi, đỏ = bất lợi (chi phí tăng là bất lợi). Xem sau VAT: số chốt nhập trước VAT được quy đổi theo tỷ lệ VAT của số hệ thống cùng thời điểm.</p>`;
     })()}
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)])}
