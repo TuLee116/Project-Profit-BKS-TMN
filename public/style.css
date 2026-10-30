@@ -1767,3 +1767,4 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
   .jr-ln { font-size: 30px; }
 }
 @media print { .jr-nd.on { background: #1f3a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+.iv-table .th-ma { white-space: nowrap; } .iv-table .iv-nm { min-width: 200px; }

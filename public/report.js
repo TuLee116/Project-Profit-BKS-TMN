@@ -424,19 +424,19 @@ function bTongHopData(list, v, P) {
     const dtSv = d.du_kien.doanh_thu.sv;
     const rT = v === 'sv' ? 1 : (dtSv ? d.du_kien.doanh_thu.gt / dtSv : 1 / 1.1), rC = v === 'sv' || !cpSv ? 1 : cpGt / cpSv;
     const q01 = (x, r) => (r === 1 ? x : Math.round((x * r) / 1e8) * 1e8); // quy đổi trước VAT: làm tròn 0,1 tỷ
-    const thu = q01(c.thu, rT), chi = q01(c.chi, rC);
+    const thu = bR(q01(c.thu, rT)), chi = bR(q01(c.chi, rC));
     // TĐ1 – ký hợp đồng (dự kiến): số đã chốt TĐ1 (nhập tay, trước VAT); chưa chốt thì lấy HĐ gốc + thầu phụ HĐ gốc + chi phí khác trên hệ thống
     const m = d.moc || {}, td1 = (d.thoi_diem || []).find((t) => t.td === 1);
     const g1 = td1 ? { dt: Number(td1.dt) || 0, cp: Number(td1.cp) || 0 } : bSysMoc(d, 1);
     const rD = v === 'sv' && m.dt?.goc?.gt ? m.dt.goc.sv / m.dt.goc.gt : v === 'sv' ? 1.1 : 1;
     const rCp = v === 'sv' ? (cpGt ? cpSv / cpGt : 1.1) : 1;
     // Số TĐ1 nhập tay là trước VAT; xem sau VAT thì quy đổi và làm tròn tới 0,1 tỷ (số ước tính, tránh số lẻ)
-    const r01 = (x) => (v === 'sv' ? Math.round(x / 1e8) * 1e8 : Math.round(x));
+    const r01 = (x) => (v === 'sv' ? Math.round(x / 1e8) * 1e8 : bR(x));
     const dt1 = r01(g1.dt * rD), cp1 = r01(g1.cp * rCp);
     // 3 thời điểm: số đã chốt (nhập tay) ưu tiên; chưa chốt -> số hệ thống. TĐ3: dự án chưa quyết toán tạm lấy bằng TĐ2
     const conv = (t) => ({ dt: r01((Number(t.dt) || 0) * rD), cp: r01((Number(t.cp) || 0) * rCp) });
     const sy = m4.get(d.id), td2 = (d.thoi_diem || []).find((t) => t.td === 2), td3 = (d.thoi_diem || []).find((t) => t.td === 3);
-    const v2 = td2 ? conv(td2) : sy ? { dt: sy.t2, cp: sy.c2 } : { dt, cp: d.du_kien.chi_phi[v] };
+    const v2 = td2 ? conv(td2) : sy ? { dt: sy.t2, cp: sy.c2 } : { dt: bR(dt), cp: bR(d.du_kien.chi_phi[v]) };
     const qt = Boolean(d.moc?.da_qt);
     const v3 = td3 ? conv(td3) : qt && sy ? { dt: sy.t3, cp: sy.c3 } : { ...v2 };
     const tdv = {
@@ -445,7 +445,8 @@ function bTongHopData(list, v, P) {
       3: { ...v3, chot: Boolean(td3), tam: !td3 && !qt, qt },
     };
     for (const n of [1, 2, 3]) tdv[n].ln = tdv[n].dt - tdv[n].cp;
-    return { d, tdv, dt1, cp1, ln1: dt1 - cp1, td1: Boolean(td1), dt, cp, ns: Boolean(nsGt), ns_v: nsV, cp_ghi: d.du_kien.chi_phi[v], vuot, ln: dt - cp, tp, hd_sv: dt, thu, chi, con: thu - chi, vay: c.vay, goc: c.goc, phai_thu: dt - thu };
+    const dtR = bR(dt), cpR = bR(cp);
+    return { d, tdv, dt1, cp1, ln1: dt1 - cp1, td1: Boolean(td1), dt: dtR, cp: cpR, ns: Boolean(nsGt), ns_v: bR(nsV), cp_ghi: bR(d.du_kien.chi_phi[v]), vuot, ln: dtR - cpR, tp: bR(tp), hd_sv: dtR, thu, chi, con: thu - chi, vay: bR(c.vay), goc: bR(c.goc), phai_thu: dtR - thu };
   });
   const T = rows.reduce((a, x) => { for (const k of ['dt1', 'cp1', 'ln1', 'dt', 'cp', 'ln', 'tp', 'hd_sv', 'thu', 'chi', 'con', 'vay', 'goc', 'phai_thu']) a[k] += x[k]; return a; },
     { dt1: 0, cp1: 0, ln1: 0, dt: 0, cp: 0, ln: 0, tp: 0, hd_sv: 0, thu: 0, chi: 0, con: 0, vay: 0, goc: 0, phai_thu: 0 });
@@ -695,6 +696,9 @@ function bTongHopHtml(list, v, P) {
 //  Chưa quyết toán: TĐ3 = TĐ2 (mờ); Còn lại = TĐ3 (hoặc TĐ2) − Đã nhận
 //  Đã nhận = tiền về (sau VAT); khi xem trước VAT quy đổi theo tỷ lệ trước/sau VAT của giá trị đối chiếu
 // ---------------------------------------------------------------------
+// Quy tắc làm tròn báo cáo: DT, CP từng dự án làm tròn 0,01 tỷ TRƯỚC, rồi mới tính LN, chênh lệch, tổng
+// -> số hiển thị luôn cộng trừ khớp (DT − CP = LN; TĐ2 − TĐ1 = mức tăng; tổng = cộng các dòng)
+const bR = (x) => Math.round((Number(x) || 0) / 1e7) * 1e7;
 function bMuc4Data(list, v) {
   const to = bNowYm();
   const rows = list.map((d) => {
@@ -702,18 +706,20 @@ function bMuc4Data(list, v) {
     if (!dt || !cp) return null;
     const qt = Boolean(d.moc.da_qt);
     // TĐ3: HĐ / HĐTP đã quyết toán lấy giá trị QT, phần chưa QT giữ theo TĐ2 (khớp số Doanh thu – Chi phí mục I-B)
-    const t1 = dt.goc[v], t2 = dt.ps[v], t3 = dt.qt[v];
-    const c1 = cp.tp_goc[v] + cp.khac[v], c2 = cp.tp_ps[v] + cp.khac[v], c3 = cp.tp_qt[v] + cp.khac[v];
+    const pl = Object.fromEntries(dt.pl.map((x) => [x.ma, bR(x[v])])), cpl = Object.fromEntries((cp.tp_pl || []).map((x) => [x.ma, bR(x[v])]));
+    const sPl = (o) => Object.values(o).reduce((a, x) => a + x, 0);
+    // TĐ2 = TĐ1 + các phụ lục (đã làm tròn) nếu khớp; còn lại làm tròn trực tiếp
+    const t1 = bR(dt.goc[v]), t2 = dt.pl.length ? t1 + sPl(pl) : bR(dt.ps[v]), t3 = bR(dt.qt[v]);
+    const c1 = bR(cp.tp_goc[v] + cp.khac[v]), c2 = (cp.tp_pl || []).length ? c1 + sPl(cpl) : bR(cp.tp_ps[v] + cp.khac[v]), c3 = bR(cp.tp_qt[v] + cp.khac[v]);
     // Tiền thật (sau VAT); xem trước VAT thì quy đổi theo tỷ lệ trước/sau VAT của giá trị đối chiếu
     const rDt = dt.qt;
     const cSv = cp.tp_qt.sv + cp.khac.sv, cGt = cp.tp_qt.gt + cp.khac.gt;
     const nhanSv = dt.da_nhan, chiSv = bThuc(d, to).chi;
-    const nhan = v === 'sv' || !rDt.sv ? nhanSv : Math.round((nhanSv * (rDt.gt / rDt.sv)) / 1e8) * 1e8; // quy đổi trước VAT: làm tròn 0,1 tỷ
-    const chi = v === 'sv' || !cSv ? chiSv : Math.round((chiSv * (cGt / cSv)) / 1e8) * 1e8;
+    const nhan = v === 'sv' || !rDt.sv ? bR(nhanSv) : Math.round((nhanSv * (rDt.gt / rDt.sv)) / 1e8) * 1e8; // quy đổi trước VAT: làm tròn 0,1 tỷ
+    const chi = v === 'sv' || !cSv ? bR(chiSv) : Math.round((chiSv * (cGt / cSv)) / 1e8) * 1e8;
     const b1 = (cp.khac_b1 || { gt: 0, sv: 0 })[v]; // giá vốn = thầu phụ cùng mốc + chi phí trực tiếp khác (B1)
-    const g1 = t1 - cp.tp_goc[v] - b1, g2 = t2 - cp.tp_ps[v] - b1, g3 = t3 - cp.tp_qt[v] - b1;
-    return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3, g1, g2, g3,
-      pl: Object.fromEntries(dt.pl.map((x) => [x.ma, x[v]])), cpl: Object.fromEntries((cp.tp_pl || []).map((x) => [x.ma, x[v]])),
+    const g1 = t1 - bR(cp.tp_goc[v] + b1), g2 = t2 - bR(cp.tp_ps[v] + b1), g3 = t3 - bR(cp.tp_qt[v] + b1);
+    return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3, g1, g2, g3, pl, cpl,
       nhan, con: t3 - nhan, chi, con_chi: c3 - chi, thuc: nhan - chi, bh: d.bh_khac || 0, gc: d.ghi_chu_bh || '' };
   }).filter(Boolean);
   const keys = (f) => [...new Set(rows.flatMap((x) => Object.keys(x[f])))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
@@ -761,10 +767,10 @@ function bMuc4Html(list, v, no = 'IV') {
 
   // ---- Bảng chi tiết theo dự án của dòng đang mở ----
   const m = (x, ghost) => `<span class="${ghost ? 'td-ghost-t' : ''} ${x < 0 ? 'neg' : ''}"${ghost ? ' title="Tạm tính theo TĐ2 – dự án chưa quyết toán"' : ''}>${bTy(x)}</span>`;
-  const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-prj" title="${esc(x.d.ten_du_an)}"><b>${esc(x.d.ma_du_an)}</b> <span class="th-name">${esc(x.d.ten_du_an)}</span></td>`;
+  const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-ma"><b>${esc(x.d.ma_du_an)}</b></td><td class="th-name iv-nm" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td>`;
   const plCols = (ks, pick, tot) => `${ks.map((k) => `<td class="num">${pick[k] === undefined ? '<span class="muted">–</span>' : m(pick[k])}</td>`).join('')}<td class="num strong">${m(tot)}</td>`;
   const plHead = (ks) => `<tr>${ks.map((k, i) => `<th class="num iv-g2" title="${esc(k)}">${i + 1}</th>`).join('')}<th class="num iv-g2">Tổng</th></tr>`;
-  const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
+  const foot = (cells) => `<tfoot><tr><td></td><td colspan="2">Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   const wrap = (title, thead, body, tfoot, note) => `<div class="iv-det"><div class="iv-det-t">${title}</div><div class="table-wrap"><table class="b-table th-table iv-table no-mcard"><thead>${thead}</thead><tbody>${body}</tbody>${tfoot}</table></div>
     <p class="muted small f-note">${note}${v === 'gt' ? ' · Tiền thật (đã nhận / đã chi) quy về trước VAT theo tỷ lệ VAT của hợp đồng' : ''}</p></div>`;
   // Rê chuột vào ô tổng: tách số THỰC (dự án đã quyết toán) và TẠM TÍNH (chưa QT, lấy theo TĐ2)
@@ -777,29 +783,29 @@ function bMuc4Html(list, v, no = 'IV') {
   let det = '';
   if (ct === 'dt') {
     det = wrap('Chi tiết doanh thu với chủ đầu tư',
-      `<tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Dự án / Công trình</th><th rowspan="2" class="num">TĐ1</th>
+      `<tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Mã DA</th><th rowspan="2">Tên dự án</th><th rowspan="2" class="num">TĐ1</th>
         <th colspan="${pls.length + 1}" class="grp iv-g2">TĐ2</th><th rowspan="2" class="num">TĐ3</th><th rowspan="2" class="num">Đã nhận</th>
         <th rowspan="2" class="num">Còn lại</th><th rowspan="2" class="num">BH/Khác</th><th rowspan="2">Ghi chú</th>${edit ? '<th rowspan="2" class="no-print"></th>' : ''}</tr>${plHead(pls)}`,
       rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${m(x.t1)}</td>${plCols(pls, x.pl, x.t2)}
         <td class="num strong">${m(x.t3, !x.qt)}</td><td class="num">${m(x.nhan)}</td><td class="num strong">${m(x.con, !x.qt)}</td>
         <td class="num">${x.bh ? m(x.bh) : '<span class="muted">–</span>'}</td><td class="iv-gc">${esc(x.gc)}</td>
         ${edit ? `<td class="no-print"><button type="button" class="td-btn" data-ivbh="${x.d.id}">Sửa</button></td>` : ''}</tr>`).join(''),
-      `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.t1)}</td>${pls.map(() => '<td></td>').join('')}<td class="num">${bTy(T.t2)}</td>
+      `<tfoot><tr><td></td><td colspan="2">Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.t1)}</td>${pls.map(() => '<td></td>').join('')}<td class="num">${bTy(T.t2)}</td>
         ${tipCell('t3', 'TĐ3 – Quyết toán', bTy(T.t3))}<td class="num">${bTy(T.nhan)}</td>${tipCell('con', 'Còn lại = TĐ3 − Đã nhận', bTy(T.con))}<td class="num">${bTy(T.bh)}</td><td></td>${edit ? '<td class="no-print"></td>' : ''}</tr></tfoot>`,
       'TĐ2 cột 1, 2, 3… = từng phụ lục với CĐT PL01, PL02… (âm = giảm) · Số mờ = chưa quyết toán, lấy theo TĐ2 · Còn lại = TĐ3 − Đã nhận · BH/Khác, Ghi chú nhập tay');
   } else if (ct === 'cp') {
     det = wrap('Chi tiết chi phí',
-      `<tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Dự án / Công trình</th><th rowspan="2" class="num">TĐ1</th>
+      `<tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Mã DA</th><th rowspan="2">Tên dự án</th><th rowspan="2" class="num">TĐ1</th>
         <th colspan="${cpls.length + 1}" class="grp iv-g2">TĐ2</th><th rowspan="2" class="num">TĐ3</th><th rowspan="2" class="num">Đã chi</th><th rowspan="2" class="num">Còn phải chi</th></tr>${plHead(cpls)}`,
       rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${m(x.c1)}</td>${plCols(cpls, x.cpl, x.c2)}
         <td class="num strong">${m(x.c3, !x.qt)}</td><td class="num">${m(x.chi)}</td><td class="num strong">${m(x.con_chi, !x.qt)}</td></tr>`).join(''),
-      `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.c1)}</td>${cpls.map(() => '<td></td>').join('')}<td class="num">${bTy(T.c2)}</td>
+      `<tfoot><tr><td></td><td colspan="2">Tổng cộng (${rows.length} dự án)</td><td class="num">${bTy(T.c1)}</td>${cpls.map(() => '<td></td>').join('')}<td class="num">${bTy(T.c2)}</td>
         ${tipCell('c3', 'TĐ3 – Quyết toán', bTy(T.c3))}<td class="num">${bTy(T.chi)}</td>${tipCell('con_chi', 'Còn phải chi = TĐ3 − Đã chi', bTy(T.con_chi))}</tr></tfoot>`,
       'Chi phí = HĐ đầu vào – thầu phụ, vật tư, MMTB, nhân công (TĐ1 HĐ gốc · TĐ2 + phụ lục · TĐ3 quyết toán) + toàn bộ chi phí khác đã ghi nhận · TĐ2 cột 1, 2, 3… = phụ lục HĐ đầu vào PL01, PL02… · Đã chi = trả HĐ đầu vào + chi phí khác đã chi · Còn phải chi = TĐ3 − Đã chi');
   } else if (ct === 'ln') {
     const lc = (l, t, ghost) => `<td class="num strong">${m(l, ghost)}</td><td class="num iv-ts">${t === null ? '—' : `<span class="${ghost ? 'td-ghost-t' : ''} ${l < 0 ? 'neg' : ''}">${pctT(t)}</span>`}</td>`;
     det = wrap('Chi tiết lợi nhuận',
-      `<tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Dự án / Công trình</th><th colspan="2" class="grp">TĐ1 – Hợp đồng</th><th colspan="2" class="grp iv-g2">TĐ2 – Điều chỉnh</th>
+      `<tr><th rowspan="2" class="num th-stt">STT</th><th rowspan="2">Mã DA</th><th rowspan="2">Tên dự án</th><th colspan="2" class="grp">TĐ1 – Hợp đồng</th><th colspan="2" class="grp iv-g2">TĐ2 – Điều chỉnh</th>
         <th colspan="2" class="grp">TĐ3 – Quyết toán</th><th rowspan="2" class="num">Chênh lệch<br>TĐ3 − TĐ1</th><th rowspan="2" class="num">Thực tế<br>(thu − chi)</th></tr>
        <tr><th class="num">LN</th><th class="num">Tỷ suất</th><th class="num iv-g2">LN</th><th class="num iv-g2">Tỷ suất</th><th class="num">LN</th><th class="num">Tỷ suất</th></tr>`,
       rows.map((x, i) => `<tr>${prj(x, i)}${lc(x.l1, tsF(x.l1, x.t1))}${lc(x.l2, tsF(x.l2, x.t2))}${lc(x.l3, tsF(x.l3, x.t3), !x.qt)}
