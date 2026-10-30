@@ -1794,3 +1794,6 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .dc-src { text-align: left !important; font-size: 11.5px; color: #0f7a4f; } .dc-src.tam { color: #b45309; }
 .dc-det tfoot td { font-weight: 700; border-top: 2px solid #1f3a6e; padding: 7px 8px; text-align: right; } .dc-det tfoot td:first-child { text-align: left; }
 .dc-go { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+
+/* Revi: nhãn nguồn số */
+.tdk-src { color: #b45309; font-weight: 700; }
