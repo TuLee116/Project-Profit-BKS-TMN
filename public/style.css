@@ -1737,3 +1737,33 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .th-htb { display: inline-block; width: 56px; height: 6px; border-radius: 3px; background: #e8edf4; margin-right: 8px; vertical-align: middle; overflow: hidden; }
 .th-htb i { display: block; height: 100%; background: #2c5fa3; border-radius: 3px; }
 .th-htv { display: inline-block; min-width: 38px; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Mục I-A – mẫu Hành trình TĐ1 → TĐ2 → TĐ3 */
+.jr { display: grid; grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr) 118px minmax(0, 1fr); align-items: stretch; background: #fff; border: 1px solid #dde4ee; border-radius: 16px; padding: 20px; font-variant-numeric: tabular-nums; }
+.jr-nd { border-radius: 14px; padding: 16px 18px; background: #f8fafc; border: 1px solid #e6ebf2; cursor: pointer; transition: background .2s, box-shadow .2s, transform .2s; outline: none; color: #0f1b33; }
+.jr-nd:hover { border-color: #b9c6d8; transform: translateY(-1px); }
+.jr-nd:focus-visible { box-shadow: 0 0 0 3px rgba(44,95,163,.3); }
+.jr-nd.on { background: linear-gradient(160deg, #0f2a55, #1f3a6e); color: #fff; border-color: transparent; box-shadow: 0 10px 26px rgba(15,42,85,.25); }
+.jr-h { display: flex; align-items: baseline; gap: 8px; } .jr-h b { font-size: 20px; } .jr-h span { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; opacity: .7; }
+.jr-sub { font-size: 11px; opacity: .6; margin-top: 2px; min-height: 15px; } .jr-sub.ok { color: #0f7a4f; opacity: 1; } .jr-nd.on .jr-sub.ok { color: #7fe3c8; }
+.jr-ln { font-size: 36px; font-weight: 700; letter-spacing: -1px; margin-top: 8px; line-height: 1.1; } .jr-ln small { font-size: 13px; font-weight: 500; opacity: .7; letter-spacing: 0; }
+.jr-ln.neg { color: #b4471c; } .jr-nd.on .jr-ln.neg { color: #ff9d7a; }
+.jr-ts { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; background: #e3f3ee; color: #0f7a4f; }
+.jr-nd.on .jr-ts { background: rgba(255,255,255,.14); color: #7fe3c8; }
+.jr-rw { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(100,116,139,.22); }
+.jr-rw span { display: block; font-size: 10.5px; opacity: .65; text-transform: uppercase; letter-spacing: .4px; } .jr-rw b { font-size: 15px; font-weight: 600; }
+.jr-rw.jr-gop { margin-top: 8px; }
+.jr-ar { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; }
+.jr-line { width: 100%; height: 2px; background: repeating-linear-gradient(90deg, #9fb0c8 0 6px, transparent 6px 10px); position: relative; margin: 2px 0; }
+.jr-line::after { content: ""; position: absolute; right: -3px; top: -5px; border: 6px solid transparent; border-left: 9px solid #9fb0c8; }
+.jr-c { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 12px; background: #fff; border: 1px solid #e3e8ef; white-space: nowrap; cursor: help; }
+.jr-c.ok { color: #0f7a4f; } .jr-c.bad { color: #b4471c; } .jr-c.eq { color: #94a3b8; }
+.jr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 4px; }
+.jr-bar .iv-ct { margin: 0; }
+@media (max-width: 900px) {
+  .jr { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 4px; }
+  .jr-ar { flex-direction: row; flex-wrap: wrap; padding: 6px 0; gap: 6px; }
+  .jr-line { display: none; } .jr-ar::before { content: "▼"; color: #9fb0c8; font-size: 12px; margin-right: 4px; }
+  .jr-ln { font-size: 30px; }
+}
+@media print { .jr-nd.on { background: #1f3a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

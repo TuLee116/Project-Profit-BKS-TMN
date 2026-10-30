@@ -732,33 +732,32 @@ function bMuc4Html(list, v, no = 'IV') {
   const edit = (can('tien') || can('ns'));
   const tsF = (l, d) => (d ? l / d : null);
   const pctT = (x) => (x === null ? '—' : `${(x * 100).toFixed(1).replace('.', ',')}%`);
-  const num = (x, isPct, ghost) => `<b class="${x < 0 ? 'neg' : ''} ${ghost ? 'iv-ghost' : ''}">${isPct ? pctT(x) : bTyU(x)}</b>`;
   const allGhost = T.n_qt === 0;
-  const R = [
-    ['dt', 'Doanh thu', [T.t1, T.t2, T.t3], true, false, 'td-r-dt'],
-    ['cp', 'Chi phí', [T.c1, T.c2, T.c3], false, false, 'td-r-cp'],
-    ['ln', 'Lợi nhuận', [T.l1, T.l2, T.l3], true, false, 'td-r-ln'],
-    ['gop', 'Tỷ suất LN', [tsF(T.l1, T.t1), tsF(T.l2, T.t2), tsF(T.l3, T.t3)], true, true, 'td-r-ts'],
-    // LN gộp = Doanh thu − Giá vốn (HĐ đầu vào + chi phí trực tiếp B1); chưa trừ chi phí gián tiếp B2, tài chính B3
-    [null, 'LN gộp', [T.g1, T.g2, T.g3], true, false, 'td-r-gop iv-gop-1'],
-    [null, 'Tỷ suất LN gộp', [tsF(T.g1, T.t1), tsF(T.g2, T.t2), tsF(T.g3, T.t3)], true, true, 'td-r-gop'],
-  ];
   const gop = Boolean(BST.iv_gop);
-  const lab = (key, label) => key === 'gop' // nút mở / ẩn 2 dòng LN gộp
-    ? `<th>${label}<button type="button" class="iv-gop no-print ${gop ? 'on' : ''}" data-ivgop aria-expanded="${gop}" title="${gop ? 'Ẩn' : 'Xem'} lợi nhuận gộp">${gop ? '−' : '+'}</button></th>`
-    : `<th>${label}${key ? `<button type="button" class="iv-ct no-print ${ct === key ? 'on' : ''}" data-ivct="${key}" aria-expanded="${ct === key}">${ct === key ? '▴ Ẩn chi tiết' : '▾ Chi tiết'}</button>` : ''}</th>`;
   const tDt = [T.t1, T.t2, T.t3];
-  // Dòng Chi phí: thêm tỷ lệ chi phí / doanh thu cùng thời điểm
-  const pDt = (key, x, i) => (key === 'cp' && tDt[i] ? `<div class="iv-pdt">= ${pctT(x / tDt[i])} doanh thu</div>` : '');
-  const cell = (key, vals, i, good, isPct) => `<td class="td-c">${num(vals[i], isPct, i === 2 && allGhost)}${pDt(key, vals[i], i)}${i ? bTdDelta(vals[i], vals[i - 1], good, isPct, `TĐ${i}`) : ''}</td>`;
   const qtNote = T.n_qt === rows.length ? '✓ Tất cả dự án đã quyết toán' : `${T.n_qt}/${rows.length} dự án đã quyết toán · dự án chưa QT lấy bằng TĐ2`;
-  const sum = `<div class="table-wrap td-wrap"><table class="td-mx no-mcard iv-sum">
-    <thead><tr><th class="td-corner">Chỉ tiêu</th>
-      <th class="td-h td-h1"><div class="td-hn"><b>TĐ1</b></div><div class="td-ht2">Hợp đồng</div><div class="td-st">HĐ gốc ký với CĐT</div></th>
-      <th class="td-h td-h2"><div class="td-hn"><b>TĐ2</b></div><div class="td-ht2">Điều chỉnh</div><div class="td-st">HĐ + phụ lục tăng / giảm</div></th>
-      <th class="td-h td-h3"><div class="td-hn"><b>TĐ3</b></div><div class="td-ht2">Quyết toán</div><div class="td-st ${T.n_qt === rows.length ? 'td-st-ok' : ''}">${qtNote}</div></th></tr></thead>
-    <tbody>${R.filter(([, , , , , cls]) => gop || !cls.includes('td-r-gop')).map(([key, label, vals, good, isPct, cls]) => `<tr class="${cls} ${ct === key ? 'iv-row-on' : ''}">${lab(key, label)}${[0, 1, 2].map((i) => cell(key, vals, i, good, isPct)).join('')}</tr>`).join('')}</tbody>
-  </table></div>`;
+  // Mẫu "Hành trình": 3 thẻ TĐ1 → TĐ2 → TĐ3, mũi tên nối ghi mức tăng / giảm; bấm thẻ nào thì thẻ đó sáng lên
+  const selTd = [1, 2, 3].includes(BST.iv_td) ? BST.iv_td : 3;
+  const TENTD = ['Hợp đồng', 'Điều chỉnh', 'Quyết toán'], SUB = ['HĐ gốc ký với CĐT', 'HĐ + phụ lục tăng / giảm', qtNote];
+  const tv = (i) => ({ dt: tDt[i], cp: [T.c1, T.c2, T.c3][i], ln: [T.l1, T.l2, T.l3][i], g: [T.g1, T.g2, T.g3][i] });
+  const card2 = (i) => { const x = tv(i), on = selTd === i + 1, gh = i === 2 && allGhost;
+    return `<div class="jr-nd ${on ? 'on' : ''}" data-ivtd="${i + 1}" role="button" tabindex="0" aria-pressed="${on}" title="Bấm để chọn TĐ${i + 1}">
+      <div class="jr-h"><b>TĐ${i + 1}</b><span>${TENTD[i]}</span></div><div class="jr-sub ${i === 2 && T.n_qt === rows.length ? 'ok' : ''}">${SUB[i]}</div>
+      <div class="jr-ln ${x.ln < 0 ? 'neg' : ''} ${gh ? 'iv-ghost' : ''}" title="${bn(x.ln)} đ">${bTy(x.ln)} <small>tỷ LN</small></div>
+      <span class="jr-ts">Tỷ suất ${pctT(tsF(x.ln, x.dt))}</span>
+      <div class="jr-rw"><div><span>Doanh thu</span><b title="${bn(x.dt)} đ">${bTy(x.dt)}</b></div><div><span>Chi phí</span><b title="${bn(x.cp)} đ">${bTy(x.cp)}</b></div><div><span>CP / DT</span><b>${pctT(tsF(x.cp, x.dt))}</b></div></div>
+      ${gop ? `<div class="jr-rw jr-gop"><div><span>LN gộp</span><b>${bTy(x.g)}</b></div><div><span>Tỷ suất LN gộp</span><b>${pctT(tsF(x.g, x.dt))}</b></div><div></div></div>` : ''}
+    </div>`; };
+  const chip = (lab, c, p, good, isPct) => { const d = c - p, z = isPct ? Math.abs(d) < 0.0005 : Math.abs(d) < 1000;
+    if (z) return `<span class="jr-c eq">${lab} — 0</span>`;
+    const tip = isPct ? `${d > 0 ? '+' : '−'}${Math.abs(d * 100).toFixed(1).replace('.', ',')} điểm %` : `${d > 0 ? '+' : '−'}${bTy(Math.abs(d))} tỷ${p ? ` (${d > 0 ? '+' : '−'}${Math.abs((d / Math.abs(p)) * 100).toFixed(1).replace('.', ',')}%)` : ''}`;
+    return `<span class="jr-c ${(d > 0) === good ? 'ok' : 'bad'}" title="${lab}: ${tip}">${lab} ${d > 0 ? '▲' : '▼'} ${isPct ? Math.abs(d * 100).toFixed(1).replace('.', ',') + 'đ' : bTy(Math.abs(d))}</span>`; };
+  const arrow = (i) => { const a0 = tv(i - 1), a1 = tv(i);
+    return `<div class="jr-ar" aria-hidden="true">${chip('DT', a1.dt, a0.dt, true)}<div class="jr-line"></div>${chip('CP', a1.cp, a0.cp, false)}${chip('LN', a1.ln, a0.ln, true)}</div>`; };
+  const btn = (key, label) => `<button type="button" class="iv-ct no-print jr-b-${key} ${ct === key ? 'on' : ''}" data-ivct="${key}" aria-expanded="${ct === key}">${ct === key ? '▴' : '▾'} ${label}</button>`;
+  const sum = `<div class="jr">${card2(0)}${arrow(1)}${card2(1)}${arrow(2)}${card2(2)}</div>
+    <div class="jr-bar no-print"><span class="muted small">Xem chi tiết theo dự án:</span>${btn('dt', 'Doanh thu')}${btn('cp', 'Chi phí')}${btn('ln', 'Lợi nhuận')}
+      <button type="button" class="iv-gop ${gop ? 'on' : ''}" data-ivgop aria-expanded="${gop}" title="${gop ? 'Ẩn' : 'Xem'} lợi nhuận gộp">${gop ? '−' : '+'}</button><span class="muted small">LN gộp</span></div>`;
 
   // ---- Bảng chi tiết theo dự án của dòng đang mở ----
   const m = (x, ghost) => `<span class="${ghost ? 'td-ghost-t' : ''} ${x < 0 ? 'neg' : ''}"${ghost ? ' title="Tạm tính theo TĐ2 – dự án chưa quyết toán"' : ''}>${bTy(x)}</span>`;
@@ -1489,7 +1488,7 @@ $('#b-report').addEventListener('mouseout', (e) => { if (e.target.closest('[data
 $('#b-report').addEventListener('keydown', (e) => {
   const w = e.target.closest('[data-wlink]');
   if (w && e.key === 'Enter') bGoWarn(Number(w.dataset.wda), JSON.parse(w.dataset.wlink));
-  const td = e.target.closest('[data-thtd]');
+  const td = e.target.closest('[data-thtd], [data-ivtd]');
   if (td && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); td.click(); }
 });
 
@@ -2050,6 +2049,7 @@ $('#b-report').addEventListener('click', (e) => {
   if (e.target.id === 'b-open-all' || e.target.id === 'b-close-all') $$('#b-report details.b-proj').forEach((d) => (d.open = e.target.id === 'b-open-all'));
   if (e.target.id === 'f-set-target') return bTargetDialog();
   if (e.target.closest('[data-ivgop]')) { BST.iv_gop = !BST.iv_gop; return renderKeepPos('[data-ivgop]'); } // mục IV: mở / ẩn LN gộp
+  { const t = e.target.closest('[data-ivtd]'); if (t) { BST.iv_td = Number(t.dataset.ivtd); return renderKeepPos(`[data-ivtd="${t.dataset.ivtd}"]`); } } // mục I-A: chọn thẻ TĐ
   const ivct = e.target.closest('[data-ivct]'); // mục IV: mở / ẩn bảng chi tiết của dòng DT / CP / LN
   if (ivct) { const k = ivct.dataset.ivct; BST.iv_ct = BST.iv_ct === k ? null : k; return renderKeepPos(`.iv-sum [data-ivct="${k}"]`); }
   const thtd = e.target.closest('[data-thtd]');
