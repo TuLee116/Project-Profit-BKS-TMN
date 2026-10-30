@@ -1728,3 +1728,12 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 /* Trợ lý đợt 2 */
 .as-chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
 .as-win { color: #0f7a4f; font-weight: 700; background: #e9f6ef; padding: 1px 5px; border-radius: 4px; }
+
+/* Mục I-B – bảng chi tiết theo dự án: tách Mã DA / Tên / Tình trạng, thêm % hoàn thành */
+.th-tdp .th-ma { white-space: nowrap; }
+.th-tdp .th-name { min-width: 200px; }
+.th-tdp td .st { white-space: nowrap; font-size: 10.5px; padding: 1px 8px; }
+.th-tdp .th-ht { white-space: nowrap; min-width: 110px; }
+.th-htb { display: inline-block; width: 56px; height: 6px; border-radius: 3px; background: #e8edf4; margin-right: 8px; vertical-align: middle; overflow: hidden; }
+.th-htb i { display: block; height: 100%; background: #2c5fa3; border-radius: 3px; }
+.th-htv { display: inline-block; min-width: 38px; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
