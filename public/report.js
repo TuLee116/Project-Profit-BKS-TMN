@@ -611,6 +611,30 @@ function bTdBand(TV, sel, rows) {
     </div>
   </div>`;
 }
+// Đối chiếu KẾ HOẠCH đã chốt (mục I-B) với THỰC TẾ hệ thống (mục I-A) tại 3 thời điểm – giải thích vì sao 2 phần khác số
+function bDoiChieu(list, v, TV) {
+  const A = bMuc4Data(list, v).T, TH = { 1: [A.t1, A.c1], 2: [A.t2, A.c2], 3: [A.t3, A.c3] };
+  const dl = (kh, tt, good) => { const d = tt - kh; if (Math.abs(d) < 1e6) return '<span class="dc-eq">khớp</span>';
+    return `<span class="${(d > 0) === good ? 'dc-ok' : 'dc-bad'}">${d > 0 ? '+' : '−'}${bTy(Math.abs(d))}</span>`; };
+  const n = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
+  const rowsH = [1, 2, 3].map((k) => { const [dt, cp] = TH[k], kh = TV[k];
+    return `<tr><td><span class="tdp-n">TĐ${k}</span> ${['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'][k - 1]}</td>
+      <td>${n(kh.dt)}</td><td>${n(dt)}</td><td>${dl(kh.dt, dt, true)}</td>
+      <td>${n(kh.cp)}</td><td>${n(cp)}</td><td>${dl(kh.cp, cp, false)}</td>
+      <td><b>${n(kh.ln)}</b></td><td><b>${n(dt - cp)}</b></td><td>${dl(kh.ln, dt - cp, true)}</td></tr>`; }).join('');
+  const same = [1, 2, 3].every((k) => Math.abs(TV[k].dt - TH[k][0]) < 1e6 && Math.abs(TV[k].cp - TH[k][1]) < 1e6);
+  return `<details class="dc" ${same ? '' : 'open'}><summary><b>Đối chiếu kế hoạch đã chốt (B) với thực tế (A)</b> <span class="muted">${same ? '· khớp hoàn toàn' : '· vì sao số ở phần A và B khác nhau?'}</span></summary>
+    <div class="dc-why">Hai phần dùng <b>hai nguồn khác nhau</b>, nên khác số là bình thường, <b>không phải số liệu sai</b>:
+      <b>A – Thực tế</b> là số máy tự tính từ hợp đồng, phụ lục, quyết toán và chi phí đã ghi nhận đến nay;
+      <b>B – Kế hoạch</b> là dự toán được duyệt khi chốt từng thời điểm. Cột <b>Chênh</b> = Thực tế − Kế hoạch:
+      <span class="dc-ok">xanh</span> có lợi (doanh thu / lợi nhuận cao hơn, chi phí thấp hơn kế hoạch), <span class="dc-bad">đỏ</span> bất lợi (vd. chi phí thực tế vượt dự toán).</div>
+    <div class="table-wrap"><table class="dc-t no-mcard">
+      <thead><tr><th rowspan="2">Thời điểm</th><th colspan="3">Doanh thu</th><th colspan="3">Chi phí</th><th colspan="3">Lợi nhuận</th></tr>
+        <tr>${'<th>Kế hoạch</th><th>Thực tế</th><th>Chênh</th>'.repeat(3)}</tr></thead>
+      <tbody>${rowsH}</tbody></table></div>
+    ${v === 'sv' ? '<p class="muted small f-note">Đang xem sau VAT: số kế hoạch chốt trước VAT được quy đổi ước tính và làm tròn 0,1 tỷ, nên có thể chênh thêm vài chục triệu. Đối chiếu chính xác nên xem <b>Trước VAT</b>.</p>' : ''}
+  </details>`;
+}
 function bTongHopHtml(list, v, P) {
   const { to, rows, T } = bTongHopData(list, v, P);
   const vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
@@ -634,7 +658,7 @@ function bTongHopHtml(list, v, P) {
       `<button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range} <span class="f-caret">▾</span></button>`)}
     ${bMuc4Html(list, v, 'A')}
 
-    ${thSub('B', 'Doanh thu – Chi phí theo thời điểm', 'Số đã chốt ở bảng TĐ của từng dự án · bấm TĐ1 / TĐ2 / TĐ3 để xem chi tiết', [])}
+    ${thSub('B', 'Doanh thu – Chi phí theo thời điểm · Kế hoạch đã chốt', 'Dự toán được duyệt khi chốt TĐ ở từng dự án (dự án chưa chốt lấy số thực tế, đánh dấu *) · bấm TĐ1 / TĐ2 / TĐ3 để xem chi tiết', ['Kế hoạch'])}
     ${(() => { // 3 khối TĐ1 – TĐ2 – TĐ3; bấm khối nào thì bảng dự án bên dưới theo thời điểm đó
       const sel = [1, 2, 3].includes(BST.th_td) ? BST.th_td : 1;
       const TEN = { 1: 'Ký hợp đồng', 2: 'Điều chỉnh', 3: 'Quyết toán' };
@@ -645,7 +669,7 @@ function bTongHopHtml(list, v, P) {
         const tip = `${k === 'dt' ? 'Doanh thu' : 'Chi phí'} – so với TĐ${sel - 1}\nTĐ${sel - 1}: ${bTy(pt[k])} tỷ\nTĐ${sel}: ${bTy(cur)} tỷ\n${d > 0 ? 'Tăng' : 'Giảm'}: ${bTy(Math.abs(d))} tỷ${pt[k] ? ` (${bpct(Math.abs(d), pt[k])})` : ''}`;
         return `<span class="th-dl ${(d > 0) === good ? 'ok' : 'bad'}" data-tdtip="d" data-tip="${esc(tip)}" aria-label="${esc(tip.replace(/\n/g, ' · '))}">${d > 0 ? '▲' : '▼'}</span>`; };
       const star = (t) => (sel === 3 ? (t.tam ? '<sup class="th-tt" title="Chưa quyết toán: tạm tính theo TĐ2">*</sup>' : '') : !t.chot ? `<sup class="th-tt" title="Chưa chốt TĐ${sel}: lấy theo số hệ thống">*</sup>` : '');
-      return `${bTdBand(T.tdv, sel, rows)}
+      return `${bTdBand(T.tdv, sel, rows)}${bDoiChieu(list, v, T.tdv)}
       <div class="tdp-cap">Chi tiết theo dự án · <b>TĐ${sel} – ${TEN[sel]}</b> <span class="muted">(bấm dòng TĐ1 / TĐ2 / TĐ3 ở bảng trên để đổi)</span></div>
       <div class="table-wrap"><table class="b-table th-table th-tdp">
         <thead><tr><th class="num th-stt">STT</th><th>Mã DA</th><th>Tên dự án</th><th>Tình trạng</th><th class="num">Doanh thu</th><th class="num">Chi phí</th><th class="num">Lợi nhuận</th><th class="num">% Hoàn thành</th><th class="num">Tỷ lệ LN</th></tr></thead>
@@ -813,7 +837,7 @@ function bMuc4Html(list, v, no = 'IV') {
       foot([bTy(T.l1), pctT(tsF(T.l1, T.t1)), bTy(T.l2), pctT(tsF(T.l2, T.t2)), '__L3__', pctT(tsF(T.l3, T.t3)), `${T.l3 - T.l1 >= 0 ? '+' : '−'}${bTy(Math.abs(T.l3 - T.l1))}`, bTy(T.thuc)]).replace('<td class="num">__L3__</td>', tipCell('l3', 'Lợi nhuận TĐ3 – Quyết toán', bTy(T.l3))),
       'Lợi nhuận = Doanh thu − Chi phí tại từng thời điểm · Số mờ = chưa quyết toán, lấy theo TĐ2 · Thực tế = tiền đã nhận − tiền đã chi (không gồm vay, trả gốc)');
   }
-  return `${(no === 'A' ? thSub : thHead)(no, 'Doanh thu hoàn thành – quyết toán', 'Hợp đồng (TĐ1) – Điều chỉnh (TĐ2) – Quyết toán (TĐ3) · tự tính theo dữ liệu hệ thống', ['Theo dữ liệu hệ thống'].concat(no === 'A' ? [] : [vt]))}
+  return `${(no === 'A' ? thSub : thHead)(no, 'Doanh thu hoàn thành – quyết toán · Thực tế', 'Máy tự tính từ HĐ gốc, phụ lục, quyết toán, HĐ đầu vào và chi phí đã ghi nhận', ['Thực tế · theo dữ liệu hệ thống'].concat(no === 'A' ? [] : [vt]))}
     ${sum}${!gop ? '' : `<p class="muted small f-note">LN gộp = Doanh thu − Giá vốn (HĐ đầu vào + chi phí trực tiếp: vật tư, nhân công, máy, tổ chức thi công, khác); Lợi nhuận = LN gộp − chi phí gián tiếp (lương, tiện ích, ngoại giao) − chi phí tài chính (lãi vay, phí, phạt).</p>`}${det}`;
 }
 // Sửa BH/Khác + ghi chú (nhập tay) của 1 dự án

@@ -1768,3 +1768,15 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 }
 @media print { .jr-nd.on { background: #1f3a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 .iv-table .th-ma { white-space: nowrap; } .iv-table .iv-nm { min-width: 200px; }
+
+/* Đối chiếu kế hoạch (I-B) – thực tế (I-A) */
+.dc { margin: 14px 0 6px; border: 1px solid #dde4ee; border-left: 4px solid #c9a96a; border-radius: 12px; background: #fffdf7; padding: 10px 14px; }
+.dc summary { cursor: pointer; font-size: 13px; color: #1f3a6e; list-style: revert; }
+.dc-why { font-size: 12.5px; color: #475569; line-height: 1.55; margin: 8px 0 10px; }
+.dc-t { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; background: #fff; }
+.dc-t th { font-size: 10.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: #64748b; padding: 6px 8px; border-bottom: 1px solid #e5eaf1; text-align: right; white-space: nowrap; }
+.dc-t thead tr:first-child th { text-align: center; } .dc-t th:first-child, .dc-t td:first-child { text-align: left; }
+.dc-t td { padding: 7px 8px; text-align: right; border-bottom: 1px solid #f1f4f8; white-space: nowrap; }
+.dc-t td:nth-child(4), .dc-t td:nth-child(7), .dc-t td:nth-child(10), .dc-t th:nth-child(3n) { border-right: 1px solid #eef2f7; }
+.dc-ok { color: #0f7a4f; font-weight: 700; } .dc-bad { color: #b4471c; font-weight: 700; } .dc-eq { color: #94a3b8; }
+@media print { .dc { break-inside: avoid; } .dc[open] summary { display: block; } }
