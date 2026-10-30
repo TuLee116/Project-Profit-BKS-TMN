@@ -571,7 +571,7 @@ function bLnBridge(TV) {
 // Khối mục I (chia đôi): trái – lợi nhuận TĐ3 là số chính + so với lúc ký; phải – 3 biểu đồ mini DT / CP / LN + bảng 3 thời điểm
 function bTdBand(TV, sel, rows) {
   const TEN = ['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'];
-  const a = TV[1], z = TV[3], n0 = rows.length;
+  const a = TV[1], z = TV[3], n0 = rows.length, nTam = rows.filter((r) => r.tdv?.[3]?.tam).length;
   const pctS = (x, b) => (b ? `${x >= 0 ? '+' : '−'}${(Math.abs(x / b) * 100).toFixed(1).replace('.', ',')}%` : '');
   const chg = (cur, prev, good, withPct = true) => { const d0 = cur - prev;
     if (Math.abs(d0) < 5e6) return '<span class="tdk-eq">— không đổi</span>';
@@ -590,21 +590,23 @@ function bTdBand(TV, sel, rows) {
   const row = (n) => { const t = TV[n];
     return `<tr class="tdk-r ${sel === n ? 'on' : ''}" data-thtd="${n}" tabindex="0" role="button" aria-pressed="${sel === n}" title="Bấm để xem chi tiết theo dự án tại TĐ${n}">
       <td><span class="tdp-n">TĐ${n}</span><span class="tdk-tn">${TEN[n - 1]}</span><small>${n === 3 ? `${t.qt}/${n0} đã QT` : `${t.chot}/${n0} đã chốt`}</small></td>
-      <td title="${bn(t.dt)} đ">${bTy(t.dt)}</td><td title="${bn(t.cp)} đ">${bTy(t.cp)}</td><td class="tdk-lnc ${t.ln < 0 ? 'neg' : ''}" title="${bn(t.ln)} đ">${bTy(t.ln)}</td><td>${bpct(t.ln, t.dt)}</td></tr>`; };
+      <td>${bTy(t.dt)}</td><td>${bTy(t.cp)}</td><td class="tdk-lnc ${t.ln < 0 ? 'neg' : ''}">${bTy(t.ln)}</td><td>${bpct(t.ln, t.dt)}</td></tr>`; };
   return `<div class="tdk">
     <div class="tdk-hero">
-      <div class="tdk-hl">Lợi nhuận quyết toán · <b class="tdk-src">kế hoạch đã chốt</b> <span>(TĐ3${z.qt < n0 ? ' · dự án chưa QT tạm tính theo TĐ2' : ''})</span></div>
-      <div class="tdk-hv2"><b class="${z.ln < 0 ? 'neg' : ''}" title="${bn(z.ln)} đ">${bTy(z.ln)}</b><small>tỷ</small><span class="tdk-pill">Tỷ suất ${bpct(z.ln, z.dt)}</span></div>
+      <div class="tdk-hl">Lợi nhuận quyết toán · <b class="tdk-src">kế hoạch đã chốt</b> <span>(TĐ3${nTam ? ` · ${nTam}/${n0} dự án chưa chốt TĐ3, chưa QT: tạm tính theo TĐ2` : ''})</span></div>
+      <div class="tdk-hv2"><b class="${z.ln < 0 ? 'neg' : ''}">${bTy(z.ln)}</b><small>tỷ</small><span class="tdk-pill">Tỷ suất ${bpct(z.ln, z.dt)}</span></div>
       <div class="tdk-hc">${chg(z.ln, a.ln, true)} so với lúc ký</div>
       ${(() => { // 2 thanh ngang: độ dài = doanh thu; chia chi phí (cam) + lợi nhuận (xanh ngọc) — so lúc ký với quyết toán
-        const mx = Math.max(a.dt, z.dt, 1);
-        const bar = (t, lab) => { const w = Math.max(0, t.dt) / mx * 100, lnP = t.dt > 0 ? Math.max(0, t.ln) / t.dt * 100 : 0;
+        const mx = Math.max(a.dt, z.dt, a.cp, z.cp, 1);
+        // Lãi: thanh dài = doanh thu (chi phí + lợi nhuận). Lỗ: thanh dài = chi phí, phần vượt doanh thu tô đỏ sọc
+        const bar = (t, lab) => { const loss = t.ln < 0, base = loss ? t.cp : t.dt, w = Math.max(0, base) / mx * 100;
+          const lnP = base > 0 ? Math.abs(t.ln) / base * 100 : 0;
           return `<div class="tdk-br"><div class="tdk-bl"><b>${lab}</b><span>DT ${bTy(t.dt)}</span></div>
             <div class="tdk-bt"><div class="tdk-bf" style="width:${w.toFixed(1)}%">
-              <i class="cp" style="width:${(100 - lnP).toFixed(1)}%" title="Chi phí ${bTy(t.cp)} tỷ (${bpct(t.cp, t.dt)} doanh thu)"><em>${bTy(t.cp)}</em></i><i class="ln" style="width:${lnP.toFixed(1)}%" title="Lợi nhuận ${bTy(t.ln)} tỷ (${bpct(t.ln, t.dt)})"></i>
-            </div><span class="tdk-bv">${bTy(t.ln)} <small>${bpct(t.ln, t.dt)}</small></span></div></div>`; };
+              <i class="cp" style="width:${(100 - lnP).toFixed(1)}%" title="Chi phí ${bTy(t.cp)} tỷ (${bpct(t.cp, t.dt)} doanh thu)"><em>${bTy(t.cp)}</em></i><i class="${loss ? 'lo' : 'ln'}" style="width:${lnP.toFixed(1)}%" title="${loss ? 'Lỗ' : 'Lợi nhuận'} ${bTy(Math.abs(t.ln))} tỷ (${bpct(t.ln, t.dt)})"></i>
+            </div><span class="tdk-bv ${loss ? 'neg' : ''}">${bTy(t.ln)} <small>${bpct(t.ln, t.dt)}</small></span></div></div>`; };
         return `<div class="tdk-bars">${bar(a, 'Lúc ký · TĐ1')}${bar(z, 'Quyết toán · TĐ3')}
-          <div class="tdk-blg"><span><i style="background:${BCOL.chi}"></i>Chi phí</span><span><i style="background:${BCOL.dk}"></i>Lợi nhuận</span><span class="muted">độ dài thanh = doanh thu</span></div></div>
+          <div class="tdk-blg"><span><i style="background:${BCOL.chi}"></i>Chi phí</span><span><i style="background:${BCOL.dk}"></i>Lợi nhuận</span><span class="muted">độ dài thanh = doanh thu${[a, z].some((t) => t.ln < 0) ? ' · đỏ sọc = phần lỗ (chi phí vượt doanh thu)' : ''}</span></div></div>
         <div class="tdk-hg2">
           <div><span>Doanh thu</span>${chg(z.dt, a.dt, true, false)}</div>
           <div><span>Chi phí</span>${chg(z.cp, a.cp, false, false)}</div>
@@ -620,8 +622,11 @@ function bTdBand(TV, sel, rows) {
   </div>`;
 }
 // Đối chiếu KẾ HOẠCH đã chốt (mục I-B) với THỰC TẾ hệ thống (mục I-A) tại 3 thời điểm – giải thích vì sao 2 phần khác số
-function bDoiChieu(list, v, TV, prj = []) {
+function bDoiChieu(list, v, TV0, prj = []) {
   const M4 = bMuc4Data(list, v), A = M4.T, TH = { 1: [A.t1, A.c1], 2: [A.t2, A.c2], 3: [A.t3, A.c3] };
+  // Chỉ đối chiếu dự án có HĐ CĐT (phần A bỏ qua dự án chưa có HĐ) -> kế hoạch cũng cộng cùng tập dự án
+  const coHd = new Set(M4.rows.map((x) => x.d.id)), nKo = prj.filter((x) => !coHd.has(x.d.id)).length;
+  const TV = nKo ? Object.fromEntries([1, 2, 3].map((k) => [k, ['dt', 'cp', 'ln'].reduce((o, f) => ({ ...o, [f]: prj.filter((x) => coHd.has(x.d.id)).reduce((a, x) => a + x.tdv[k][f], 0) }), {})])) : TV0;
   // Bấm 1 số -> chi tiết theo dự án của chỉ tiêu / thời điểm đó (BST.dc = 'k|m')
   const [sk, sm] = String(BST.dc || '').split('|'), selK = Number(sk), selM = ['dt', 'cp', 'ln'].includes(sm) ? sm : null;
   const cl = (k, m, html) => `<button type="button" class="dc-lnk ${selK === k && selM === m ? 'on' : ''}" data-dc="${k}|${m}" title="Bấm để xem chi tiết theo dự án">${html}</button>`;
@@ -639,18 +644,18 @@ function bDoiChieu(list, v, TV, prj = []) {
     const TEN = { dt: 'Doanh thu', cp: 'Chi phí', ln: 'Lợi nhuận' }, good = selM !== 'cp';
     const by4 = new Map(M4.rows.map((x) => [x.d.id, x]));
     const R = prj.map((x) => { const a = by4.get(x.d.id), t = x.tdv[selK], td = (x.d.thoi_diem || []).find((q) => q.td === selK);
-      const th = a ? { dt: a[`t${selK}`], cp: a[`c${selK}`], ln: a[`l${selK}`] }[selM] : 0;
+      const th = a ? { dt: a[`t${selK}`], cp: a[`c${selK}`], ln: a[`l${selK}`] }[selM] : null; // null = chưa có HĐ CĐT
       const src = td ? `Chốt TĐ${selK}${td.ngay ? ` ngày ${dmy(td.ngay)}` : ''}` : selK === 3 && t.qt ? 'Chưa chốt – lấy số quyết toán' : `Chưa chốt – lấy số thực tế${selK === 3 ? ' (TĐ2)' : ''}`;
-      return { d: x.d, kh: t[selM], th, src, chot: Boolean(td) }; });
-    const S = (k) => R.reduce((a, x) => a + x[k], 0);
+      return { d: x.d, kh: t[selM], th, src: th === null ? 'Chưa có HĐ CĐT – không đối chiếu' : src, chot: Boolean(td) && th !== null }; });
+    const RS = R.filter((x) => x.th !== null), S = (k) => RS.reduce((a, x) => a + x[k], 0);
     const actualOf = { dt: 'dt', cp: 'cp', ln: 'ln' }[selM];
     det = `<div class="dc-det"><div class="dc-dh"><b>${TEN[selM]} · TĐ${selK} – ${['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'][selK - 1]}</b> theo từng dự án
         <button type="button" class="dc-x" data-dc="" title="Đóng">×</button></div>
       <div class="table-wrap"><table class="dc-t no-mcard"><thead><tr><th>Mã DA</th><th>Tên dự án</th><th>Kế hoạch (B)</th><th>Nguồn số kế hoạch</th><th>Thực tế (A)</th><th>Chênh</th><th></th></tr></thead>
         <tbody>${R.map((x) => `<tr><td><b>${esc(x.d.ma_du_an)}</b></td><td class="dc-nm" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td><td>${n(x.kh)}</td>
-          <td class="dc-src ${x.chot ? '' : 'tam'}">${x.src}</td><td>${n(x.th)}</td><td>${dl(x.kh, x.th, good)}</td>
+          <td class="dc-src ${x.chot ? '' : 'tam'}">${x.src}</td><td>${x.th === null ? '—' : n(x.th)}</td><td>${x.th === null ? '—' : dl(x.kh, x.th, good)}</td>
           <td><button type="button" class="td-btn" data-dcprj="${x.d.id}" title="Mở thẻ dự án: xem / sửa số chốt TĐ và dữ liệu">Thẻ dự án →</button></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="2">Tổng cộng (${R.length} dự án)</td><td>${n(S('kh'))}</td><td></td><td>${n(S('th'))}</td><td>${dl(S('kh'), S('th'), good)}</td><td></td></tr></tfoot></table></div>
+        <tfoot><tr><td colspan="2">Tổng cộng (${RS.length} dự án${RS.length < R.length ? `, bỏ ${R.length - RS.length} chưa có HĐ` : ''})</td><td>${n(S('kh'))}</td><td></td><td>${n(S('th'))}</td><td>${dl(S('kh'), S('th'), good)}</td><td></td></tr></tfoot></table></div>
       <div class="dc-go"><span class="muted small">Số thực tế lấy từ:</span><button type="button" class="iv-ct" data-dcgo="${actualOf}|${selK}">Bảng chi tiết ${TEN[selM].toLowerCase()} – phần A ↑</button>
         <span class="muted small">· Số kế hoạch: bảng Thời điểm trong thẻ từng dự án.</span></div></div>`;
   }
@@ -664,7 +669,7 @@ function bDoiChieu(list, v, TV, prj = []) {
       <thead><tr><th rowspan="2">Thời điểm</th><th colspan="3">Doanh thu</th><th colspan="3">Chi phí</th><th colspan="3">Lợi nhuận</th></tr>
         <tr>${'<th>Kế hoạch</th><th>Thực tế</th><th>Chênh</th>'.repeat(3)}</tr></thead>
       <tbody>${rowsH}</tbody></table></div>
-    <p class="muted small dc-hint">👆 Bấm vào số bất kỳ để xem chi tiết theo từng dự án và nguồn của số đó.</p>
+    <p class="muted small dc-hint">👆 Bấm vào số bất kỳ để xem chi tiết theo từng dự án và nguồn của số đó.${nKo ? ` · ${nKo} dự án chưa có HĐ CĐT không đưa vào đối chiếu.` : ''}</p>
     ${det}
     ${v === 'sv' ? '<p class="muted small f-note">Đang xem sau VAT: số kế hoạch chốt trước VAT được quy đổi theo tỷ lệ VAT của số thực tế cùng thời điểm; số chốt bằng số thực tế (trước VAT) thì hiện “khớp”.</p>' : ''}
   </details>`;
@@ -675,7 +680,7 @@ function bTongHopHtml(list, v, P) {
   const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
   const meter = (a, b, color) => `<span class="f-meter"><i style="width:${b > 0 ? Math.max(0, Math.min(100, (a / b) * 100)) : 0}%;background:${a < 0 ? '#d92d35' : color}"></i></span>`;
   // Thẻ chỉ tiêu: biểu tượng + nền chuyển màu theo chỉ tiêu + biểu đồ nhỏ (viz) + dòng diễn giải
-  const card = (k, title, val, lines, unit = 'tỷ', viz = '') => `<div class="f-card f-${k} kx" title="${unit === '%' ? '' : bn(val) + ' đ'}">
+  const card = (k, title, val, lines, unit = 'tỷ', viz = '') => `<div class="f-card f-${k} kx">
       <div class="f-body"><div class="kx-top"><span class="kx-ic" aria-hidden="true">${KX_IC[k] || KX_IC.dt}</span><div class="f-title">${title}</div></div>
         <div class="f-val ${val < 0 ? 'neg' : ''}">${unit === '%' ? bpct(val, 1) : `${bTy(val)} <small>tỷ</small>`}</div>
         ${viz}
@@ -708,11 +713,11 @@ function bTongHopHtml(list, v, P) {
         <thead><tr><th class="num th-stt">STT</th><th>Mã DA</th><th>Tên dự án</th><th>Tình trạng</th><th class="num">Doanh thu</th><th class="num">Chi phí</th><th class="num">Lợi nhuận</th><th class="num">% Hoàn thành</th><th class="num">Tỷ lệ LN</th></tr></thead>
         <tbody>${R.map(({ x, t }, i) => `<tr><td class="num th-stt">${i + 1}</td><td class="th-ma"><b>${esc(x.d.ma_du_an)}</b></td><td class="th-name" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td>
           <td><span class="st st-${slug(x.d.trang_thai)}">${esc(x.d.trang_thai)}</span></td>
-          <td class="num">${dl(t.dt, x.tdv[sel - 1], 'dt', true)}${bTy(t.dt)}</td><td class="num">${dl(t.cp, x.tdv[sel - 1], 'cp', false)}${bTy(t.cp)}</td>
+          <td class="num">${dl(t.dt, x.tdv[sel - 1], 'dt', true)}${bTy(t.dt)}${star(t)}</td><td class="num">${dl(t.cp, x.tdv[sel - 1], 'cp', false)}${bTy(t.cp)}${star(t)}</td>
           <td class="num strong ${t.ln < 0 ? 'neg' : 'pos'}">${bTy(t.ln)}</td>
           <td class="num th-ht"><span class="th-htb"><i style="width:${Math.max(0, Math.min(100, Number(x.d.tien_do) || 0))}%"></i></span><b class="th-htv">${Number(x.d.tien_do) || 0}%</b></td>
           <td class="f-pct">${meter(t.dt ? t.ln / t.dt : 0, 0.3, BCOL.dk)}<b class="${t.ln < 0 ? 'neg' : ''}">${bpct(t.ln, t.dt)}${star(t)}</b></td></tr>`).join('')}</tbody>
-        <tfoot><tr><td></td><td colspan="3">Tổng cộng (${R.length} dự án)</td><td class="num">${dl(TS.dt, T.tdv[sel - 1], 'dt', true)}${bTy(TS.dt)}</td><td class="num">${dl(TS.cp, T.tdv[sel - 1], 'cp', false)}${bTy(TS.cp)}</td>
+        <tfoot><tr><td></td><td colspan="3">Tổng cộng (${R.length} dự án) <small class="muted">· ${sel === 3 ? `${R.filter(({ t }) => !t.tam).length}/${R.length} đã chốt hoặc đã QT` : `${R.filter(({ t }) => t.chot).length}/${R.length} đã chốt TĐ${sel}`}</small></td><td class="num">${dl(TS.dt, T.tdv[sel - 1], 'dt', true)}${bTy(TS.dt)}</td><td class="num">${dl(TS.cp, T.tdv[sel - 1], 'cp', false)}${bTy(TS.cp)}</td>
           <td class="num">${ty(TS.ln)}</td><td></td><td class="num">${bpct(TS.ln, TS.dt)}</td></tr></tfoot>
       </table></div>
       <p class="muted small f-note">Mỗi thời điểm ưu tiên số đã chốt ở bảng TĐ của từng dự án. Chưa chốt: TĐ1 lấy HĐ gốc + thầu phụ / HĐ đầu vào gốc + chi phí khác; TĐ2 lấy HĐ + phụ lục; TĐ3 lấy giá trị quyết toán, dự án chưa quyết toán tạm tính bằng TĐ2 <b>(*)</b>. Tăng / giảm so với thời điểm trước: xanh = có lợi, đỏ = bất lợi (chi phí tăng là bất lợi). Xem sau VAT: số chốt nhập trước VAT được quy đổi theo tỷ lệ VAT của số hệ thống cùng thời điểm.</p>`;
@@ -744,7 +749,8 @@ function bTongHopHtml(list, v, P) {
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.hd_sv)}</td><td class="num">${bTy(x.chi_nay)}</td>
         <td class="num strong">${ty(x.hd_sv - x.chi_nay)}</td><td class="f-pct">${meter(x.chi_nay, x.hd_sv, BCOL.chi)}<b>${bpct(x.chi_nay, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.hd_sv), bTy(T.chi_nay), ty(T.hd_sv - T.chi_nay), bpct(T.chi_nay, T.hd_sv)])}
-    </table></div>`;
+    </table></div>
+    <p class="muted small f-note"><b>Quy tắc làm tròn:</b> doanh thu, chi phí từng dự án làm tròn 0,01 tỷ trước; lợi nhuận, chênh lệch và dòng tổng tính từ số đã làm tròn nên luôn cộng trừ khớp. Số đồng chính xác xem ở trang nhập liệu hoặc file Excel.</p>`;
 }
 
 // ---------------------------------------------------------------------
@@ -808,9 +814,9 @@ function bMuc4Html(list, v, no = 'A') {
   const card2 = (i) => { const x = tv(i), on = selTd === i + 1, gh = i === 2 && allGhost;
     return `<div class="jr-nd ${on ? 'on' : ''}" data-ivtd="${i + 1}" role="button" tabindex="0" aria-pressed="${on}" title="Bấm để chọn TĐ${i + 1}">
       <div class="jr-h"><b>TĐ${i + 1}</b><span>${TENTD[i]}</span></div><div class="jr-sub ${i === 2 && T.n_qt === rows.length ? 'ok' : ''}">${SUB[i]}</div>
-      <div class="jr-ln ${x.ln < 0 ? 'neg' : ''} ${gh ? 'iv-ghost' : ''}" title="${bn(x.ln)} đ">${bTy(x.ln)} <small>tỷ LN</small></div>
+      <div class="jr-ln ${x.ln < 0 ? 'neg' : ''} ${gh ? 'iv-ghost' : ''}">${bTy(x.ln)} <small>tỷ LN</small></div>
       <span class="jr-ts">Tỷ suất ${pctT(tsF(x.ln, x.dt))}</span>
-      <div class="jr-rw"><div><span>Doanh thu</span><b title="${bn(x.dt)} đ">${bTy(x.dt)}</b></div><div><span>Chi phí</span><b title="${bn(x.cp)} đ">${bTy(x.cp)}</b></div><div><span>CP / DT</span><b>${pctT(tsF(x.cp, x.dt))}</b></div></div>
+      <div class="jr-rw"><div><span>Doanh thu</span><b>${bTy(x.dt)}</b></div><div><span>Chi phí</span><b>${bTy(x.cp)}</b></div><div><span>CP / DT</span><b>${pctT(tsF(x.cp, x.dt))}</b></div></div>
       ${gop ? `<div class="jr-rw jr-gop"><div><span>LN gộp</span><b>${bTy(x.g)}</b></div><div><span>Tỷ suất LN gộp</span><b>${pctT(tsF(x.g, x.dt))}</b></div><div></div></div>` : ''}
     </div>`; };
   const chip = (lab, c, p, good, isPct) => { const d = c - p, z = isPct ? Math.abs(d) < 0.0005 : Math.abs(d) < 1000;
@@ -836,7 +842,7 @@ function bMuc4Html(list, v, no = 'A') {
   const splitTip = (k, label) => {
     const q = rows.filter((x) => x.qt), t = rows.filter((x) => !x.qt);
     const sq = q.reduce((a, x) => a + x[k], 0), st = t.reduce((a, x) => a + x[k], 0);
-    return ` title="${label}\nThực – đã quyết toán (${q.length} dự án): ${bTy(sq)} tỷ\nTạm tính theo TĐ2 – chưa QT (${t.length} dự án): ${bTy(st)} tỷ\nTổng: ${bn(sq + st)} đồng"`;
+    return ` title="${label}\nThực – đã quyết toán (${q.length} dự án): ${bTy(sq)} tỷ\nTạm tính theo TĐ2 – chưa QT (${t.length} dự án): ${bTy(st)} tỷ\nTổng: ${bTy(sq + st)} tỷ"`;
   };
   const tipCell = (k, label, val) => `<td class="num iv-tip"${splitTip(k, label)}>${val}</td>`;
   let det = '';

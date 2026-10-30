@@ -1797,3 +1797,4 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 
 /* Revi: nhãn nguồn số */
 .tdk-src { color: #b45309; font-weight: 700; }
+.tdk-bf i.lo { background: repeating-linear-gradient(45deg, #b4471c 0 4px, #d0643a 4px 8px); }
