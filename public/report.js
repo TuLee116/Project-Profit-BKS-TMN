@@ -612,16 +612,40 @@ function bTdBand(TV, sel, rows) {
   </div>`;
 }
 // Đối chiếu KẾ HOẠCH đã chốt (mục I-B) với THỰC TẾ hệ thống (mục I-A) tại 3 thời điểm – giải thích vì sao 2 phần khác số
-function bDoiChieu(list, v, TV) {
-  const A = bMuc4Data(list, v).T, TH = { 1: [A.t1, A.c1], 2: [A.t2, A.c2], 3: [A.t3, A.c3] };
+function bDoiChieu(list, v, TV, prj = []) {
+  const M4 = bMuc4Data(list, v), A = M4.T, TH = { 1: [A.t1, A.c1], 2: [A.t2, A.c2], 3: [A.t3, A.c3] };
+  // Bấm 1 số -> chi tiết theo dự án của chỉ tiêu / thời điểm đó (BST.dc = 'k|m')
+  const [sk, sm] = String(BST.dc || '').split('|'), selK = Number(sk), selM = ['dt', 'cp', 'ln'].includes(sm) ? sm : null;
+  const cl = (k, m, html) => `<button type="button" class="dc-lnk ${selK === k && selM === m ? 'on' : ''}" data-dc="${k}|${m}" title="Bấm để xem chi tiết theo dự án">${html}</button>`;
   const dl = (kh, tt, good) => { const d = tt - kh; if (Math.abs(d) < 1e6) return '<span class="dc-eq">khớp</span>';
     return `<span class="${(d > 0) === good ? 'dc-ok' : 'dc-bad'}">${d > 0 ? '+' : '−'}${bTy(Math.abs(d))}</span>`; };
   const n = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
   const rowsH = [1, 2, 3].map((k) => { const [dt, cp] = TH[k], kh = TV[k];
     return `<tr><td><span class="tdp-n">TĐ${k}</span> ${['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'][k - 1]}</td>
-      <td>${n(kh.dt)}</td><td>${n(dt)}</td><td>${dl(kh.dt, dt, true)}</td>
-      <td>${n(kh.cp)}</td><td>${n(cp)}</td><td>${dl(kh.cp, cp, false)}</td>
-      <td><b>${n(kh.ln)}</b></td><td><b>${n(dt - cp)}</b></td><td>${dl(kh.ln, dt - cp, true)}</td></tr>`; }).join('');
+      <td>${cl(k, 'dt', n(kh.dt))}</td><td>${cl(k, 'dt', n(dt))}</td><td>${cl(k, 'dt', dl(kh.dt, dt, true))}</td>
+      <td>${cl(k, 'cp', n(kh.cp))}</td><td>${cl(k, 'cp', n(cp))}</td><td>${cl(k, 'cp', dl(kh.cp, cp, false))}</td>
+      <td>${cl(k, 'ln', `<b>${n(kh.ln)}</b>`)}</td><td>${cl(k, 'ln', `<b>${n(dt - cp)}</b>`)}</td><td>${cl(k, 'ln', dl(kh.ln, dt - cp, true))}</td></tr>`; }).join('');
+  // Bảng chi tiết theo dự án
+  let det = '';
+  if (selK && selM) {
+    const TEN = { dt: 'Doanh thu', cp: 'Chi phí', ln: 'Lợi nhuận' }, good = selM !== 'cp';
+    const by4 = new Map(M4.rows.map((x) => [x.d.id, x]));
+    const R = prj.map((x) => { const a = by4.get(x.d.id), t = x.tdv[selK], td = (x.d.thoi_diem || []).find((q) => q.td === selK);
+      const th = a ? { dt: a[`t${selK}`], cp: a[`c${selK}`], ln: a[`l${selK}`] }[selM] : 0;
+      const src = td ? `Chốt TĐ${selK}${td.ngay ? ` ngày ${dmy(td.ngay)}` : ''}` : selK === 3 && t.qt ? 'Chưa chốt – lấy số quyết toán' : `Chưa chốt – lấy số thực tế${selK === 3 ? ' (TĐ2)' : ''}`;
+      return { d: x.d, kh: t[selM], th, src, chot: Boolean(td) }; });
+    const S = (k) => R.reduce((a, x) => a + x[k], 0);
+    const actualOf = { dt: 'dt', cp: 'cp', ln: 'ln' }[selM];
+    det = `<div class="dc-det"><div class="dc-dh"><b>${TEN[selM]} · TĐ${selK} – ${['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'][selK - 1]}</b> theo từng dự án
+        <button type="button" class="dc-x" data-dc="" title="Đóng">×</button></div>
+      <div class="table-wrap"><table class="dc-t no-mcard"><thead><tr><th>Mã DA</th><th>Tên dự án</th><th>Kế hoạch (B)</th><th>Nguồn số kế hoạch</th><th>Thực tế (A)</th><th>Chênh</th><th></th></tr></thead>
+        <tbody>${R.map((x) => `<tr><td><b>${esc(x.d.ma_du_an)}</b></td><td class="dc-nm" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td><td>${n(x.kh)}</td>
+          <td class="dc-src ${x.chot ? '' : 'tam'}">${x.src}</td><td>${n(x.th)}</td><td>${dl(x.kh, x.th, good)}</td>
+          <td><button type="button" class="td-btn" data-dcprj="${x.d.id}" title="Mở thẻ dự án: xem / sửa số chốt TĐ và dữ liệu">Thẻ dự án →</button></td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2">Tổng cộng (${R.length} dự án)</td><td>${n(S('kh'))}</td><td></td><td>${n(S('th'))}</td><td>${dl(S('kh'), S('th'), good)}</td><td></td></tr></tfoot></table></div>
+      <div class="dc-go"><span class="muted small">Số thực tế lấy từ:</span><button type="button" class="iv-ct" data-dcgo="${actualOf}|${selK}">Bảng chi tiết ${TEN[selM].toLowerCase()} – phần A ↑</button>
+        <span class="muted small">· Số kế hoạch: bảng Thời điểm trong thẻ từng dự án.</span></div></div>`;
+  }
   const same = [1, 2, 3].every((k) => Math.abs(TV[k].dt - TH[k][0]) < 1e6 && Math.abs(TV[k].cp - TH[k][1]) < 1e6);
   return `<details class="dc" ${same ? '' : 'open'}><summary><b>Đối chiếu kế hoạch đã chốt (B) với thực tế (A)</b> <span class="muted">${same ? '· khớp hoàn toàn' : '· vì sao số ở phần A và B khác nhau?'}</span></summary>
     <div class="dc-why">Hai phần dùng <b>hai nguồn khác nhau</b>, nên khác số là bình thường, <b>không phải số liệu sai</b>:
@@ -632,6 +656,8 @@ function bDoiChieu(list, v, TV) {
       <thead><tr><th rowspan="2">Thời điểm</th><th colspan="3">Doanh thu</th><th colspan="3">Chi phí</th><th colspan="3">Lợi nhuận</th></tr>
         <tr>${'<th>Kế hoạch</th><th>Thực tế</th><th>Chênh</th>'.repeat(3)}</tr></thead>
       <tbody>${rowsH}</tbody></table></div>
+    <p class="muted small dc-hint">👆 Bấm vào số bất kỳ để xem chi tiết theo từng dự án và nguồn của số đó.</p>
+    ${det}
     ${v === 'sv' ? '<p class="muted small f-note">Đang xem sau VAT: số kế hoạch chốt trước VAT được quy đổi ước tính và làm tròn 0,1 tỷ, nên có thể chênh thêm vài chục triệu. Đối chiếu chính xác nên xem <b>Trước VAT</b>.</p>' : ''}
   </details>`;
 }
@@ -669,7 +695,7 @@ function bTongHopHtml(list, v, P) {
         const tip = `${k === 'dt' ? 'Doanh thu' : 'Chi phí'} – so với TĐ${sel - 1}\nTĐ${sel - 1}: ${bTy(pt[k])} tỷ\nTĐ${sel}: ${bTy(cur)} tỷ\n${d > 0 ? 'Tăng' : 'Giảm'}: ${bTy(Math.abs(d))} tỷ${pt[k] ? ` (${bpct(Math.abs(d), pt[k])})` : ''}`;
         return `<span class="th-dl ${(d > 0) === good ? 'ok' : 'bad'}" data-tdtip="d" data-tip="${esc(tip)}" aria-label="${esc(tip.replace(/\n/g, ' · '))}">${d > 0 ? '▲' : '▼'}</span>`; };
       const star = (t) => (sel === 3 ? (t.tam ? '<sup class="th-tt" title="Chưa quyết toán: tạm tính theo TĐ2">*</sup>' : '') : !t.chot ? `<sup class="th-tt" title="Chưa chốt TĐ${sel}: lấy theo số hệ thống">*</sup>` : '');
-      return `${bTdBand(T.tdv, sel, rows)}${bDoiChieu(list, v, T.tdv)}
+      return `${bTdBand(T.tdv, sel, rows)}${bDoiChieu(list, v, T.tdv, rows)}
       <div class="tdp-cap">Chi tiết theo dự án · <b>TĐ${sel} – ${TEN[sel]}</b> <span class="muted">(bấm dòng TĐ1 / TĐ2 / TĐ3 ở bảng trên để đổi)</span></div>
       <div class="table-wrap"><table class="b-table th-table th-tdp">
         <thead><tr><th class="num th-stt">STT</th><th>Mã DA</th><th>Tên dự án</th><th>Tình trạng</th><th class="num">Doanh thu</th><th class="num">Chi phí</th><th class="num">Lợi nhuận</th><th class="num">% Hoàn thành</th><th class="num">Tỷ lệ LN</th></tr></thead>
@@ -2080,6 +2106,10 @@ $('#b-report').addEventListener('click', (e) => {
   if (e.target.id === 'f-set-target') return bTargetDialog();
   if (e.target.closest('[data-ivgop]')) { BST.iv_gop = !BST.iv_gop; return renderKeepPos('[data-ivgop]'); } // mục IV: mở / ẩn LN gộp
   { const t = e.target.closest('[data-ivtd]'); if (t) { BST.iv_td = Number(t.dataset.ivtd); return renderKeepPos(`[data-ivtd="${t.dataset.ivtd}"]`); } } // mục I-A: chọn thẻ TĐ
+  { const t = e.target.closest('[data-dc]'); if (t) { BST.dc = BST.dc === t.dataset.dc ? '' : t.dataset.dc; return renderKeepPos('.dc'); } } // đối chiếu: mở / đóng chi tiết theo dự án
+  { const t = e.target.closest('[data-dcprj]'); if (t) return openProjectReport(Number(t.dataset.dcprj)); }
+  { const t = e.target.closest('[data-dcgo]'); if (t) { const [m, k] = t.dataset.dcgo.split('|'); BST.iv_ct = m; BST.iv_td = Number(k); renderReport();
+    return requestAnimationFrame(() => ($('.iv-det') || $('.jr'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }
   const ivct = e.target.closest('[data-ivct]'); // mục IV: mở / ẩn bảng chi tiết của dòng DT / CP / LN
   if (ivct) { const k = ivct.dataset.ivct; BST.iv_ct = BST.iv_ct === k ? null : k; return renderKeepPos(`.iv-sum [data-ivct="${k}"]`); }
   const thtd = e.target.closest('[data-thtd]');
