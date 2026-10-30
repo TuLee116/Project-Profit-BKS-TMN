@@ -784,13 +784,15 @@ function bMuc4Data(list, v) {
     const chi = v === 'sv' || !cSv ? bR(chiSv) : Math.round((chiSv * (cGt / cSv)) / 1e8) * 1e8;
     const b1 = (cp.khac_b1 || { gt: 0, sv: 0 })[v]; // giá vốn = thầu phụ cùng mốc + chi phí trực tiếp khác (B1)
     const g1 = t1 - bR(cp.tp_goc[v] + b1), g2 = t2 - bR(cp.tp_ps[v] + b1), g3 = t3 - bR(cp.tp_qt[v] + b1);
-    return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3, g1, g2, g3, pl, cpl,
+    // Tách chi phí: HĐ đầu vào theo mốc (p1, p2, p3) + chi phí khác đã ghi nhận đến nay (k – như nhau ở 3 TĐ)
+    const k = bR(cp.khac[v]);
+    return { d, qt, t1, t2, t3, c1, c2, c3, l1: t1 - c1, l2: t2 - c2, l3: t3 - c3, g1, g2, g3, pl, cpl, k, p1: c1 - k, p2: c2 - k, p3: c3 - k,
       nhan, con: t3 - nhan, chi, con_chi: c3 - chi, thuc: nhan - chi, bh: d.bh_khac || 0, gc: d.ghi_chu_bh || '' };
   }).filter(Boolean);
   const keys = (f) => [...new Set(rows.flatMap((x) => Object.keys(x[f])))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
   const pls = keys('pl'), cpls = keys('cpl');
   const S = (k) => rows.reduce((a, x) => a + x[k], 0);
-  const T = Object.fromEntries(['t1', 't2', 't3', 'c1', 'c2', 'c3', 'l1', 'l2', 'l3', 'g1', 'g2', 'g3', 'nhan', 'con', 'chi', 'con_chi', 'thuc', 'bh'].map((k) => [k, S(k)]));
+  const T = Object.fromEntries(['t1', 't2', 't3', 'c1', 'c2', 'c3', 'l1', 'l2', 'l3', 'g1', 'g2', 'g3', 'k', 'p1', 'p2', 'p3', 'nhan', 'con', 'chi', 'con_chi', 'thuc', 'bh'].map((k) => [k, S(k)]));
   T.pl = Object.fromEntries(pls.map((k) => [k, rows.reduce((a, x) => a + (x.pl[k] || 0), 0)]));
   T.cpl = Object.fromEntries(cpls.map((k) => [k, rows.reduce((a, x) => a + (x.cpl[k] || 0), 0)]));
   T.n_qt = rows.filter((x) => x.qt).length;
@@ -809,14 +811,15 @@ function bMuc4Html(list, v, no = 'A') {
   const qtNote = T.n_qt === rows.length ? '✓ Tất cả dự án đã quyết toán' : `${T.n_qt}/${rows.length} dự án đã quyết toán · dự án chưa QT lấy bằng TĐ2`;
   // Mẫu "Hành trình": 3 thẻ TĐ1 → TĐ2 → TĐ3, mũi tên nối ghi mức tăng / giảm; bấm thẻ nào thì thẻ đó sáng lên
   const selTd = [1, 2, 3].includes(BST.iv_td) ? BST.iv_td : 3;
-  const TENTD = ['Hợp đồng', 'Điều chỉnh', 'Quyết toán'], SUB = ['HĐ gốc ký với CĐT', 'HĐ + phụ lục tăng / giảm', qtNote];
-  const tv = (i) => ({ dt: tDt[i], cp: [T.c1, T.c2, T.c3][i], ln: [T.l1, T.l2, T.l3][i], g: [T.g1, T.g2, T.g3][i] });
+  const TENTD = ['Theo HĐ gốc', 'Theo HĐ + phụ lục', 'Theo quyết toán'], SUB = ['Hợp đồng gốc ký với CĐT và HĐ đầu vào gốc', 'Sau các phụ lục tăng / giảm', qtNote];
+  const tv = (i) => ({ dt: tDt[i], cp: [T.c1, T.c2, T.c3][i], ln: [T.l1, T.l2, T.l3][i], g: [T.g1, T.g2, T.g3][i], p: [T.p1, T.p2, T.p3][i] });
   const card2 = (i) => { const x = tv(i), on = selTd === i + 1, gh = i === 2 && allGhost;
     return `<div class="jr-nd ${on ? 'on' : ''}" data-ivtd="${i + 1}" role="button" tabindex="0" aria-pressed="${on}" title="Bấm để chọn TĐ${i + 1}">
       <div class="jr-h"><b>TĐ${i + 1}</b><span>${TENTD[i]}</span></div><div class="jr-sub ${i === 2 && T.n_qt === rows.length ? 'ok' : ''}">${SUB[i]}</div>
       <div class="jr-ln ${x.ln < 0 ? 'neg' : ''} ${gh ? 'iv-ghost' : ''}">${bTy(x.ln)} <small>tỷ LN</small></div>
       <span class="jr-ts">Tỷ suất ${pctT(tsF(x.ln, x.dt))}</span>
       <div class="jr-rw"><div><span>Doanh thu</span><b>${bTy(x.dt)}</b></div><div><span>Chi phí</span><b>${bTy(x.cp)}</b></div><div><span>CP / DT</span><b>${pctT(tsF(x.cp, x.dt))}</b></div></div>
+      <div class="jr-cp"><span>= HĐ đầu vào <b>${bTy(x.p)}</b></span><span>+ CP khác đến nay <b>${bTy(T.k)}</b></span></div>
       ${gop ? `<div class="jr-rw jr-gop"><div><span>LN gộp</span><b>${bTy(x.g)}</b></div><div><span>Tỷ suất LN gộp</span><b>${pctT(tsF(x.g, x.dt))}</b></div><div></div></div>` : ''}
     </div>`; };
   const chip = (lab, c, p, good, isPct) => { const d = c - p, z = isPct ? Math.abs(d) < 0.0005 : Math.abs(d) < 1000;
@@ -827,6 +830,7 @@ function bMuc4Html(list, v, no = 'A') {
     return `<div class="jr-ar" aria-hidden="true">${chip('DT', a1.dt, a0.dt, true)}<div class="jr-line"></div>${chip('CP', a1.cp, a0.cp, false)}${chip('LN', a1.ln, a0.ln, true)}</div>`; };
   const btn = (key, label) => `<button type="button" class="iv-ct no-print jr-b-${key} ${ct === key ? 'on' : ''}" data-ivct="${key}" aria-expanded="${ct === key}">${ct === key ? '▴' : '▾'} ${label}</button>`;
   const sum = `<div class="jr">${card2(0)}${arrow(1)}${card2(1)}${arrow(2)}${card2(2)}</div>
+    <p class="muted small jr-note">Chi phí mỗi thẻ = <b>HĐ đầu vào</b> theo mốc (HĐ gốc → + phụ lục → quyết toán) + <b>chi phí khác đã ghi nhận đến nay</b> (giống nhau ở 3 thẻ). Mũi tên chỉ phản ánh thay đổi do phụ lục / quyết toán hợp đồng. Dự toán lúc ký xem phần B – Kế hoạch đã chốt.</p>
     <div class="jr-bar no-print"><span class="muted small">Xem chi tiết theo dự án:</span>${btn('dt', 'Doanh thu')}${btn('cp', 'Chi phí')}${btn('ln', 'Lợi nhuận')}
       <button type="button" class="iv-gop ${gop ? 'on' : ''}" data-ivgop aria-expanded="${gop}" title="${gop ? 'Ẩn' : 'Xem'} lợi nhuận gộp">${gop ? '−' : '+'}</button><span class="muted small">LN gộp</span></div>`;
 

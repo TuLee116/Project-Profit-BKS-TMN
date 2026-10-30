@@ -1798,3 +1798,6 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 /* Revi: nhãn nguồn số */
 .tdk-src { color: #b45309; font-weight: 700; }
 .tdk-bf i.lo { background: repeating-linear-gradient(45deg, #b4471c 0 4px, #d0643a 4px 8px); }
+.jr-cp { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 11px; opacity: .75; }
+.jr-cp b { font-weight: 600; }
+.jr-note { margin: 8px 2px 0; }
