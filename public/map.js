@@ -79,8 +79,19 @@ async function bMapInit(list, v) {
     L.marker([x.d.vi_do, x.d.kinh_do], { interactive: false, keyboard: false,
       icon: L.divIcon({ className: 'map-lbl-w', html: `<span class="map-lbl">${esc(x.d.ma_du_an)}</span>`, iconSize: null, iconAnchor: [-14, 10] }) }).addTo(m);
   }
-  if (R.length === 1) m.setView([R[0].d.vi_do, R[0].d.kinh_do], 14);
-  else m.fitBounds(R.map((x) => [x.d.vi_do, x.d.kinh_do]), { padding: [60, 60], maxZoom: 15 });
+  // Canh vùng nhìn: 1 dự án -> mức quận/phường (13); nhiều dự án -> vừa đủ tất cả, chừa lề cho vòng tròn và nhãn, tối đa mức 14.
+  // Canh lại khi khung đổi kích thước (trang vừa vẽ xong, đổi cỡ cửa sổ) cho đến khi người dùng tự kéo / phóng to.
+  const pts = R.map((x) => [x.d.vi_do, x.d.kinh_do]), rMax = 9 + 22;
+  let tuChinh = false, dangCanh = false;
+  const fit = () => { if (tuChinh || !document.body.contains(el)) return; dangCanh = true;
+    m.invalidateSize({ pan: false });
+    if (pts.length === 1) m.setView(pts[0], 13, { animate: false });
+    else m.fitBounds(pts, { paddingTopLeft: [rMax + 10, rMax + 10], paddingBottomRight: [rMax + 90, rMax + 10], maxZoom: 14, animate: false });
+    dangCanh = false; };
+  fit();
+  requestAnimationFrame(fit); setTimeout(fit, 250);
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => fit()); ro.observe(el); m.on('unload', () => ro.disconnect()); }
+  m.on('dragstart zoomstart', () => { if (!dangCanh) tuChinh = true; }); // người dùng tự kéo / phóng to -> giữ nguyên vùng họ chọn
   m.on('focus click', () => m.scrollWheelZoom.enable()); // lăn chuột phóng to chỉ sau khi bấm vào bản đồ (tránh kẹt khi cuộn trang)
   m.on('blur mouseout', () => m.scrollWheelZoom.disable());
 }
