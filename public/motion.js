@@ -43,6 +43,9 @@ function bMotion(quiet) {
   box.classList.remove('mo-off');
   box.classList.toggle('mo-quiet', Boolean(quiet)); // vẽ lại do thao tác: không chạy hiệu ứng xuất hiện / mọc cột
   moIO?.disconnect();
+  // Khối nào đang chờ cuộn tới để hiện (mo-rv chưa mo-in) thì hiện ngay – không bao giờ để khối bị ẩn mãi
+  // (lỗi cũ: bấm nút phía trên trước khi cuộn xuống -> ngắt theo dõi cuộn -> mục II, III, bản đồ trắng trơn)
+  box.querySelectorAll('.mo-rv:not(.mo-in)').forEach((el) => el.classList.add('mo-in'));
   // Đếm số: chạy khi ô hiện trên màn hình (vẽ lại do thao tác: chạy ngay, từ giá trị cũ)
   const so = []; MO_SO.forEach((sel) => box.querySelectorAll(sel).forEach((el, i) => so.push([el, `${sel}#${i}`])));
   // Khối trượt vào + cột mọc khi cuộn tới
@@ -54,6 +57,8 @@ function bMotion(quiet) {
     moIO = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return;
       const el = e.target; moIO.unobserve(el); el.classList.add('mo-in'); if (map.has(el)) moDem(el, map.get(el), false); }), { threshold: 0.15 });
     so.forEach(([el]) => moIO.observe(el)); khoi.forEach((el) => moIO.observe(el));
+    clearTimeout(bMotion.t); // lưới an toàn: sau 4 giây khối nào chưa hiện thì hiện luôn
+    bMotion.t = setTimeout(() => box.querySelectorAll('.mo-rv:not(.mo-in)').forEach((el) => el.classList.add('mo-in')), 4000);
   }
 }
 
