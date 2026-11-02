@@ -2045,3 +2045,51 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 
 /* Trang Báo cáo tự giữ vị trí khi vẽ lại -> tắt cơ chế tự neo cuộn của trình duyệt (tránh chỉnh 2 lần gây giật trên điện thoại) */
 #b-report { overflow-anchor: none; }
+
+/* =====================================================================
+   Dashboard PDF – 1 trang A4 ngang (dash-pdf.js)
+   ===================================================================== */
+#dp-print { display: none; }
+@media print {
+  body.dp-on > *:not(#dp-print) { display: none !important; }
+  body.dp-on #dp-print { display: block !important; }
+  body.dp-on { background: #fff !important; }
+}
+@page dash { size: A4 landscape; margin: 8mm; }
+.dp { page: dash; width: 281mm; height: 192mm; overflow: hidden; box-sizing: border-box; font-family: Montserrat, Arial, sans-serif; font-size: 8.4pt; color: #2b2118;
+  font-variant-numeric: tabular-nums; -webkit-print-color-adjust: exact; print-color-adjust: exact; display: flex; flex-direction: column; gap: 2.4mm; }
+.dp .neg { color: #b4471c; }
+.dp-hd { display: flex; align-items: center; gap: 4mm; padding: 2.2mm 4mm; border-radius: 3mm; background: linear-gradient(120deg, #f6f1e9 0%, #fbf7f0 60%, #f3ece1 100%); border-left: 1.4mm solid #1f2a44; }
+.dp-hd img { width: 13mm; height: 13mm; object-fit: contain; background: #fff; border-radius: 2mm; padding: 1mm; }
+.dp-ht { flex: 1; min-width: 0; } .dp-co { font-size: 7.4pt; font-weight: 700; letter-spacing: .4pt; color: #9a7a45; text-transform: uppercase; }
+.dp-ht h1 { margin: .4mm 0; font-size: 15pt; font-weight: 800; color: #1f2a44; letter-spacing: .3pt; } .dp-sc { font-size: 7.4pt; color: #6b5d4f; }
+.dp-dt { text-align: right; } .dp-dt span { display: block; font-size: 7pt; color: #8a7b6b; } .dp-dt b { font-size: 10pt; color: #1f2a44; }
+.dp-ks6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2.5mm; }
+.dp-k { border: .3mm solid #e7ddcf; border-top: 1mm solid var(--c); border-radius: 2.2mm; padding: 1.6mm 2.6mm; background: #fffdf9; }
+.dp-kl { font-size: 6.8pt; font-weight: 700; letter-spacing: .3pt; text-transform: uppercase; color: #8a7b6b; }
+.dp-kv { font-size: 14pt; font-weight: 800; color: #1f2a44; margin: .3mm 0; } .dp-kv small { font-size: 7.5pt; font-weight: 500; color: #8a7b6b; margin-left: 1mm; }
+.dp-ks { font-size: 6.8pt; color: #6b5d4f; } .dp-ok { color: #0f7a4f; font-weight: 700; } .dp-bad { color: #b4471c; font-weight: 700; } .dp-eq { color: #8a7b6b; }
+.dp-r2 { display: grid; grid-template-columns: 1.45fr 1fr 1fr; gap: 2.5mm; }
+.dp-c { border: .3mm solid #e7ddcf; border-radius: 2.2mm; padding: 2.2mm 2.8mm; background: #fff; min-width: 0; }
+.dp-ct { display: flex; align-items: center; gap: 2mm; font-size: 8pt; font-weight: 800; color: #1f2a44; padding-bottom: 1.2mm; margin-bottom: 1.5mm; border-bottom: .3mm solid #ece4d8; }
+.dp-ct2 { margin-top: 2mm; } .dp-lg { margin-left: auto; font-size: 6.8pt; font-weight: 600; color: #8a7b6b; } .dp-lg i { display: inline-block; width: 2.2mm; height: 2.2mm; border-radius: .5mm; margin: 0 .8mm 0 1.6mm; vertical-align: -.2mm; }
+.dp-mini { width: 100%; border-collapse: collapse; font-size: 7.2pt; margin-top: 1mm; } .dp-mini th, .dp-mini td { padding: .5mm 1mm; text-align: right; border: 0; background: none; color: #4a3c2f; white-space: nowrap; }
+.dp-mini th { font-size: 6.8pt; color: #8a7b6b; text-transform: none; letter-spacing: 0; } .dp-mini td:first-child { text-align: left; color: #8a7b6b; }
+.dp-dn { display: flex; align-items: center; gap: 3mm; } .dp-dn > div { flex: 1; }
+.dp-li { display: grid; grid-template-columns: 3mm 1fr auto; align-items: center; column-gap: 1mm; margin: 1.5mm 0; font-size: 7.6pt; }
+.dp-li i { width: 2.4mm; height: 2.4mm; border-radius: 50%; } .dp-li b { font-size: 9pt; color: #1f2a44; } .dp-li small { grid-column: 2 / -1; color: #8a7b6b; font-size: 6.8pt; }
+.dp-hb { display: grid; grid-template-columns: 19mm 1fr 12mm 10mm; align-items: center; gap: 1.5mm; font-size: 7.2pt; margin: .8mm 0; }
+.dp-hn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dp-tr { height: 2mm; background: #efe7db; border-radius: 1mm; overflow: hidden; } .dp-tr i { display: block; height: 100%; border-radius: 1mm; }
+.dp-hb b { text-align: right; } .dp-hb em { font-style: normal; text-align: right; color: #8a7b6b; font-size: 6.6pt; }
+.dp-note { font-size: 6.6pt; color: #8a7b6b; margin-top: .6mm; }
+.dp-tb { width: 100%; border-collapse: collapse; font-size: 7.2pt; }
+.dp-tb th { background: #1f2a44 !important; color: #fff; font-size: 6.6pt; font-weight: 700; letter-spacing: .3pt; text-transform: uppercase; padding: 1mm 1.6mm; text-align: right; white-space: nowrap; border: 0; }
+.dp-tb td { padding: .6mm 1.6mm; text-align: right; border: 0; border-bottom: .2mm solid #ece4d8; white-space: nowrap; background: #fff; }
+.dp-tb th:nth-child(-n+4), .dp-tb td:nth-child(-n+4) { text-align: left; } .dp-tb td:first-child, .dp-tb th:first-child { text-align: center; width: 6mm; color: #8a7b6b; }
+.dp-tb .dp-nm { max-width: 62mm; overflow: hidden; text-overflow: ellipsis; } .dp-tb tbody tr:nth-child(even) td { background: #fbf8f3; }
+.dp-tb tfoot td { font-weight: 800; color: #1f2a44; background: #f3ece1 !important; border-top: .5mm solid #1f2a44; border-bottom: 0; }
+.dp-rest td { color: #8a7b6b; font-style: italic; }
+.dp-ft { margin-top: auto; display: grid; grid-template-columns: 1fr 115mm; gap: 4mm; align-items: end; }
+.dp-fn { font-size: 6.4pt; color: #8a7b6b; line-height: 1.45; border-top: .3mm solid #ece4d8; padding-top: 1.2mm; }
+.dp-sg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; text-align: center; } .dp-sg div { height: 11mm; border-bottom: .3mm dotted #b9ab97; position: relative; }
+.dp-sg span { position: absolute; top: 0; left: 0; right: 0; font-size: 7pt; font-weight: 700; color: #1f2a44; }

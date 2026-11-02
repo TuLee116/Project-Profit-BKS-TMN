@@ -24,7 +24,9 @@ const mapTsCol = (ts) => (ts >= 0.15 ? '#0f7a4f' : ts >= 0.1 ? '#c9a227' : '#b44
 // Khu vực để gộp: lấy phần trước dấu phẩy, bỏ "quận / huyện / phường / Q. / P.", viết hoa chữ đầu mỗi từ
 // -> "Cẩm Lệ, Đà Nẵng", "Q. Cẩm Lệ", "quận cẩm lệ" đều thành "Cẩm Lệ"
 function mapKv(s) {
-  const t = String(s || '').split(',')[0].trim().replace(/^(quận|huyện|phường|xã|thị xã|thành phố|tp\.?|q\.|p\.)\s*/i, '').trim();
+  const goc = String(s || '').split(',')[0].trim();
+  let t = goc.replace(/^(quận|huyện|phường|xã|thị xã|thành phố|tp\.?|q\.|p\.)\s*/i, '').trim();
+  if (/^\d+$/.test(t)) t = (/^(phường|p\.)/i.test(goc) ? 'Phường ' : 'Quận ') + t; // "Quận 7", "Phường 3": giữ chữ đứng trước số
   if (!t) return 'Chưa ghi khu vực';
   return t.toLocaleLowerCase('vi').replace(/(^|\s)(\p{L})/gu, (m, a, c) => a + c.toLocaleUpperCase('vi'));
 }
