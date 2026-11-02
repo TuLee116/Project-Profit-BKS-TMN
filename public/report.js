@@ -6,7 +6,8 @@ let BC = null;                                  // dữ liệu báo cáo
 const BST = { project: '', vat: 'gt', ky: 'nam', tu: '', den: '', chi_tiet: false }; // phạm vi, cơ sở VAT, kỳ báo cáo
 try { Object.assign(BST, JSON.parse(localStorage.getItem('bao_cao') || '{}')); } catch {}
 BST.chi_tiet = false; // phần Phân tích chi tiết luôn ẩn khi mở báo cáo; chỉ mở khi người dùng bấm xem
-const bSave = () => { try { localStorage.setItem('bao_cao', JSON.stringify({ ...BST, chi_tiet: false })); } catch {} };
+BST.dc_open = false; BST.dc = ''; // khung Đối chiếu kế hoạch – thực tế luôn thu gọn khi mở báo cáo
+const bSave = () => { try { localStorage.setItem('bao_cao', JSON.stringify({ ...BST, chi_tiet: false, dc_open: false, dc: '' })); } catch {} };
 
 // Bảng màu doanh nghiệp (đã kiểm tra phân biệt màu cho người mù màu): Doanh thu navy · Chi phí đồng · Lợi nhuận teal
 const BCOL = { dt: '#3462a3', cp: '#b07338', dk: '#2a9d8f', th: '#3462a3', thu: '#3462a3', chi: '#b07338', ts: '#8a6a3f' }; // tông cafe (đã kiểm tra mù màu)
@@ -20,6 +21,7 @@ const MUC = { cao: 'Cao', tb: 'Trung bình', thap: 'Thấp' };
 async function loadReport() {
   $('#b-report').innerHTML = '<div class="card muted">Đang tổng hợp số liệu...</div>';
   BC = await api('/api/bao-cao');
+  BST.dc_open = false; BST.dc = ''; // mỗi lần mở / tải lại báo cáo: khung Đối chiếu thu gọn
   renderReport();
 }
 
