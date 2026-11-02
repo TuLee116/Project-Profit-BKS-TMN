@@ -1806,7 +1806,7 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .cf { --cf-bg: #f6f1e9; --cf-card: #fffdf9; --cf-bd: #e7ddcf; --cf-ink: #2b2118; --cf-mut: #8a7b6b; --cf-soft: #efe7db;
   background: var(--cf-bg); border: 1px solid var(--cf-bd); border-radius: 16px; padding: 18px; margin: 0 0 14px; color: var(--cf-ink); font-variant-numeric: tabular-nums; }
 .cf-hd { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.cf-h1 { font-family: Georgia, "Times New Roman", serif; font-size: 19px; font-weight: 600; }
+.cf-h1 { font-size: 18px; font-weight: 800; letter-spacing: .2px; color: #1f2a44; }
 .cf-sub { font-size: 11.5px; color: var(--cf-mut); margin-top: 2px; }
 .cf-seg { margin-left: auto; display: flex; gap: 6px; flex: none; }
 .cf-seg button { border: 1px solid var(--cf-bd); background: var(--cf-card); color: var(--cf-ink); border-radius: 18px; padding: 5px 14px; font-size: 12px; font-weight: 600; box-shadow: none; cursor: pointer; }
@@ -1822,8 +1822,8 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 .cf-r2 { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
 .cf-r3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
 .cf-c { background: var(--cf-card); border: 1px solid var(--cf-bd); border-radius: 12px; padding: 12px 14px; min-width: 0; }
-.cf-ct { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-family: Georgia, "Times New Roman", serif; font-size: 14.5px; font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid var(--cf-bd); margin-bottom: 10px; }
-.cf-lg { margin-left: auto; display: flex; gap: 10px; font-family: Montserrat, Arial, sans-serif; font-size: 11px; font-weight: 500; color: var(--cf-mut); }
+.cf-ct { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13.5px; font-weight: 700; color: #1f2a44; padding-bottom: 8px; border-bottom: 1px solid var(--cf-bd); margin-bottom: 10px; }
+.cf-lg { margin-left: auto; display: flex; gap: 10px; font-size: 11px; font-weight: 500; color: var(--cf-mut); }
 .cf-lg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; } .cf-lg i.dot { border-radius: 50%; }
 .cf-chart { overflow: hidden; } .cf-svg { display: block; max-width: 100%; height: auto; }
 .cf-grid { stroke: var(--cf-soft); } .cf-ax { font-size: 10px; fill: var(--cf-mut); }
