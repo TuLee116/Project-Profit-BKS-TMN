@@ -479,146 +479,100 @@ const KX_IC = {
   cp: KX_SVG('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   ln: KX_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/>'),
 };
-// Cầu lợi nhuận: LN lúc ký → ± doanh thu / chi phí phát sinh (TĐ1→TĐ2) → LN TĐ2 → ± khi quyết toán (TĐ2→TĐ3) → LN quyết toán
-// Cột xanh = làm tăng LN, đỏ = làm giảm LN, xám đậm = LN tại mốc; cùng một thang từ 0 (không phóng đại)
-// Biểu đồ cột nhóm: mỗi thời điểm 3 cột Doanh thu – Chi phí – Lợi nhuận (cùng thang từ 0); thời điểm đang chọn đậm, các TĐ khác nhạt
-function bTdCols(TV, sel) {
-  const TEN = ['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'];
-  const K = [['dt', 'Doanh thu', '#2c5fa3'], ['cp', 'Chi phí', '#c27a3e'], ['ln', 'Lợi nhuận', '#16968a']];
-  const rep = document.querySelector('#b-report')?.clientWidth || 1180;
-  const W = Math.round(Math.min(820, Math.max(320, rep > 1100 ? rep - 470 : rep - 40)));
-  const small = W < 560, H = small ? 220 : 250, L = small ? 34 : 44, R = W - 6, T = 22, B = H - (small ? 30 : 34);
-  const vals = [1, 2, 3].flatMap((n) => K.map(([k]) => TV[n][k])), mx = Math.max(0, ...vals), mn = Math.min(0, ...vals);
-  const raw = Math.max(mx - mn, 1e9) / 4, mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((x) => x >= raw);
-  const lo = Math.floor(mn / step) * step, hi = Math.ceil((mx * 1.08) / step) * step;
-  const Y = (v) => B - ((v - lo) / ((hi - lo) || 1)) * (B - T);
-  const ticks = []; for (let v = lo; v <= hi + 1; v += step) ticks.push(v);
-  const gw = (R - L) / 3, bw = Math.min(small ? 20 : 40, (gw * 0.7) / 3), gap = small ? 3 : 8, fs = small ? 9.5 : 10.5;
-  const tip = (n) => `TĐ${n} – ${TEN[n - 1]}\nDoanh thu: ${bTy(TV[n].dt)} tỷ\nChi phí: ${bTy(TV[n].cp)} tỷ (${bpct(TV[n].cp, TV[n].dt)})\nLợi nhuận: ${bTy(TV[n].ln)} tỷ (${bpct(TV[n].ln, TV[n].dt)})`;
-  const groups = [1, 2, 3].map((n) => {
-    const cx = L + gw * (n - 0.5), on = n === sel, x0 = cx - (3 * bw + 2 * gap) / 2;
-    const bars = K.map(([k, , col], j) => { const v = TV[n][k], x = x0 + j * (bw + gap), y = Y(Math.max(v, 0)), h = Math.max(2, Math.abs(Y(v) - Y(0)));
-      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${v < 0 ? '#d92d35' : col}" opacity="${on ? 1 : 0.5}"/>
-        ${on && !small ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 6).toFixed(1)}" text-anchor="middle" font-size="${fs}" class="tc-v on">${bTy(v)}</text>` : ''}`; }).join('');
-    return `<rect x="${(L + gw * (n - 1) + 4).toFixed(1)}" y="2" width="${(gw - 8).toFixed(1)}" height="${(B - 2).toFixed(1)}" rx="10" class="tc-sel ${on ? 'on' : ''}"/>${bars}
-      <text x="${cx.toFixed(1)}" y="${B + (small ? 18 : 21)}" text-anchor="middle" font-size="${fs + 0.5}" class="tc-x ${on ? 'on' : ''}"><tspan font-weight="700">TĐ${n}</tspan>${small ? '' : ` · ${TEN[n - 1]}`}</text>
-      <rect x="${(L + gw * (n - 1)).toFixed(1)}" y="0" width="${gw.toFixed(1)}" height="${H}" fill="transparent" class="tc-hit" data-tip="${esc(tip(n))}" data-tdtip="c" data-thtd="${n}"/>`;
-  }).join('');
-  // Câu kết luận: lợi nhuận quyết toán so với lúc ký và nguyên nhân
-  const a = TV[1], c = TV[3], dLn = c.ln - a.ln, dDt = c.dt - a.dt, dCp = c.cp - a.cp, t2 = (x) => `${bTy(Math.abs(x))} tỷ`;
-  const ket = Math.abs(dLn) < 5e6 ? 'Lợi nhuận quyết toán <b>bằng</b> lúc ký' : `Lợi nhuận quyết toán ${dLn > 0 ? '<b class="tdk-up">tăng' : '<b class="tdk-dn">giảm'} ${t2(dLn)}</b> so với lúc ký`;
-  const ly = [Math.abs(dDt) >= 5e6 ? `doanh thu ${dDt > 0 ? 'tăng' : 'giảm'} ${t2(dDt)}` : '', Math.abs(dCp) >= 5e6 ? `chi phí ${dCp > 0 ? 'tăng' : 'giảm'} ${t2(dCp)}` : ''].filter(Boolean).join(', ');
-  return `<div class="tc-box"><div class="lb-h"><b>Doanh thu – Chi phí theo thời điểm</b><span class="tc-lg">${K.map(([, lab, col]) => `<span><i style="background:${col}"></i>${lab}</span>`).join('')}</span></div>
-    <svg class="lb-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Biểu đồ cột doanh thu, chi phí, lợi nhuận theo TĐ1, TĐ2, TĐ3">
-      ${ticks.map((v) => `<line x1="${L}" x2="${R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="tc-grid ${v === 0 ? 'z' : ''}"/><text x="${L - 7}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end" class="tc-ax">${(v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</text>`).join('')}
-      ${groups}</svg>
-    <p class="lb-k">${ket}${ly ? `: ${ly}.` : '.'} Tỷ suất ${bpct(a.ln, a.dt)} → ${bpct(c.ln, c.dt)}.</p></div>`;
-}
-function bLnBridge(TV) {
-  const [a, b, c] = [TV[1], TV[2], TV[3]];
-  const st = [
-    { k: 'tot', lb: 'LN lúc ký', sub: 'TĐ1', v: a.ln },
-    { k: 'd', lb: (b.dt - a.dt) >= 0 ? 'DT tăng' : 'DT giảm', sub: 'TĐ1→TĐ2', v: b.dt - a.dt, why: 'Doanh thu thay đổi do phụ lục / điều chỉnh' },
-    { k: 'd', lb: (b.cp - a.cp) >= 0 ? 'CP tăng' : 'CP giảm', sub: 'TĐ1→TĐ2', v: -(b.cp - a.cp), why: 'Chi phí thay đổi do phụ lục / điều chỉnh (chi phí tăng làm giảm LN)' },
-    { k: 'tot', lb: 'LN điều chỉnh', sub: 'TĐ2', v: b.ln },
-    { k: 'd', lb: (c.dt - b.dt) >= 0 ? 'DT tăng' : 'DT giảm', sub: 'khi QT', v: c.dt - b.dt, why: 'Doanh thu chênh khi quyết toán với CĐT' },
-    { k: 'd', lb: (c.cp - b.cp) >= 0 ? 'CP tăng' : 'CP giảm', sub: 'khi QT', v: -(c.cp - b.cp), why: 'Chi phí chênh khi quyết toán (chi phí tăng làm giảm LN)' },
-    { k: 'tot', lb: 'LN quyết toán', sub: 'TĐ3', v: c.ln },
-  ];
-  // Vị trí từng cột (cột chênh lệch nối tiếp từ mức LN trước đó)
-  let run = 0;
-  for (const x of st) { if (x.k === 'tot') { x.y0 = 0; x.y1 = x.v; run = x.v; } else { x.y0 = run; x.y1 = run + x.v; run = x.y1; } }
-  const all = st.flatMap((x) => [x.y0, x.y1, 0]), mx = Math.max(...all), mn = Math.min(...all);
-  const rep = document.querySelector('#b-report')?.clientWidth || 1180;
-  const W = Math.round(Math.min(820, Math.max(320, rep > 1100 ? rep - 470 : rep - 40)));
-  const small = W < 560, H = small ? 222 : 244, T = 56, B = H - (small ? 26 : 30), Lp = 4, Rp = 4;
-  const Y = (v) => B - ((v - mn) / ((mx - mn) || 1)) * (B - T);
-  const slot = (W - Lp - Rp) / st.length, fs = small ? 10 : 11.5;
-  const bwT = Math.min(small ? 26 : 40, slot * 0.5), bwD = Math.min(small ? 20 : 30, slot * 0.4);
-  const cxOf = (i) => Lp + slot * (i + 0.5);
-  const tipOf = (x) => (x.k === 'tot' ? `${x.lb} (${x.sub})\nLợi nhuận: ${bTy(x.v)} tỷ` : `${x.lb} ${x.sub}\nTác động đến LN: ${x.v >= 0 ? '+' : '−'}${bTy(Math.abs(x.v))} tỷ\n${x.why}`);
-  // Dải nền theo giai đoạn: Điều chỉnh (cột 2–3) · Quyết toán (cột 5–6)
-  const phase = (i0, lab) => `<rect x="${(Lp + slot * i0 + 3).toFixed(1)}" y="2" width="${(slot * 2 - 6).toFixed(1)}" height="${(B - 2).toFixed(1)}" rx="10" class="lb-ph"/>
-    <text x="${(Lp + slot * (i0 + 1)).toFixed(1)}" y="17" text-anchor="middle" font-size="${small ? 9.5 : 10.5}" class="lb-pht">${lab}</text>`;
-  const bars = st.map((x, i) => {
-    const cx = cxOf(i), tot = x.k === 'tot', bw = tot ? bwT : bwD;
-    const top = Y(Math.max(x.y0, x.y1)), bot = Y(Math.min(x.y0, x.y1)), h = Math.max(3, bot - top), zero = Math.abs(x.v) < 5e6;
-    const cls = tot ? 'lb-tot' : zero ? 'lb-0' : x.v > 0 ? 'lb-up' : 'lb-dn';
-    const val = tot ? bTy(x.v) : zero ? '0' : `${x.v > 0 ? '+' : '−'}${bTy(Math.abs(x.v))}`;
-    const nx = i < st.length - 1 ? `<line x1="${(cx + bw / 2 + 2).toFixed(1)}" x2="${(cxOf(i + 1) - (st[i + 1].k === 'tot' ? bwT : bwD) / 2 - 2).toFixed(1)}" y1="${Y(x.y1).toFixed(1)}" y2="${Y(x.y1).toFixed(1)}" class="lb-link"/>` : '';
-    const lw = Math.max(small ? 34 : 44, String(val).length * (small ? 6.2 : 7.2) + 12), ly = top - (small ? 22 : 24);
-    const lab = tot ? `<text x="${cx.toFixed(1)}" y="${(top - 8).toFixed(1)}" text-anchor="middle" font-size="${fs + 1}" class="lb-vt">${val}</text>`
-      : `<rect x="${(cx - lw / 2).toFixed(1)}" y="${ly.toFixed(1)}" width="${lw.toFixed(1)}" height="${small ? 16 : 18}" rx="${small ? 8 : 9}" class="lb-chip ${cls}"/><text x="${cx.toFixed(1)}" y="${(ly + (small ? 11.5 : 12.8)).toFixed(1)}" text-anchor="middle" font-size="${fs - 0.5}" class="lb-vc ${cls}">${val}</text>`;
-    return `${nx}<rect x="${(cx - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${tot ? 7 : 5}" class="lb-b ${cls}"/>${lab}
-      <text x="${cx.toFixed(1)}" y="${B + (small ? 16 : 19)}" text-anchor="middle" font-size="${fs - 0.5}" class="lb-x ${tot ? 'lb-xt' : ''}">${tot ? (small ? `LN ${x.sub}` : `LN ${x.sub}`) : (x.lb.startsWith('DT') ? (small ? 'DT' : 'Doanh thu') : (small ? 'CP' : 'Chi phí'))}</text>
-      <rect x="${(Lp + slot * i).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H}" fill="transparent" data-tip="${esc(tipOf(x))}" data-tdtip="b"/>`;
-  }).join('');
-  const defs = `<defs>
-    <linearGradient id="lb-gt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a5d9c"/><stop offset="1" stop-color="#1f3a6e"/></linearGradient>
-    <linearGradient id="lb-gu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5cc9a0"/><stop offset="1" stop-color="#22a274"/></linearGradient>
-    <linearGradient id="lb-gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f09a76"/><stop offset="1" stop-color="#d9673f"/></linearGradient></defs>`;
-  // Câu kết luận: LN đổi bao nhiêu và yếu tố chính
-  const dLn = c.ln - a.ln, dDt = c.dt - a.dt, dCp = c.cp - a.cp;
-  const ty2 = (x) => `${bTy(Math.abs(x))} tỷ`;
-  const ket = Math.abs(dLn) < 5e6 ? `Lợi nhuận từ lúc ký đến quyết toán <b>không đổi</b>` : `Lợi nhuận ${dLn > 0 ? '<b class="tdk-up">tăng' : '<b class="tdk-dn">giảm'} ${ty2(dLn)}</b> từ lúc ký đến quyết toán`;
-  const ly = [Math.abs(dDt) >= 5e6 ? `doanh thu ${dDt > 0 ? 'tăng' : 'giảm'} ${ty2(dDt)}` : '', Math.abs(dCp) >= 5e6 ? `chi phí ${dCp > 0 ? 'tăng' : 'giảm'} ${ty2(dCp)}` : ''].filter(Boolean).join(', ');
-  return `<div class="lb-box"><div class="lb-h"><b>Vì sao lợi nhuận thay đổi?</b><span class="lb-lg"><i class="lb-up"></i>Làm tăng LN<i class="lb-dn"></i>Làm giảm LN<i class="lb-tot"></i>LN tại mốc</span></div>
-    <svg class="lb-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cầu lợi nhuận từ lúc ký đến quyết toán">${defs}
-      ${phase(1, small ? 'Điều chỉnh' : 'Điều chỉnh · TĐ1→TĐ2')}${phase(4, small ? 'Quyết toán' : 'Quyết toán · TĐ2→TĐ3')}
-      <line x1="0" x2="${W}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="lb-base"/>${bars}</svg>
-    <p class="lb-k">${ket}${ly ? `: ${ly}.` : '.'} Tỷ suất ${bpct(a.ln, a.dt)} → ${bpct(c.ln, c.dt)}.</p></div>`;
-}
-// Khối mục I (chia đôi): trái – lợi nhuận TĐ3 là số chính + so với lúc ký; phải – 3 biểu đồ mini DT / CP / LN + bảng 3 thời điểm
+// Mục I-B (kiểu dashboard, tông cafe): 4 thẻ chỉ tiêu + biểu đồ cột/đường 3 TĐ + vòng cơ cấu + 3 khối thanh ngang + bảng 3 thời điểm
+// Số theo thời điểm đang chọn (sel); so sánh với lúc ký (TĐ1). Màu: DT #3462a3 · CP #b07338 · LN #2a9d8f (đã kiểm tra mù màu trên nền kem)
+const CF = { dt: '#3462a3', cp: '#b07338', ln: '#2a9d8f', gold: '#c9a96a', ok: '#0f7a4f', bad: '#b4471c' };
 function bTdBand(TV, sel, rows) {
-  const TEN = ['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'];
-  const a = TV[1], z = TV[3], n0 = rows.length, nTam = rows.filter((r) => r.tdv?.[3]?.tam).length;
-  const pctS = (x, b) => (b ? `${x >= 0 ? '+' : '−'}${(Math.abs(x / b) * 100).toFixed(1).replace('.', ',')}%` : '');
-  const chg = (cur, prev, good, withPct = true) => { const d0 = cur - prev;
-    if (Math.abs(d0) < 5e6) return '<span class="tdk-eq">— không đổi</span>';
-    const up = d0 > 0;
-    return `<span class="${up === good ? 'tdk-up' : 'tdk-dn'}">${up ? '▲' : '▼'} ${bTy(Math.abs(d0))}${withPct ? ` (${pctS(d0, prev)})` : ''}</span>`; };
-  // Biểu đồ mini: đường mềm qua 3 thời điểm, tô nhạt bên dưới, điểm đang chọn đậm hơn
-  const spark = (k, col) => { const vs = [1, 2, 3].map((n) => TV[n][k]), mn = Math.min(...vs), mx = Math.max(...vs), W = 180, H = 54;
-    const span = mx - mn || Math.abs(mx) || 1, lo = mn - span * 0.25, hi = mx + span * 0.25;
-    const P = vs.map((v, i) => [10 + (i * (W - 20)) / 2, H - 8 - ((v - lo) / (hi - lo)) * (H - 18)]);
-    const d = P.reduce((s0, [x, y], i) => (i ? `${s0} C${((P[i - 1][0] + x) / 2).toFixed(1)},${P[i - 1][1].toFixed(1)} ${((P[i - 1][0] + x) / 2).toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}` : `M${x.toFixed(1)},${y.toFixed(1)}`), '');
-    return `<svg class="tdk-sp" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d} L${P[2][0]},${H} L${P[0][0]},${H} Z" fill="${col}" opacity=".1"/>
-      <path d="${d}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-      ${P.map(([x, y], i) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i === sel - 1 ? 4.2 : 3}" fill="${i === sel - 1 ? col : '#fff'}" stroke="${col}" stroke-width="2"/>`).join('')}</svg>`; };
-  const mini = (k, lab, col, good) => `<div class="tdk-mini"><div class="tdk-ml"><span><i class="tdp-sw" style="background:${col}"></i>${lab}</span>${chg(z[k], a[k], good, false)}</div>${spark(k, col)}
-    <div class="tdk-mx"><span>TĐ1</span><span>TĐ2</span><span>TĐ3</span></div></div>`;
+  const TEN = ['Ký hợp đồng', 'Điều chỉnh', 'Quyết toán'], TN = ['Ký HĐ', 'Điều chỉnh', 'Quyết toán'];
+  const a = TV[1], s = TV[sel], n0 = rows.length, nTam = rows.filter((r) => r.tdv?.[sel]?.tam).length;
+  const cmpK = sel === 1 ? 3 : sel, c = TV[cmpK]; // khối "thay đổi": TĐ đang chọn (TĐ1 thì lấy TĐ3) so với lúc ký
+  const pct = (x, b) => (b ? `${x >= 0 ? '+' : '−'}${Math.abs((x / b) * 100).toFixed(1).replace('.', ',')}%` : '');
+  const dlt = (cur, base, good, unit = '') => { const d = cur - base;
+    if (Math.abs(d) < (unit ? 0.0005 : 5e6)) return '<span class="cf-eq">— không đổi</span>';
+    return `<span class="${(d > 0) === good ? 'cf-ok' : 'cf-bad'}">${d > 0 ? '▲' : '▼'} ${unit ? `${Math.abs(d * 100).toFixed(1).replace('.', ',')} điểm` : bTy(Math.abs(d))}</span>`; };
+  const ts = (t) => (t.dt ? t.ln / t.dt : 0);
+  // Đường xu hướng nhỏ TĐ1 → TĐ3 trong thẻ
+  const spark = (vals, col) => { const mn = Math.min(...vals), mx = Math.max(...vals), sp = mx - mn || 1;
+    const P = vals.map((v, i) => [6 + i * 52, 25 - ((v - mn) / sp) * 17]);
+    return `<svg class="cf-sp" viewBox="0 0 116 30" aria-hidden="true"><polyline points="${P.map((q) => q.map((x) => x.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${col}" stroke-width="2"/>
+      ${P.map((q, i) => `<circle cx="${q[0]}" cy="${q[1].toFixed(1)}" r="${i === sel - 1 ? 3.6 : 2.5}" fill="${i === sel - 1 ? col : '#fffdf9'}" stroke="${col}" stroke-width="1.6"/>`).join('')}</svg>`; };
+  const V = (k) => [1, 2, 3].map((n) => TV[n][k]);
+  const so = sel === 1 ? '<span class="cf-mut">mốc lúc ký</span>' : '';
+  const tile = (lab, val, unit, d, sub, ic, vals, col) => `<div class="cf-t"><div class="cf-tl">${lab}</div><div class="cf-ic" style="color:${col}">${ic}</div>
+    <div class="cf-tv">${val} <small>${unit}</small></div><div class="cf-td">${sel === 1 ? so : `${d} <span class="cf-mut">${sub}</span>`}</div>${spark(vals, col)}</div>`;
+  const tiles = `<div class="cf-k">
+    ${tile(`Doanh thu · TĐ${sel}`, bTy(s.dt), 'tỷ', dlt(s.dt, a.dt, true), 'so với lúc ký', '₫', V('dt'), CF.dt)}
+    ${tile(`Chi phí · TĐ${sel}`, bTy(s.cp), 'tỷ', dlt(s.cp, a.cp, false), 'so với lúc ký', '◫', V('cp'), CF.cp)}
+    ${tile(`Lợi nhuận · TĐ${sel}`, `<span class="${s.ln < 0 ? 'neg' : ''}">${bTy(s.ln)}</span>`, 'tỷ', dlt(s.ln, a.ln, true), `${pct(s.ln - a.ln, Math.abs(a.ln))} so với lúc ký`, '◎', V('ln'), CF.ln)}
+    ${tile('Tỷ suất lợi nhuận', (ts(s) * 100).toFixed(1).replace('.', ','), '%', dlt(ts(s), ts(a), true, '%'), `lúc ký ${bpct(a.ln, a.dt)}`, '%', [1, 2, 3].map((n) => ts(TV[n])), CF.gold)}
+  </div>`;
+  // Biểu đồ cột DT, CP + đường LN (một trục, từ 0)
+  const rep = document.querySelector('#b-report')?.clientWidth || 1180;
+  const W = Math.round(rep > 1000 ? (rep - 90) * 0.63 : Math.max(300, rep - 60)), small = W < 560, H = small ? 210 : 236;
+  const L = small ? 30 : 40, R = W - 8, T = 24, B = H - (small ? 28 : 32);
+  const all = [1, 2, 3].flatMap((n) => [TV[n].dt, TV[n].cp, TV[n].ln]), mx = Math.max(0, ...all), mn = Math.min(0, ...all);
+  const raw = Math.max(mx - mn, 1e9) / 4, mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((x) => x >= raw);
+  const lo = Math.floor(mn / step) * step, hi = Math.ceil((mx * 1.1) / step) * step, Y = (v) => B - ((v - lo) / ((hi - lo) || 1)) * (B - T);
+  const ticks = []; for (let v = lo; v <= hi + 1; v += step) ticks.push(v);
+  const gw = (R - L) / 3, bw = Math.min(small ? 22 : 40, gw * 0.24), fs = small ? 9.5 : 11;
+  const X = [1, 2, 3].map((n) => L + gw * (n - 0.5));
+  const tip = (n) => `TĐ${n} – ${TEN[n - 1]}\nDoanh thu: ${bTy(TV[n].dt)} tỷ\nChi phí: ${bTy(TV[n].cp)} tỷ (${bpct(TV[n].cp, TV[n].dt)})\nLợi nhuận: ${bTy(TV[n].ln)} tỷ (${bpct(TV[n].ln, TV[n].dt)})`;
+  const bar = (x, v, col, on, lbl) => { const y = Y(Math.max(v, 0)), h = Math.max(2, Math.abs(Y(v) - Y(0)));
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${col}" opacity="${on ? 1 : 0.5}"/>${on || !small ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 6).toFixed(1)}" text-anchor="middle" font-size="${fs}" class="cf-bv ${on ? 'on' : ''}">${lbl}</text>` : ''}`; };
+  const svg = `<svg class="cf-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Doanh thu, chi phí, lợi nhuận qua 3 thời điểm">
+    ${ticks.map((v) => `<line x1="${L}" x2="${R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="cf-grid"/><text x="${L - 7}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end" class="cf-ax">${(v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</text>`).join('')}
+    ${[1, 2, 3].map((n, i) => { const on = n === sel;
+      return `${on ? `<rect x="${(L + gw * i + 4).toFixed(1)}" y="2" width="${(gw - 8).toFixed(1)}" height="${(B - 2).toFixed(1)}" rx="10" class="cf-sel"/>` : ''}
+        ${bar(X[i] - bw - 3, TV[n].dt, TV[n].dt < 0 ? CF.bad : CF.dt, on, bTy(TV[n].dt))}${bar(X[i] + 3, TV[n].cp, CF.cp, on, bTy(TV[n].cp))}
+        <text x="${X[i].toFixed(1)}" y="${B + (small ? 17 : 21)}" text-anchor="middle" font-size="${fs + 0.5}" class="cf-x ${on ? 'on' : ''}"><tspan font-weight="700">TĐ${n}</tspan>${small ? '' : ` · ${TN[i]}`}</text>`; }).join('')}
+    <polyline points="${X.map((x, i) => `${x.toFixed(1)},${Y(TV[i + 1].ln).toFixed(1)}`).join(' ')}" fill="none" stroke="${CF.ln}" stroke-width="2.5"/>
+    ${X.map((x, i) => `<circle cx="${x.toFixed(1)}" cy="${Y(TV[i + 1].ln).toFixed(1)}" r="${i === sel - 1 ? 6.5 : 5}" fill="${TV[i + 1].ln < 0 ? CF.bad : CF.ln}" stroke="#fffdf9" stroke-width="2"/>
+      <text x="${x.toFixed(1)}" y="${(Y(TV[i + 1].ln) - 11).toFixed(1)}" text-anchor="middle" font-size="${fs + 0.5}" class="cf-lv">${bTy(TV[i + 1].ln)}</text>`).join('')}
+    ${[1, 2, 3].map((n, i) => `<rect x="${(L + gw * i).toFixed(1)}" y="0" width="${gw.toFixed(1)}" height="${H}" fill="transparent" class="cf-hit" data-tip="${esc(tip(n))}" data-tdtip="c" data-thtd="${n}"/>`).join('')}</svg>`;
+  const dLn = c.ln - a.ln, dDt = c.dt - a.dt, dCp = c.cp - a.cp, t2 = (x) => `${bTy(Math.abs(x))} tỷ`;
+  const ket = `Lợi nhuận TĐ${cmpK} ${Math.abs(dLn) < 5e6 ? '<b>bằng</b> lúc ký' : `${dLn > 0 ? '<b class="cf-ok">tăng' : '<b class="cf-bad">giảm'} ${t2(dLn)}</b> so với lúc ký`}`
+    + `${[Math.abs(dDt) >= 5e6 ? `doanh thu ${dDt > 0 ? 'tăng' : 'giảm'} ${t2(dDt)}` : '', Math.abs(dCp) >= 5e6 ? `chi phí ${dCp > 0 ? 'tăng' : 'giảm'} ${t2(dCp)}` : ''].filter(Boolean).map((x, i) => (i ? ', ' : ': ') + x).join('')}. Tỷ suất ${bpct(a.ln, a.dt)} → ${bpct(c.ln, c.dt)}.`;
+  // Vòng cơ cấu doanh thu của TĐ đang chọn
+  const loss = s.ln < 0, lp = s.dt > 0 ? Math.max(0, Math.min(1, s.ln / s.dt)) : 0, r0 = 58, C0 = 2 * Math.PI * r0;
+  const donut = `<svg class="cf-dn" viewBox="0 0 160 160" role="img" aria-label="Cơ cấu doanh thu TĐ${sel}">
+    <circle cx="80" cy="80" r="${r0}" fill="none" stroke="${loss ? CF.bad : CF.cp}" stroke-width="20"/>
+    ${lp > 0 ? `<circle cx="80" cy="80" r="${r0}" fill="none" stroke="${CF.ln}" stroke-width="20" stroke-dasharray="${Math.max(0, C0 * lp - 2).toFixed(1)} ${C0.toFixed(1)}" transform="rotate(-90 80 80)"/>` : ''}
+    <text x="80" y="80" text-anchor="middle" class="cf-dv">${bTy(s.dt)}</text><text x="80" y="98" text-anchor="middle" class="cf-du">tỷ doanh thu</text></svg>`;
+  const lgi = (col, lab, val, p) => `<div class="cf-li"><span><i style="background:${col}"></i>${lab}<small>${val} tỷ</small></span><b>${p}</b></div>`;
+  // Khối thanh ngang
+  const hb = (L0, max) => L0.map(([n, v, col, e, t]) => `<div class="cf-hb" ${t ? `title="${esc(t)}"` : ''}><span class="cf-hn">${n}</span><span class="cf-tr"><i style="width:${max ? Math.min(100, (Math.abs(v) / max) * 100).toFixed(1) : 0}%;background:${col}"></i></span><b class="${v < 0 ? 'neg' : ''}">${e[0]}</b><em>${e[1]}</em></div>`).join('');
+  const prj = rows.map((r) => ({ d: r.d, t: r.tdv[sel] })).sort((x, y) => y.t.ln - x.t.ln), top = prj.slice(0, 8), pm = Math.max(...prj.map((x) => Math.abs(x.t.ln)), 1);
+  const star = (t) => (t.tam || (sel < 3 && !t.chot) ? '*' : '');
+  const p1 = hb(top.map((x) => [esc(x.d.ma_du_an), x.t.ln, x.t.ln < 0 ? CF.bad : CF.ln, [bTy(x.t.ln), bpct(x.t.ln, x.t.dt) + star(x.t)], x.d.ten_du_an]), pm)
+    + (prj.length > top.length ? `<div class="cf-note">… và ${prj.length - top.length} dự án khác</div>` : '');
+  const dm = Math.max(Math.abs(dDt), Math.abs(dCp), Math.abs(dLn), 1), dts = ts(c) - ts(a);
+  const sg = (d, good) => (Math.abs(d) < 5e6 ? '#cdbfae' : (d > 0) === good ? CF.ok : CF.bad);
+  const p2 = hb([
+    ['Doanh thu', dDt, sg(dDt, true), [`${dDt >= 0 ? '+' : '−'}${bTy(Math.abs(dDt))}`, pct(dDt, Math.abs(a.dt))]],
+    ['Chi phí', dCp, sg(dCp, false), [`${dCp >= 0 ? '+' : '−'}${bTy(Math.abs(dCp))}`, pct(dCp, Math.abs(a.cp))]],
+    ['Lợi nhuận', dLn, sg(dLn, true), [`${dLn >= 0 ? '+' : '−'}${bTy(Math.abs(dLn))}`, pct(dLn, Math.abs(a.ln))]],
+  ], dm) + `<div class="cf-hb"><span class="cf-hn">Tỷ suất</span><span class="cf-tr"><i style="width:${Math.min(100, Math.abs(dts) * 2000).toFixed(1)}%;background:${Math.abs(dts) < 0.0005 ? '#cdbfae' : dts > 0 ? CF.ok : CF.bad}"></i></span><b>${dts >= 0 ? '+' : '−'}${Math.abs(dts * 100).toFixed(1).replace('.', ',')}</b><em>điểm</em></div>`;
+  const p3 = hb([['Doanh thu', s.dt, CF.dt, [bTy(s.dt), '100%']], ['Chi phí', s.cp, CF.cp, [bTy(s.cp), bpct(s.cp, s.dt)]], ['Lợi nhuận', s.ln, s.ln < 0 ? CF.bad : CF.ln, [bTy(s.ln), bpct(s.ln, s.dt)]]], Math.max(s.dt, s.cp, 1));
   const row = (n) => { const t = TV[n];
-    return `<tr class="tdk-r ${sel === n ? 'on' : ''}" data-thtd="${n}" tabindex="0" role="button" aria-pressed="${sel === n}" title="Bấm để xem chi tiết theo dự án tại TĐ${n}">
-      <td><span class="tdp-n">TĐ${n}</span><span class="tdk-tn">${TEN[n - 1]}</span><small>${n === 3 ? `${t.qt}/${n0} đã QT` : `${t.chot}/${n0} đã chốt`}</small></td>
-      <td>${bTy(t.dt)}</td><td>${bTy(t.cp)}</td><td class="tdk-lnc ${t.ln < 0 ? 'neg' : ''}">${bTy(t.ln)}</td><td>${bpct(t.ln, t.dt)}</td></tr>`; };
-  return `<div class="tdk">
-    <div class="tdk-hero">
-      <div class="tdk-hl">Lợi nhuận quyết toán · <b class="tdk-src">kế hoạch đã chốt</b> <span>(TĐ3${nTam ? ` · ${nTam}/${n0} dự án chưa chốt TĐ3, chưa QT: tạm tính theo TĐ2` : ''})</span></div>
-      <div class="tdk-hv2"><b class="${z.ln < 0 ? 'neg' : ''}">${bTy(z.ln)}</b><small>tỷ</small><span class="tdk-pill">Tỷ suất ${bpct(z.ln, z.dt)}</span></div>
-      <div class="tdk-hc">${chg(z.ln, a.ln, true)} so với lúc ký</div>
-      ${(() => { // 2 thanh ngang: độ dài = doanh thu; chia chi phí (cam) + lợi nhuận (xanh ngọc) — so lúc ký với quyết toán
-        const mx = Math.max(a.dt, z.dt, a.cp, z.cp, 1);
-        // Lãi: thanh dài = doanh thu (chi phí + lợi nhuận). Lỗ: thanh dài = chi phí, phần vượt doanh thu tô đỏ sọc
-        const bar = (t, lab) => { const loss = t.ln < 0, base = loss ? t.cp : t.dt, w = Math.max(0, base) / mx * 100;
-          const lnP = base > 0 ? Math.abs(t.ln) / base * 100 : 0;
-          return `<div class="tdk-br"><div class="tdk-bl"><b>${lab}</b><span>DT ${bTy(t.dt)}</span></div>
-            <div class="tdk-bt"><div class="tdk-bf" style="width:${w.toFixed(1)}%">
-              <i class="cp" style="width:${(100 - lnP).toFixed(1)}%" title="Chi phí ${bTy(t.cp)} tỷ (${bpct(t.cp, t.dt)} doanh thu)"><em>${bTy(t.cp)}</em></i><i class="${loss ? 'lo' : 'ln'}" style="width:${lnP.toFixed(1)}%" title="${loss ? 'Lỗ' : 'Lợi nhuận'} ${bTy(Math.abs(t.ln))} tỷ (${bpct(t.ln, t.dt)})"></i>
-            </div><span class="tdk-bv ${loss ? 'neg' : ''}">${bTy(t.ln)} <small>${bpct(t.ln, t.dt)}</small></span></div></div>`; };
-        return `<div class="tdk-bars">${bar(a, 'Lúc ký · TĐ1')}${bar(z, 'Quyết toán · TĐ3')}
-          <div class="tdk-blg"><span><i style="background:${BCOL.chi}"></i>Chi phí</span><span><i style="background:${BCOL.dk}"></i>Lợi nhuận</span><span class="muted">độ dài thanh = doanh thu${[a, z].some((t) => t.ln < 0) ? ' · đỏ sọc = phần lỗ (chi phí vượt doanh thu)' : ''}</span></div></div>
-        <div class="tdk-hg2">
-          <div><span>Doanh thu</span>${chg(z.dt, a.dt, true, false)}</div>
-          <div><span>Chi phí</span>${chg(z.cp, a.cp, false, false)}</div>
-          <div><span>Lợi nhuận</span>${chg(z.ln, a.ln, true, false)}</div>
-        </div>`;
-      })()}
+    return `<tr class="cf-r ${sel === n ? 'on' : ''}" data-thtd="${n}" tabindex="0" role="button" aria-pressed="${sel === n}" title="Bấm để xem TĐ${n}">
+      <td><span class="cf-n">TĐ${n}</span>${TEN[n - 1]} <small>${n === 3 ? `${t.qt}/${n0} đã QT` : `${t.chot}/${n0} đã chốt`}</small></td>
+      <td>${bTy(t.dt)}</td><td>${bTy(t.cp)}</td><td><b class="${t.ln < 0 ? 'neg' : ''}">${bTy(t.ln)}</b></td><td>${bpct(t.ln, t.dt)}</td></tr>`; };
+  return `<div class="cf">
+    <div class="cf-hd"><div><div class="cf-h1">Kế hoạch đã chốt · TĐ${sel} – ${TEN[sel - 1]}</div>
+      <div class="cf-sub">${nTam ? `${nTam}/${n0} dự án chưa chốt${sel === 3 ? ' TĐ3, chưa QT: tạm tính theo TĐ2' : ` TĐ${sel}: lấy số thực tế`} (*) · ` : ''}tỷ đồng</div></div>
+      <div class="cf-seg" role="group" aria-label="Chọn thời điểm">${[1, 2, 3].map((n) => `<button type="button" class="${sel === n ? 'on' : ''}" data-thtd="${n}" aria-pressed="${sel === n}">TĐ${n}</button>`).join('')}</div></div>
+    ${tiles}
+    <div class="cf-r2"><div class="cf-c"><div class="cf-ct">Doanh thu, chi phí & lợi nhuận qua 3 thời điểm<span class="cf-lg"><span><i style="background:${CF.dt}"></i>Doanh thu</span><span><i style="background:${CF.cp}"></i>Chi phí</span><span><i class="dot" style="background:${CF.ln}"></i>Lợi nhuận</span></span></div>
+      <div class="cf-chart">${svg}</div><p class="cf-k1">${ket}</p></div>
+      <div class="cf-c"><div class="cf-ct">Cơ cấu doanh thu · TĐ${sel}</div><div class="cf-dw">${donut}<div class="cf-dl">
+        ${loss ? lgi(CF.bad, 'Chi phí (vượt doanh thu)', bTy(s.cp), bpct(s.cp, s.dt)) + lgi(CF.bad, 'Lỗ', bTy(s.ln), bpct(s.ln, s.dt)) : lgi(CF.cp, 'Chi phí', bTy(s.cp), bpct(s.cp, s.dt)) + lgi(CF.ln, 'Lợi nhuận', bTy(s.ln), bpct(s.ln, s.dt))}
+        <div class="cf-note">Lúc ký: lợi nhuận chiếm ${bpct(a.ln, a.dt)}</div></div></div></div></div>
+    <div class="cf-r3">
+      <div class="cf-c"><div class="cf-ct">Lợi nhuận theo dự án · TĐ${sel}</div>${p1}<div class="cf-note">Thanh = lợi nhuận · cột phải = tỷ suất${prj.some((x) => star(x.t)) ? ' · (*) chưa chốt / tạm tính' : ''}</div></div>
+      <div class="cf-c"><div class="cf-ct">TĐ${cmpK} so với lúc ký</div>${p2}<div class="cf-note">Xanh có lợi · đỏ bất lợi (chi phí tăng là bất lợi)</div></div>
+      <div class="cf-c"><div class="cf-ct">Từ doanh thu đến lợi nhuận · TĐ${sel}</div>${p3}<div class="cf-note">Mỗi 100 đồng doanh thu: ${s.dt ? ((s.cp / s.dt) * 100).toFixed(1).replace('.', ',') : '0'} đồng chi phí, ${s.dt ? ((s.ln / s.dt) * 100).toFixed(1).replace('.', ',') : '0'} đồng ${loss ? 'lỗ' : 'lãi'}</div></div>
     </div>
-    <div class="tdk-side">
-      ${bTdCols(TV, sel)}
-      <table class="tdk-t"><thead><tr><th>Thời điểm</th><th>Doanh thu</th><th>Chi phí</th><th>Lợi nhuận</th><th>Tỷ suất</th></tr></thead>
-        <tbody>${[1, 2, 3].map(row).join('')}</tbody></table>
-    </div>
+    <div class="table-wrap"><table class="cf-tb no-mcard"><thead><tr><th>Thời điểm</th><th>Doanh thu</th><th>Chi phí</th><th>Lợi nhuận</th><th>Tỷ suất</th></tr></thead><tbody>${[1, 2, 3].map(row).join('')}</tbody></table></div>
   </div>`;
 }
 // Đối chiếu KẾ HOẠCH đã chốt (mục I-B) với THỰC TẾ hệ thống (mục I-A) tại 3 thời điểm – giải thích vì sao 2 phần khác số
@@ -698,7 +652,7 @@ function bTongHopHtml(list, v, P) {
 
     ${thSub('B', 'Doanh thu – Chi phí theo thời điểm · Kế hoạch đã chốt', 'Dự toán được duyệt khi chốt TĐ ở từng dự án (dự án chưa chốt lấy số thực tế, đánh dấu *) · bấm TĐ1 / TĐ2 / TĐ3 để xem chi tiết', ['Kế hoạch'])}
     ${(() => { // 3 khối TĐ1 – TĐ2 – TĐ3; bấm khối nào thì bảng dự án bên dưới theo thời điểm đó
-      const sel = [1, 2, 3].includes(BST.th_td) ? BST.th_td : 1;
+      const sel = [1, 2, 3].includes(BST.th_td) ? BST.th_td : 3;
       const TEN = { 1: 'Ký hợp đồng', 2: 'Điều chỉnh', 3: 'Quyết toán' };
       const R = rows.map((x) => ({ x, t: x.tdv[sel] }));
       const TS = T.tdv[sel];
