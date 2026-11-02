@@ -454,7 +454,8 @@ async function asNav(sec, prjId) {
 function asToggle(open) {
   const p = $('#as-panel'); if (!p) return;
   open = open ?? p.hidden;
-  p.hidden = !open;
+  p.hidden = !open; p.style.transform = '';
+  if ($('#as-bd')) $('#as-bd').hidden = !open;
   $('#as-fab').setAttribute('aria-expanded', String(open));
   document.body.classList.toggle('as-on', open);
   if (open) {
@@ -469,7 +470,9 @@ function asInit() {
   if (!ME?.role || ME.role === 'it' || $('#as-fab')) return; // IT: không có quyền xem số liệu tài chính
   document.body.insertAdjacentHTML('beforeend', `
     <button type="button" id="as-fab" class="as-fab no-print" aria-expanded="false" aria-controls="as-panel" title="Trợ lý số liệu"><span class="as-fab-ic">💬</span><span class="as-fab-t">Trợ lý</span></button>
+    <div id="as-bd" class="as-bd no-print" hidden></div>
     <section id="as-panel" class="as-panel no-print" hidden role="dialog" aria-label="Trợ lý số liệu">
+      <div class="as-grab" aria-hidden="true"></div>
       <header class="as-head">
         <div class="as-ttl"><b>Trợ lý BKS</b><small>Số liệu đến hôm nay · không dùng AI</small></div>
         <div class="seg as-vat" id="as-vat"><button type="button" data-v="gt">Trước VAT</button><button type="button" data-v="sv">Sau VAT</button></div>
@@ -484,6 +487,21 @@ function asInit() {
       </form>
     </section>`);
   $('#as-fab').addEventListener('click', () => asToggle());
+  // Đóng khi chạm / bấm ra ngoài hộp (nền mờ trên điện thoại, hoặc bất kỳ chỗ nào ngoài hộp)
+  $('#as-bd').addEventListener('click', () => asToggle(false));
+  document.addEventListener('pointerdown', (e) => {
+    const p = $('#as-panel'); if (!p || p.hidden) return;
+    if (e.target.closest('#as-panel, #as-fab, #as-bd, dialog')) return;
+    asToggle(false);
+  }, true);
+  // Điện thoại: vuốt thanh tiêu đề xuống để đóng
+  { const p = $('#as-panel'); let y0 = null, dy = 0;
+    const start = (e) => { if (window.innerWidth > 760 || e.target.closest('button, .seg')) return; y0 = e.touches[0].clientY; dy = 0; p.style.transition = 'none'; };
+    const move = (e) => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); p.style.transform = dy ? `translateY(${dy}px)` : ''; if (dy > 4) e.preventDefault(); };
+    const end = () => { if (y0 === null) return; y0 = null; p.style.transition = '';
+      if (dy > 90) asToggle(false); else p.style.transform = ''; };
+    for (const sel of ['.as-grab', '.as-head']) { const h = p.querySelector(sel);
+      h.addEventListener('touchstart', start, { passive: true }); h.addEventListener('touchmove', move, { passive: false }); h.addEventListener('touchend', end); h.addEventListener('touchcancel', end); } }
   $('#as-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const key = $('#as-q').value.trim(); if (!key) return;

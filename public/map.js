@@ -116,7 +116,7 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('.map-r').forEach((x) => x.classList.toggle('on', x === kvb)); bMapObj.closePopup(); B.fitTo(P, true); return; }
   if (e.target.closest('[data-mapall]') && B) { document.querySelectorAll('.map-r.on, .map-go .on').forEach((x) => x.classList.remove('on')); bMapObj.closePopup(); B.mo(); return; }
   const md = e.target.closest('[data-mapmode]');
-  if (md && BC) { BST.map_mode = md.dataset.mapmode; bSave(); return renderKeepPos('.map-sec'); }
+  if (md && BC) { BST.map_mode = md.dataset.mapmode; bSave(); return renderKeepPos(`[data-mapmode="${md.dataset.mapmode}"]`); }
 });
 
 // ---------------------------------------------------------------------

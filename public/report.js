@@ -2097,7 +2097,9 @@ $('#b-report').addEventListener('click', (e) => {
   const ivct = e.target.closest('[data-ivct]'); // mục I-A: mở / ẩn bảng chi tiết của dòng DT / CP / LN
   if (ivct) { const k = ivct.dataset.ivct; BST.iv_ct = BST.iv_ct === k ? null : k; return renderKeepPos(`.iv-sum [data-ivct="${k}"]`); }
   const thtd = e.target.closest('[data-thtd]');
-  if (thtd) { BST.th_td = Number(thtd.dataset.thtd); bSave(); return renderKeepPos(`[data-thtd="${thtd.dataset.thtd}"]`); }
+  if (thtd) { // giữ đúng vị trí của chính chỗ vừa chạm (nút TĐ / dòng bảng / cột biểu đồ) -> trang không nhảy
+    const n = thtd.dataset.thtd, k = thtd.closest('.cf-seg') ? '.cf-seg ' : thtd.classList.contains('cf-r') ? '.cf-r' : thtd.classList.contains('cf-hit') ? '.cf-hit' : '';
+    BST.th_td = Number(n); bSave(); return renderKeepPos(`${k}[data-thtd="${n}"]`); }
   const ivbh = e.target.closest('[data-ivbh]');
   if (ivbh) return bBhDialog(BC.du_an.find((x) => x.id === Number(ivbh.dataset.ivbh)));
   const kp = e.target.closest('[data-kypick]');
