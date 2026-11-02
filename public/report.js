@@ -494,7 +494,7 @@ function bTdBand(TV, sel, rows) {
   // Đường xu hướng nhỏ TĐ1 → TĐ3 trong thẻ
   const spark = (vals, col) => { const mn = Math.min(...vals), mx = Math.max(...vals), sp = mx - mn || 1;
     const P = vals.map((v, i) => [6 + i * 52, 25 - ((v - mn) / sp) * 17]);
-    return `<svg class="cf-sp" viewBox="0 0 116 30" aria-hidden="true"><polyline points="${P.map((q) => q.map((x) => x.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${col}" stroke-width="2"/>
+    return `<svg class="cf-sp" viewBox="0 0 116 30" aria-hidden="true"><polyline class="mo-line" pathLength="1" points="${P.map((q) => q.map((x) => x.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${col}" stroke-width="2"/>
       ${P.map((q, i) => `<circle cx="${q[0]}" cy="${q[1].toFixed(1)}" r="${i === sel - 1 ? 3.6 : 2.5}" fill="${i === sel - 1 ? col : '#fffdf9'}" stroke="${col}" stroke-width="1.6"/>`).join('')}</svg>`; };
   const V = (k) => [1, 2, 3].map((n) => TV[n][k]);
   const so = sel === 1 ? '<span class="cf-mut">mốc lúc ký</span>' : '';
@@ -525,7 +525,7 @@ function bTdBand(TV, sel, rows) {
       return `${on ? `<rect x="${(L + gw * i + 4).toFixed(1)}" y="2" width="${(gw - 8).toFixed(1)}" height="${(B - 2).toFixed(1)}" rx="10" class="cf-sel"/>` : ''}
         ${bar(X[i] - bw - 3, TV[n].dt, TV[n].dt < 0 ? CF.bad : CF.dt, on, bTy(TV[n].dt))}${bar(X[i] + 3, TV[n].cp, CF.cp, on, bTy(TV[n].cp))}
         <text x="${X[i].toFixed(1)}" y="${B + (small ? 17 : 21)}" text-anchor="middle" font-size="${fs + 0.5}" class="cf-x ${on ? 'on' : ''}"><tspan font-weight="700">TĐ${n}</tspan>${small ? '' : ` · ${TN[i]}`}</text>`; }).join('')}
-    <polyline points="${X.map((x, i) => `${x.toFixed(1)},${Y(TV[i + 1].ln).toFixed(1)}`).join(' ')}" fill="none" stroke="${CF.ln}" stroke-width="2.5"/>
+    <polyline class="mo-line" pathLength="1" points="${X.map((x, i) => `${x.toFixed(1)},${Y(TV[i + 1].ln).toFixed(1)}`).join(' ')}" fill="none" stroke="${CF.ln}" stroke-width="2.5"/>
     ${X.map((x, i) => `<circle cx="${x.toFixed(1)}" cy="${Y(TV[i + 1].ln).toFixed(1)}" r="${i === sel - 1 ? 6.5 : 5}" fill="${TV[i + 1].ln < 0 ? CF.bad : CF.ln}" stroke="#fffdf9" stroke-width="2"/>
       <text x="${x.toFixed(1)}" y="${(Y(TV[i + 1].ln) - 11).toFixed(1)}" text-anchor="middle" font-size="${fs + 0.5}" class="cf-lv">${bTy(TV[i + 1].ln)}</text>`).join('')}
     ${[1, 2, 3].map((n, i) => `<rect x="${(L + gw * i).toFixed(1)}" y="0" width="${gw.toFixed(1)}" height="${H}" fill="transparent" class="cf-hit" data-tip="${esc(tip(n))}" data-tdtip="c" data-thtd="${n}"/>`).join('')}</svg>`;
@@ -1269,12 +1269,14 @@ function bBarH(el, items, series, { pctOf } = {}) {
 // ---------------------------------------------------------------------
 // Vẽ lại báo cáo mà giữ nguyên vị trí đang xem: ghi khoảng cách từ đỉnh màn hình tới nút vừa bấm,
 // vẽ lại xong cuộn bù đúng khoảng đó (Safari iPhone/iPad không tự giữ vị trí cuộn khi nội dung thay đổi)
+let B_QUIET = false;
 function renderKeepPos(sel) {
   const before = sel && document.querySelector(sel);
   const top = before ? before.getBoundingClientRect().top : null;
   const box = $('#b-report');
   if (box) box.style.minHeight = box.offsetHeight + 'px'; // giữ chiều cao trong lúc vẽ lại để trang không co lại, kéo vị trí cuộn lên
-  renderReport();
+  B_QUIET = true; // vẽ lại do thao tác (đổi TĐ, mở chi tiết…): không chạy hiệu ứng xuất hiện, số chuyển mượt từ giá trị cũ
+  try { renderReport(); } finally { B_QUIET = false; }
   const fix = () => { const after = top !== null && document.querySelector(sel); if (after) window.scrollBy(0, after.getBoundingClientRect().top - top); };
   fix();
   requestAnimationFrame(() => { fix(); setTimeout(() => { fix(); if (box) box.style.minHeight = ''; fix(); }, 250); }); // biểu đồ vẽ sau 1 nhịp
@@ -1403,6 +1405,7 @@ function renderReport() {
 
   bDrawCharts(list, v, one);
   bMapInit(list, v);
+  if (typeof bMotion === 'function') bMotion(B_QUIET);
 }
 
 function bProjectDetail(d, v, open) {

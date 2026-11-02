@@ -1983,3 +1983,46 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .map-go button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #e7ddcf; background: #fffdf9; color: #1f2a44; border-radius: 14px; padding: 3px 10px; font-size: 11px; font-weight: 700; box-shadow: none; cursor: pointer; }
 .map-go button i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .map-go button:hover { border-color: #c9a96a; } .map-go button.on { background: #1f2a44; color: #fff; border-color: #1f2a44; }
+
+/* =====================================================================
+   Hiệu ứng trang Báo cáo (motion.js): mức 1 chuyển động · mức 2 chiều sâu 3D
+   ===================================================================== */
+@keyframes moUp { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes moX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes moDraw { to { stroke-dashoffset: 0; } }
+@keyframes moPop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes moRing { from { opacity: 0; transform: rotate(-120deg) scale(.7); } to { opacity: 1; transform: none; } }
+/* Khối trượt nhẹ vào khi cuộn tới */
+#b-report .mo-rv { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .7s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease; }
+#b-report .mo-rv.mo-in { opacity: 1; transform: none; }
+#b-report .cf-k .cf-t.mo-rv:nth-child(2), #b-report .cf-r3 .cf-c.mo-rv:nth-child(2), #b-report .th-grid3 .mo-rv:nth-child(2) { transition-delay: .08s; }
+#b-report .cf-k .cf-t.mo-rv:nth-child(3), #b-report .cf-r3 .cf-c.mo-rv:nth-child(3), #b-report .th-grid3 .mo-rv:nth-child(3) { transition-delay: .16s; }
+#b-report .cf-k .cf-t.mo-rv:nth-child(4) { transition-delay: .24s; }
+/* Cột biểu đồ mọc lên, đường lợi nhuận vẽ dần, điểm bật ra */
+#b-report .mo-in .cf-svg rect:not(.cf-sel):not(.cf-hit) { transform-box: fill-box; transform-origin: 50% 100%; animation: moUp .8s cubic-bezier(.2,.8,.2,1) both; }
+#b-report .mo-in .cf-svg rect:not(.cf-sel):not(.cf-hit):nth-of-type(odd) { animation-delay: .06s; }
+#b-report .mo-in .mo-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: moDraw 1s .35s ease forwards; }
+#b-report .mo-in .cf-svg circle, #b-report .mo-in .cf-sp circle { transform-box: fill-box; transform-origin: center; animation: moPop .4s .9s cubic-bezier(.3,1.6,.5,1) both; }
+#b-report .mo-in .cf-svg text { animation: moPop .4s .7s ease both; transform-box: fill-box; transform-origin: center bottom; }
+/* Thanh ngang chạy ra, vòng cơ cấu vẽ dần */
+#b-report .mo-in .cf-tr i, #b-report .mo-in .kx-bar i, #b-report .mo-in .map-tr i, #b-report .mo-in .th-htb i, #b-report .mo-in .f-meter i,
+#b-report .mo-rv.mo-in.th-tdp .th-htb i { transform-origin: 0 50%; animation: moX .9s .15s cubic-bezier(.2,.8,.2,1) both; }
+#b-report .mo-in .cf-dn circle { transform-box: view-box; transform-origin: 80px 80px; animation: moRing .9s .1s cubic-bezier(.2,.8,.2,1) both; }
+#b-report .mo-in .kx-ring { animation: moRing .9s .2s cubic-bezier(.2,.8,.2,1) both; }
+/* Thẻ hành trình xuất hiện lần lượt */
+#b-report .jr.mo-in .jr-nd { animation: moPop .55s cubic-bezier(.2,.8,.2,1) both; }
+#b-report .jr.mo-in .jr-nd:nth-of-type(2) { animation-delay: .12s; } #b-report .jr.mo-in .jr-nd:nth-of-type(3) { animation-delay: .24s; }
+#b-report .jr.mo-in .jr-c { animation: moPop .4s .45s ease both; }
+/* Vẽ lại do thao tác (đổi TĐ, mở chi tiết…): không chạy lại hiệu ứng, chỉ số chuyển mượt */
+#b-report.mo-quiet *, #b-report.mo-off * { animation: none !important; }
+#b-report.mo-off .mo-rv { opacity: 1; transform: none; }
+
+/* ---- Mức 2: chiều sâu 3D ---- */
+#b-report .cf-t, #b-report .jr-nd, #b-report .f-card.kx, #b-report .map-hot { transform-style: preserve-3d; will-change: transform; }
+#b-report .mo-tilt { position: relative; z-index: 3; transition: transform .12s ease-out, box-shadow .2s ease !important; box-shadow: 0 18px 34px -16px rgba(31,42,68,.45), 0 4px 10px -6px rgba(31,42,68,.2) !important; }
+#b-report .jr-nd { transition: transform .25s ease, box-shadow .25s ease, background .2s; }
+#b-report .jr-nd.on:not(.mo-tilt) { transform: translateY(-6px) scale(1.025); box-shadow: 0 22px 40px -16px rgba(31,42,68,.6), 0 6px 14px -8px rgba(31,42,68,.35); }
+#b-report .cf-t { box-shadow: 0 1px 2px rgba(43,33,24,.05); }
+#b-report .cf-tv, #b-report .jr-ln { transform: translateZ(18px); } /* số lớn "nổi" lên khi thẻ nghiêng */
+@media (prefers-reduced-motion: reduce) { #b-report * { animation: none !important; transition: none !important; } #b-report .mo-rv { opacity: 1; transform: none; } }
+@media print { #b-report .mo-rv { opacity: 1 !important; transform: none !important; } #b-report * { animation: none !important; } #b-report .jr-nd.on { transform: none !important; } }
