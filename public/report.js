@@ -510,8 +510,9 @@ function bTdBand(TV, sel, rows) {
   </div>`;
   // Biểu đồ cột DT, CP + đường LN (một trục, từ 0)
   const rep = document.querySelector('#b-report')?.clientWidth || 1180;
-  const W = Math.round(rep > 1000 ? (rep - 90) * 0.63 : Math.max(300, rep - 60)), small = W < 560, H = small ? 210 : 236;
-  const L = small ? 30 : 40, R = W - 8, T = 24, B = H - (small ? 28 : 32);
+  // Bề rộng biểu đồ = bề rộng thật của ô (trừ lề khối, thẻ): không bị thu nhỏ chữ trên điện thoại
+  const W = Math.round(rep > 1000 ? (rep - 90) * 0.63 : Math.max(250, rep - (rep < 760 ? 72 : 100))), small = W < 560, H = small ? 210 : 236;
+  const L = small ? 36 : 40, R = W - 8, T = 24, B = H - (small ? 28 : 32);
   const all = [1, 2, 3].flatMap((n) => [TV[n].dt, TV[n].cp, TV[n].ln]), mx = Math.max(0, ...all), mn = Math.min(0, ...all);
   const raw = Math.max(mx - mn, 1e9) / 4, mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((x) => x >= raw);
   const lo = Math.floor(mn / step) * step, hi = Math.ceil((mx * 1.1) / step) * step, Y = (v) => B - ((v - lo) / ((hi - lo) || 1)) * (B - T);

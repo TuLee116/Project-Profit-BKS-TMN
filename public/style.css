@@ -2026,3 +2026,13 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 #b-report .cf-tv, #b-report .jr-ln { transform: translateZ(18px); } /* số lớn "nổi" lên khi thẻ nghiêng */
 @media (prefers-reduced-motion: reduce) { #b-report * { animation: none !important; transition: none !important; } #b-report .mo-rv { opacity: 1; transform: none; } }
 @media print { #b-report .mo-rv { opacity: 1 !important; transform: none !important; } #b-report * { animation: none !important; } #b-report .jr-nd.on { transform: none !important; } }
+
+/* Điện thoại hẹp (≤ 420px): thẻ chỉ tiêu I-B gọn, số không rớt dòng */
+@media (max-width: 420px) {
+  #b-report .cf { padding: 10px; } #b-report .cf-c { padding: 10px; }
+  .cf-k { gap: 6px; } .cf-t { padding: 10px 10px 6px; } .cf-tl { font-size: 9.5px; letter-spacing: .3px; padding-right: 30px; }
+  .cf-ic { width: 24px; height: 24px; right: 8px; top: 8px; font-size: 12px; }
+  .cf-tv { font-size: 17px; white-space: nowrap; } .cf-tv small { font-size: 10.5px; } .cf-td { font-size: 10.5px; } .cf-sp { width: 100%; }
+  .cf-hb { grid-template-columns: minmax(60px, 80px) minmax(0, 1fr) 52px 42px; gap: 6px; font-size: 11.5px; }
+  .cf-h1 { font-size: 16px; } .jr-ln { font-size: 28px; }
+}
