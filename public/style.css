@@ -1900,3 +1900,39 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 #b-report .dc-dh b { color: var(--cfb-navy); }
 #b-report .dc-det tfoot td { border-top-color: var(--cfb-navy); }
 #b-report .dc > .f-note:last-child, #b-report .dc > p:last-child { margin-bottom: 12px; }
+
+/* ---------- Báo cáo: cân lại toàn trang (tiêu đề mục thanh thoát, khoảng cách đều, thẻ nhẹ, bảng đồng bộ) ---------- */
+/* Tiêu đề mục lớn: bỏ hộp nền, dùng số La Mã + gạch chân vàng đồng */
+#b-report .th-head { background: none; border: 0; border-bottom: 1px solid #ece4d8; border-radius: 0; padding: 4px 2px 12px; margin: 38px 0 16px; box-shadow: none; position: relative; }
+#b-report .th-head::after { content: ''; position: absolute; left: 0; bottom: -1px; width: 72px; height: 3px; border-radius: 2px; background: var(--cfb-gold); }
+#b-report .f-sec > .th-head:first-child { margin-top: 0; }
+#b-report .th-no { min-width: 36px; height: 36px; border-radius: 10px; font-size: 14px; }
+#b-report .th-ttl h3 { font-size: 15.5px; letter-spacing: .5px; }
+#b-report .th-ttl p { font-size: 12px; }
+#b-report .th-tags span, #b-report .th-tags .f-range-btn { background: #fbf8f3; }
+/* Tiêu đề phần A, B */
+#b-report .th-sub { margin: 26px 0 12px; padding: 0 0 8px; border-bottom: 1px dashed #e3d8c8; }
+#b-report .th-head + .th-sub { margin-top: 6px; }
+#b-report .th-sno { width: 26px; height: 26px; border-radius: 50%; background: var(--cfb-navy); color: #fff; border: 0; font-size: 12px; }
+#b-report .th-sub h4 { font-size: 13px; }
+/* Thẻ chỉ tiêu mục II, III: nhẹ hơn, vạch trên mảnh */
+#b-report .f-card.kx { box-shadow: 0 1px 2px rgba(15,23,42,.04); border-color: #e8ecf2; background: linear-gradient(160deg, color-mix(in srgb, var(--f-ac) 6%, #fff) 0%, #fff 55%); }
+#b-report .f-card.kx::before { height: 3px; background: var(--f-ac); }
+#b-report .f-card.kx::after { opacity: .5; }
+#b-report .f-card.kx:hover { transform: none; box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--f-ac) 60%, transparent); }
+#b-report .f-card.kx .f-val { font-size: 28px; }
+#b-report .th-grid3 { gap: 14px; margin-bottom: 14px; }
+/* Bảng: một kiểu cho toàn trang */
+#b-report .table-wrap { border-color: #e8ecf2; border-radius: 12px; }
+#b-report .b-table th, #b-report .th-table th { background: #f6f7f9; color: #475569; font-size: 10.5px; letter-spacing: .4px; }
+#b-report .b-table td, #b-report .th-table td { border-bottom-color: #f1f3f6; }
+#b-report .b-table tbody tr:hover td, #b-report .th-table tbody tr:hover td { background: #fbf8f3; }
+#b-report .b-table tfoot td, #b-report .th-table tfoot td { background: #fbf8f3; border-top: 2px solid var(--cfb-navy); font-weight: 700; color: var(--cfb-navy); }
+/* Ghi chú và chú thích dịu hơn */
+#b-report .f-note { font-size: 11.5px; line-height: 1.55; margin-top: 8px; }
+#b-report .tdp-cap { margin: 16px 0 8px; font-size: 12.5px; }
+/* Khối I-A, I-B, đối chiếu: khoảng cách đều */
+#b-report .jr, #b-report .cf, #b-report .dc { margin-bottom: 14px; }
+#b-report .jr { border-color: #e8ecf2; box-shadow: 0 1px 2px rgba(15,23,42,.03); }
+#b-report .cf { border-color: #ece2d4; }
+@media (max-width: 760px) { #b-report .th-head { margin-top: 28px; } #b-report .f-card.kx .f-val { font-size: 24px; } }
