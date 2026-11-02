@@ -9,7 +9,7 @@ BST.chi_tiet = false; // phần Phân tích chi tiết luôn ẩn khi mở báo 
 const bSave = () => { try { localStorage.setItem('bao_cao', JSON.stringify({ ...BST, chi_tiet: false })); } catch {} };
 
 // Bảng màu doanh nghiệp (đã kiểm tra phân biệt màu cho người mù màu): Doanh thu navy · Chi phí đồng · Lợi nhuận teal
-const BCOL = { dt: '#2c5fa3', cp: '#c27a3e', dk: '#16968a', th: '#2c5fa3', thu: '#2c5fa3', chi: '#c27a3e', ts: '#7e5aa6' };
+const BCOL = { dt: '#3462a3', cp: '#b07338', dk: '#2a9d8f', th: '#3462a3', thu: '#3462a3', chi: '#b07338', ts: '#8a6a3f' }; // tông cafe (đã kiểm tra mù màu)
 const bf = new Intl.NumberFormat('vi-VN');
 const bn = (n) => bf.format(Math.round(n || 0));
 const bm = (n) => `<span class="${n < 0 ? 'neg' : ''}">${bn(n)}</span>`;

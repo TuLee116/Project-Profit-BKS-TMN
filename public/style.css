@@ -1856,3 +1856,55 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 @media (max-width: 760px) { .cf { padding: 12px; } .cf-hd { flex-wrap: wrap; } .cf-seg { margin-left: 0; } .cf-k { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .cf-tv { font-size: 20px; } .cf-dw { flex-direction: column; align-items: stretch; } .cf-dn { margin: 0 auto; } .cf-lg { margin-left: 0; } }
 @media print { .cf { -webkit-print-color-adjust: exact; print-color-adjust: exact; break-inside: avoid; } .cf-seg { display: none; } }
+
+/* =====================================================================
+   Trang Báo cáo – tông cafe đồng bộ (nền kem, thẻ ngà, viền be, xanh than đậm)
+   DT #3462a3 · CP #b07338 · LN #2a9d8f · nhấn vàng đồng #c9a96a · chữ #2b2118
+   ===================================================================== */
+#b-report { --cfb-bg: #f6f1e9; --cfb-card: #fffdf9; --cfb-bd: #e7ddcf; --cfb-soft: #f3ece1; --cfb-ink: #2b2118; --cfb-mut: #8a7b6b; --cfb-navy: #1f2a44; }
+#b-report .card { background: var(--cfb-card); border: 1px solid var(--cfb-bd); box-shadow: 0 1px 2px rgba(43,33,24,.04), 0 10px 26px -18px rgba(43,33,24,.25); }
+#b-report .b-head { background: linear-gradient(120deg, #f6f1e9 0%, #fbf7f0 60%, #f3ece1 100%); }
+#b-report .b-company { color: #9a7a45; }
+#b-report .b-head h1 { color: var(--cfb-navy); }
+#b-report .b-cash-i.con { border-top-color: var(--cfb-bd); }
+/* Tiêu đề mục */
+#b-report .th-head { background: linear-gradient(90deg, #f3ece1 0%, #faf6ef 65%, var(--cfb-card) 100%); border-color: var(--cfb-bd); border-left-color: var(--cfb-navy); }
+#b-report .th-no { background: var(--cfb-navy); box-shadow: 0 2px 6px rgba(31,42,68,.3); }
+#b-report .th-ttl h3, #b-report .th-sub h4 { color: var(--cfb-navy); }
+#b-report .th-ttl p, #b-report .th-sub .th-ttl p { color: var(--cfb-mut); }
+#b-report .th-tags span, #b-report .th-tags .f-range-btn { background: var(--cfb-card); border-color: var(--cfb-bd); color: #4a3c2f; }
+#b-report .th-sub { border-bottom-color: var(--cfb-bd); }
+#b-report .th-sno { border-color: var(--cfb-navy); color: var(--cfb-navy); background: var(--cfb-card); }
+/* Mục I-A: hành trình */
+#b-report .jr { background: var(--cfb-bg); border-color: var(--cfb-bd); }
+#b-report .jr-nd { background: var(--cfb-card); border-color: var(--cfb-bd); color: var(--cfb-ink); }
+#b-report .jr-nd:hover { border-color: #cdbfae; }
+#b-report .jr-nd.on { background: linear-gradient(160deg, #1f2a44 0%, #34507a 100%); color: #fff; box-shadow: 0 12px 26px -10px rgba(31,42,68,.55); }
+#b-report .jr-ts { background: #e3f2ee; color: #1d6f65; }
+#b-report .jr-nd.on .jr-ts { background: rgba(255,255,255,.14); color: #8fe3cf; }
+#b-report .jr-rw { border-top-color: rgba(138,123,107,.25); }
+#b-report .jr-c { background: var(--cfb-card); border-color: var(--cfb-bd); }
+#b-report .jr-line { background: repeating-linear-gradient(90deg, #cdbfae 0 6px, transparent 6px 10px); }
+#b-report .jr-line::after { border-left-color: #cdbfae; }
+#b-report .iv-ct { border-color: var(--cfb-bd); color: var(--cfb-navy); background: var(--cfb-card); }
+#b-report .iv-ct.on { background: var(--cfb-navy); border-color: var(--cfb-navy); color: #fff; }
+/* Bảng */
+#b-report .table-wrap { border-color: var(--cfb-bd); }
+#b-report th { background: var(--cfb-soft); color: #5b4a3a; }
+#b-report td { border-bottom-color: #f0e8dc; }
+#b-report tbody tr:hover td { background: #fbf6ee; }
+#b-report tfoot td { background: #f8f2e8; color: var(--cfb-navy); border-top: 2px solid var(--cfb-navy); }
+#b-report .iv-table th.iv-g2 { background: #f6ead9; }
+#b-report .iv-det-t, #b-report .tdp-cap b { color: var(--cfb-navy); }
+/* Thẻ chỉ tiêu mục II, III */
+#b-report .f-dt { --f-ac: #3462a3; } #b-report .f-cp { --f-ac: #b07338; } #b-report .f-ln { --f-ac: #2a9d8f; }
+#b-report .f-card.kx { background: linear-gradient(150deg, color-mix(in srgb, var(--f-ac) 8%, #fffdf9) 0%, #fffdf9 60%); border-color: var(--cfb-bd); }
+#b-report .f-card.kx::before { background: linear-gradient(90deg, var(--f-ac), color-mix(in srgb, var(--f-ac) 40%, #c9a96a)); }
+#b-report .kx-ic { background: linear-gradient(140deg, var(--f-ac), color-mix(in srgb, var(--f-ac) 55%, #c9a96a)); }
+#b-report .f-card.kx .f-title { color: color-mix(in srgb, var(--f-ac) 60%, #4a3c2f); }
+/* Đối chiếu + ghi chú */
+#b-report .dc { background: var(--cfb-bg); border-color: var(--cfb-bd); border-left-color: #c9a96a; }
+#b-report .dc-t, #b-report .dc-det { background: var(--cfb-card); }
+#b-report .dc-lnk.on { background: var(--cfb-navy); }
+#b-report .f-note { color: var(--cfb-mut); }
+#b-report .b-detail-bar b { color: var(--cfb-navy); }
