@@ -47,8 +47,10 @@ function bMapSection(list, v) {
       <div class="map-p">
         ${top && tot > 0 ? `<div class="map-hot"><div class="k">★ Trọng điểm</div><div class="v">${esc(top[0])}</div>
           <div class="s">${top[1].n} dự án · ${bTy(top[1].dt)} tỷ · <b>${bpct(top[1].dt, tot)}</b> doanh thu</div></div>` : ''}
-        <div class="map-pt">Doanh thu theo khu vực</div>
-        ${kv.map(([k, o]) => `<div class="map-r"><span>${esc(k)} <small>${o.n} DA</small></span><b>${bTy(o.dt)}</b><em>${bpct(o.dt, tot)}</em><span class="map-tr"><i style="width:${tot ? Math.min(100, (o.dt / tot) * 100) : 0}%"></i></span></div>`).join('')}
+        <div class="map-pt">Doanh thu theo khu vực <small>· bấm để phóng tới</small></div>
+        ${kv.map(([k, o]) => `<button type="button" class="map-r" data-mapkv="${esc(k)}" title="Phóng tới ${esc(k)}"><span>${esc(k)} <small>${o.n} DA</small></span><b>${bTy(o.dt)}</b><em>${bpct(o.dt, tot)}</em><span class="map-tr"><i style="width:${tot ? Math.min(100, (o.dt / tot) * 100) : 0}%"></i></span></button>`).join('')}
+        ${R.some((x) => x.co) ? `<div class="map-pt map-pt2">Đi tới dự án ${R.filter((x) => x.co).length > 1 ? '<button type="button" class="map-all" data-mapall>⤢ Xem tất cả</button>' : ''}</div>
+          <div class="map-go">${R.filter((x) => x.co).sort((a, b) => b.dt - a.dt).map((x) => `<button type="button" data-mapgo="${x.d.id}" title="${esc(x.d.ten_du_an)}"><i style="background:${mapTsCol(x.dt ? x.ln / x.dt : 0)}"></i>${esc(x.d.ma_du_an)}</button>`).join('')}</div>` : ''}
         <div class="map-lg">${lg}<div>Vòng to = doanh thu lớn · nhãn = mã dự án · tỷ đồng, ${v === 'gt' ? 'trước' : 'sau'} VAT</div></div>
         ${thieu.length ? `<div class="map-miss"><b>${thieu.length} dự án chưa có vị trí:</b> ${thieu.map((x) => esc(x.d.ma_du_an)).join(', ')}. Nhập ở tab Dự án.</div>` : ''}
       </div>
@@ -68,6 +70,7 @@ async function bMapInit(list, v) {
   mapTiles().addTo(m);
   if (!R.length) { m.setView(MAP_HOME, 12); return; }
   const mode = BST.map_mode === 'tt' ? 'tt' : 'ts', mx = Math.max(...R.map((x) => Math.max(0, x.dt)), 1);
+  const MK = new Map(); // id dự án -> vòng tròn (để bấm "Đi tới dự án")
   for (const x of [...R].sort((a, b) => b.dt - a.dt)) { // vòng lớn vẽ trước, vòng nhỏ nằm trên
     const ts = x.dt ? x.ln / x.dt : 0, col = mode === 'ts' ? mapTsCol(ts) : (MAP_ST[x.d.trang_thai] || '#8a94a6');
     const c = L.circleMarker([x.d.vi_do, x.d.kinh_do], { radius: 9 + Math.sqrt(Math.max(0, x.dt) / mx) * 22, color: '#fff', weight: 2.5, fillColor: col, fillOpacity: 0.82 }).addTo(m);
@@ -78,20 +81,23 @@ async function bMapInit(list, v) {
       <button type="button" class="map-pp-b" data-mapprj="${x.d.id}">Mở thẻ dự án →</button></div>`);
     L.marker([x.d.vi_do, x.d.kinh_do], { interactive: false, keyboard: false,
       icon: L.divIcon({ className: 'map-lbl-w', html: `<span class="map-lbl">${esc(x.d.ma_du_an)}</span>`, iconSize: null, iconAnchor: [-14, 10] }) }).addTo(m);
+    MK.set(x.d.id, { c, x });
   }
   // Canh vùng nhìn: 1 dự án -> mức quận/phường (13); nhiều dự án -> vừa đủ tất cả, chừa lề cho vòng tròn và nhãn, tối đa mức 14.
   // Canh lại khi khung đổi kích thước (trang vừa vẽ xong, đổi cỡ cửa sổ) cho đến khi người dùng tự kéo / phóng to.
   const pts = R.map((x) => [x.d.vi_do, x.d.kinh_do]), rMax = 9 + 22;
-  let tuChinh = false, dangCanh = false;
-  const fit = () => { if (tuChinh || !document.body.contains(el)) return; dangCanh = true;
-    m.invalidateSize({ pan: false });
-    if (pts.length === 1) m.setView(pts[0], 13, { animate: false });
-    else m.fitBounds(pts, { paddingTopLeft: [rMax + 10, rMax + 10], paddingBottomRight: [rMax + 90, rMax + 10], maxZoom: 14, animate: false });
-    dangCanh = false; };
+  let tuChinh = false;
+  const pad = { paddingTopLeft: [rMax + 10, rMax + 10], paddingBottomRight: [rMax + 90, rMax + 10] };
+  const fitTo = (P, anim) => { if (P.length === 1) m.setView(P[0], P === pts ? 13 : 15, { animate: anim }); else m.fitBounds(P, { ...pad, maxZoom: 14, animate: anim }); };
+  // không canh khi khung đang ẩn (rộng 0) – sẽ canh khi khung hiện ra (ResizeObserver)
+  const fit = () => { if (tuChinh || !document.body.contains(el) || !el.clientWidth || !el.clientHeight) return; m.invalidateSize({ pan: false }); fitTo(pts, false); };
+  m._bks = { MK, fitTo, pts, R, khoa: () => { tuChinh = true; }, mo: () => { tuChinh = false; fit(); } };
+  m.setView(pts[0], 12, { animate: false }); // vùng nhìn tạm (kể cả khi khung đang ẩn), fit() canh lại khi khung có kích thước
   fit();
   requestAnimationFrame(fit); setTimeout(fit, 250);
   if (window.ResizeObserver) { const ro = new ResizeObserver(() => fit()); ro.observe(el); m.on('unload', () => ro.disconnect()); }
-  m.on('dragstart zoomstart', () => { if (!dangCanh) tuChinh = true; }); // người dùng tự kéo / phóng to -> giữ nguyên vùng họ chọn
+  // người dùng tự kéo / lăn chuột / bấm nút phóng to -> giữ nguyên vùng họ chọn, không tự canh lại
+  ['mousedown', 'wheel', 'touchstart', 'keydown'].forEach((ev) => el.addEventListener(ev, () => { tuChinh = true; }, { passive: true }));
   m.on('focus click', () => m.scrollWheelZoom.enable()); // lăn chuột phóng to chỉ sau khi bấm vào bản đồ (tránh kẹt khi cuộn trang)
   m.on('blur mouseout', () => m.scrollWheelZoom.disable());
 }
@@ -99,6 +105,16 @@ async function bMapInit(list, v) {
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-mapprj]');
   if (b) { bMapObj?.closePopup(); return openProjectReport(Number(b.dataset.mapprj)); }
+  const B = bMapObj?._bks;
+  const go = e.target.closest('[data-mapgo]');
+  if (go && B) { const k = B.MK.get(Number(go.dataset.mapgo)); if (!k) return; B.khoa();
+    document.querySelectorAll('.map-go button').forEach((x) => x.classList.toggle('on', x === go));
+    bMapObj.flyTo(k.c.getLatLng(), Math.max(bMapObj.getZoom(), 15), { duration: 0.8 }); bMapObj.once('moveend', () => k.c.openPopup());
+    document.getElementById('b-map')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+  const kvb = e.target.closest('[data-mapkv]');
+  if (kvb && B) { const P = B.R.filter((x) => x.kv === kvb.dataset.mapkv).map((x) => [x.d.vi_do, x.d.kinh_do]); if (!P.length) return; B.khoa();
+    document.querySelectorAll('.map-r').forEach((x) => x.classList.toggle('on', x === kvb)); bMapObj.closePopup(); B.fitTo(P, true); return; }
+  if (e.target.closest('[data-mapall]') && B) { document.querySelectorAll('.map-r.on, .map-go .on').forEach((x) => x.classList.remove('on')); bMapObj.closePopup(); B.mo(); return; }
   const md = e.target.closest('[data-mapmode]');
   if (md && BC) { BST.map_mode = md.dataset.mapmode; bSave(); return renderKeepPos('.map-sec'); }
 });

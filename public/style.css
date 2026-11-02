@@ -1972,3 +1972,14 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 @media (max-width: 1000px) { .map-w { grid-template-columns: minmax(0, 1fr); } .map-c { height: 360px; min-height: 360px; flex: none; } }
 @media (max-width: 760px) { .map-in { flex-wrap: wrap; } .map-in button { width: 100%; } }
 @media print { .map-c { height: 380px; } .map-seg { display: none; } }
+
+/* Bản đồ: khu vực bấm được, đi tới dự án */
+button.map-r { width: 100%; border: 0; background: none; box-shadow: none; padding: 4px 6px; border-radius: 8px; cursor: pointer; text-align: left; color: inherit; font: inherit; font-size: 12px; margin: 4px 0 0; }
+button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc7; box-shadow: inset 3px 0 0 #1f2a44; }
+.map-pt small { font-weight: 500; color: #8a7b6b; font-size: 10.5px; }
+.map-pt2 { display: flex; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e3d8c8; }
+.map-all { margin-left: auto; border: 1px solid #1f2a44; background: #fffdf9; color: #1f2a44; border-radius: 14px; padding: 2px 10px; font-size: 11px; font-weight: 700; box-shadow: none; cursor: pointer; }
+.map-go { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.map-go button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #e7ddcf; background: #fffdf9; color: #1f2a44; border-radius: 14px; padding: 3px 10px; font-size: 11px; font-weight: 700; box-shadow: none; cursor: pointer; }
+.map-go button i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.map-go button:hover { border-color: #c9a96a; } .map-go button.on { background: #1f2a44; color: #fff; border-color: #1f2a44; }
