@@ -332,7 +332,7 @@ function mcardLabels(table) {
   document.addEventListener('click', (e) => {
     if (e.target.closest('.tap-tip')) return hide();
     const el = e.target.closest('[title], [data-tip]');
-    if (!el || el.closest('button, a, input, select, textarea, label, summary')) return hide();
+    if (!el || el.closest('button, a, input, select, textarea, label, summary, [data-thtd], [data-ivtd], [data-dc], [data-tdtip]')) return hide();
     const text = el.dataset.tip || el.getAttribute('title');
     if (!text) return hide();
     el.dataset.tip = text; el.removeAttribute('title'); // bỏ chú thích mặc định của trình duyệt
@@ -349,5 +349,6 @@ function mcardLabels(table) {
     tip.classList.add(above ? 'up' : 'down');
     tip.style.setProperty('--ax', `${Math.min(Math.max(14, r.left + r.width / 2 - left), t.width - 14)}px`);
   });
-  ['scroll', 'resize'].forEach((ev) => window.addEventListener(ev, hide, { passive: true, capture: true }));
+  ['scroll', 'resize', 'touchmove'].forEach((ev) => window.addEventListener(ev, hide, { passive: true, capture: true }));
+  document.addEventListener('touchstart', (e) => { if (tip && !e.target.closest('.tap-tip') && e.target !== tip._el) hide(); }, { passive: true, capture: true });
 })();

@@ -651,10 +651,10 @@ function bTongHopHtml(list, v, P) {
   const foot = (cells) => `<tfoot><tr><td></td><td>Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
   return `
     ${thHead('I', 'Bảng tổng hợp theo dõi thời điểm', 'TĐ1 ký hợp đồng · TĐ2 điều chỉnh · TĐ3 quyết toán · luôn tính đến hôm nay, không theo kỳ báo cáo', ['Đến hôm nay', vt[0].toUpperCase() + vt.slice(1)])}
-    ${bMuc4Html(list, v, 'A')}
+    <div id="b-ia">${bMuc4Html(list, v, 'A')}</div>
 
     ${thSub('B', 'Doanh thu – Chi phí theo thời điểm · Kế hoạch đã chốt', 'Dự toán được duyệt khi chốt TĐ ở từng dự án (dự án chưa chốt lấy số thực tế, đánh dấu *) · bấm TĐ1 / TĐ2 / TĐ3 để xem chi tiết', ['Kế hoạch'])}
-    ${(() => { // 3 khối TĐ1 – TĐ2 – TĐ3; bấm khối nào thì bảng dự án bên dưới theo thời điểm đó
+    <div id="b-ib">${(() => { // 3 khối TĐ1 – TĐ2 – TĐ3; bấm khối nào thì bảng dự án bên dưới theo thời điểm đó
       const sel = [1, 2, 3].includes(BST.th_td) ? BST.th_td : 3;
       const TEN = { 1: 'Ký hợp đồng', 2: 'Điều chỉnh', 3: 'Quyết toán' };
       const R = rows.map((x) => ({ x, t: x.tdv[sel] }));
@@ -678,7 +678,7 @@ function bTongHopHtml(list, v, P) {
           <td class="num">${ty(TS.ln)}</td><td></td><td class="num">${bpct(TS.ln, TS.dt)}</td></tr></tfoot>
       </table></div>
       <p class="muted small f-note">Mỗi thời điểm ưu tiên số đã chốt ở bảng TĐ của từng dự án. Chưa chốt: TĐ1 lấy HĐ gốc + thầu phụ / HĐ đầu vào gốc + chi phí khác; TĐ2 lấy HĐ + phụ lục; TĐ3 lấy giá trị quyết toán, dự án chưa quyết toán tạm tính bằng TĐ2 <b>(*)</b>. Tăng / giảm so với thời điểm trước: xanh = có lợi, đỏ = bất lợi (chi phí tăng là bất lợi). Xem sau VAT: số chốt nhập trước VAT được quy đổi theo tỷ lệ VAT của số hệ thống cùng thời điểm.</p>`;
-    })()}
+    })()}</div>
 
     ${thHead('II', 'Dòng tiền thực tế', 'Tiền thật đã thu về và đã chi ra của dự án · theo kỳ báo cáo', [`Lũy kế đến ${dTo}`, vt[0].toUpperCase() + vt.slice(1)],
       `<button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo (áp dụng cho mục II)">📅 ${P.range} <span class="f-caret">▾</span></button>`)}
@@ -1272,16 +1272,19 @@ function bBarH(el, items, series, { pctOf } = {}) {
 // ---------------------------------------------------------------------
 // Vẽ lại báo cáo mà giữ nguyên vị trí đang xem: ghi khoảng cách từ đỉnh màn hình tới nút vừa bấm,
 // vẽ lại xong cuộn bù đúng khoảng đó (Safari iPhone/iPad không tự giữ vị trí cuộn khi nội dung thay đổi)
-let B_QUIET = false;
+let B_QUIET = false, B_PART = ''; // B_PART: id khối cần vẽ lại ('b-ia' mục I-A, 'b-ib' mục I-B); trống = cả trang
+const bPart = (id, sel) => { B_PART = id; try { renderKeepPos(sel); } finally { B_PART = ''; } };
 function renderKeepPos(sel) {
   const before = sel && document.querySelector(sel);
   const top = before ? before.getBoundingClientRect().top : null;
   const box = $('#b-report');
-  if (box) box.style.minHeight = box.offsetHeight + 'px'; // giữ chiều cao trong lúc vẽ lại để trang không co lại, kéo vị trí cuộn lên
+  // giữ chiều cao trong lúc vẽ lại cả trang để trang không co lại (vẽ lại 1 khối thì không cần -> tránh giật 2 lần trên điện thoại)
+  if (box && !B_PART) box.style.minHeight = box.offsetHeight + 'px';
   B_QUIET = true; // vẽ lại do thao tác (đổi TĐ, mở chi tiết…): không chạy hiệu ứng xuất hiện, số chuyển mượt từ giá trị cũ
   try { renderReport(); } finally { B_QUIET = false; }
   const fix = () => { const after = top !== null && document.querySelector(sel); if (after) window.scrollBy(0, after.getBoundingClientRect().top - top); };
   fix();
+  if (B_PART) { requestAnimationFrame(fix); return; } // vẽ lại 1 khối: canh 1 lần là đủ
   requestAnimationFrame(() => { fix(); setTimeout(() => { fix(); if (box) box.style.minHeight = ''; fix(); }, 250); }); // biểu đồ vẽ sau 1 nhịp
 }
 function renderReport() {
@@ -1305,7 +1308,7 @@ function renderReport() {
   const kpi = (label, val, sub, cls = '') => `<div class="b-kpi ${cls}"><div class="label">${label}</div><div class="value">${bm(val)}</div><div class="sub">${sub}</div></div>`;
   const projRows = (f) => list.map(f).join('');
 
-  $('#b-report').innerHTML = `
+  const html = `
   <div class="card b-head">
     <div class="b-brand"><img src="/img/logo-icon.png" alt=""><div>
       <div class="b-company">${esc(BC.ten_cong_ty || '')}</div>
@@ -1406,6 +1409,12 @@ function renderReport() {
   </div>
   <div class="b-foot">Nguồn: ${esc(BC.ten_he_thong || 'PROJECT PROFIT')} · ${esc(BC.phien_ban)} · Số liệu lấy tự động từ các tab Doanh thu, Chi phí, Thầu phụ, Tiền về tại thời điểm lập báo cáo.</div>`;
 
+  hideTip(); document.querySelectorAll('.tap-tip').forEach((x) => x.remove()); // khung số liệu cũ không treo lại sau khi vẽ lại
+  if (B_PART && document.getElementById(B_PART)) { // thao tác trong 1 khối (đổi TĐ, chi tiết, đối chiếu): chỉ thay khối đó -> không vẽ lại cả trang, không nhảy, mượt trên điện thoại
+    const t = document.createElement('template'); t.innerHTML = html; const nw = t.content.getElementById(B_PART);
+    if (nw) { document.getElementById(B_PART).replaceWith(nw); if (typeof bMotion === 'function') bMotion(true); return; }
+  }
+  $('#b-report').innerHTML = html;
   bDrawCharts(list, v, one);
   bMapInit(list, v);
   if (typeof bMotion === 'function') bMotion(B_QUIET);
@@ -1516,7 +1525,9 @@ $('#b-report').addEventListener('click', (e) => {
   if (w) bGoWarn(Number(w.dataset.wda), JSON.parse(w.dataset.wlink)).catch((err) => alert(err.message));
 });
 // Biểu đồ dải lợi nhuận: rê chuột vào cột thời điểm -> khung số liệu (điện thoại: chạm, qua tapTips)
+const B_TOUCH = window.matchMedia?.('(hover: none)').matches;
 $('#b-report').addEventListener('mousemove', (e) => {
+  if (B_TOUCH) return; // điện thoại: chạm cột = chọn TĐ, số hiện ngay ở thẻ / bảng; không hiện khung treo
   const h = e.target.closest('[data-tdtip]');
   if (!h) return;
   const [t0, ...ls] = h.dataset.tip.split('\n');
@@ -2088,18 +2099,18 @@ $('#b-reload').addEventListener('click', () => loadReport().catch((err) => alert
 $('#b-report').addEventListener('click', (e) => {
   if (e.target.id === 'b-open-all' || e.target.id === 'b-close-all') $$('#b-report details.b-proj').forEach((d) => (d.open = e.target.id === 'b-open-all'));
   if (e.target.id === 'f-set-target') return bTargetDialog();
-  if (e.target.closest('[data-ivgop]')) { BST.iv_gop = !BST.iv_gop; return renderKeepPos('[data-ivgop]'); } // mục I-A: mở / ẩn LN gộp
-  { const t = e.target.closest('[data-ivtd]'); if (t) { BST.iv_td = Number(t.dataset.ivtd); return renderKeepPos(`[data-ivtd="${t.dataset.ivtd}"]`); } } // mục I-A: chọn thẻ TĐ
-  { const t = e.target.closest('[data-dc]'); if (t) { BST.dc = BST.dc === t.dataset.dc ? '' : t.dataset.dc; return renderKeepPos('.dc'); } } // đối chiếu: mở / đóng chi tiết theo dự án
+  if (e.target.closest('[data-ivgop]')) { BST.iv_gop = !BST.iv_gop; return bPart('b-ia', '[data-ivgop]'); } // mục I-A: mở / ẩn LN gộp
+  { const t = e.target.closest('[data-ivtd]'); if (t) { BST.iv_td = Number(t.dataset.ivtd); return bPart('b-ia', `[data-ivtd="${t.dataset.ivtd}"]`); } } // mục I-A: chọn thẻ TĐ
+  { const t = e.target.closest('[data-dc]'); if (t) { BST.dc = BST.dc === t.dataset.dc ? '' : t.dataset.dc; return bPart('b-ib', '.dc summary'); } } // đối chiếu: mở / đóng chi tiết theo dự án
   { const t = e.target.closest('[data-dcprj]'); if (t) return openProjectReport(Number(t.dataset.dcprj)); }
   { const t = e.target.closest('[data-dcgo]'); if (t) { const [m, k] = t.dataset.dcgo.split('|'); BST.iv_ct = m; BST.iv_td = Number(k); renderReport();
     return requestAnimationFrame(() => ($('.iv-det') || $('.jr'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }
   const ivct = e.target.closest('[data-ivct]'); // mục I-A: mở / ẩn bảng chi tiết của dòng DT / CP / LN
-  if (ivct) { const k = ivct.dataset.ivct; BST.iv_ct = BST.iv_ct === k ? null : k; return renderKeepPos(`.iv-sum [data-ivct="${k}"]`); }
+  if (ivct) { const k = ivct.dataset.ivct; BST.iv_ct = BST.iv_ct === k ? null : k; return bPart('b-ia', `[data-ivct="${k}"]`); }
   const thtd = e.target.closest('[data-thtd]');
   if (thtd) { // giữ đúng vị trí của chính chỗ vừa chạm (nút TĐ / dòng bảng / cột biểu đồ) -> trang không nhảy
     const n = thtd.dataset.thtd, k = thtd.closest('.cf-seg') ? '.cf-seg ' : thtd.classList.contains('cf-r') ? '.cf-r' : thtd.classList.contains('cf-hit') ? '.cf-hit' : '';
-    BST.th_td = Number(n); bSave(); return renderKeepPos(`${k}[data-thtd="${n}"]`); }
+    BST.th_td = Number(n); bSave(); return bPart('b-ib', `${k}[data-thtd="${n}"]`); }
   const ivbh = e.target.closest('[data-ivbh]');
   if (ivbh) return bBhDialog(BC.du_an.find((x) => x.id === Number(ivbh.dataset.ivbh)));
   const kp = e.target.closest('[data-kypick]');

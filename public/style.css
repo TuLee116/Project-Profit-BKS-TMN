@@ -2042,3 +2042,6 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
   .cf-hb { grid-template-columns: minmax(60px, 80px) minmax(0, 1fr) 52px 42px; gap: 6px; font-size: 11.5px; }
   .cf-h1 { font-size: 16px; } .jr-ln { font-size: 28px; }
 }
+
+/* Trang Báo cáo tự giữ vị trí khi vẽ lại -> tắt cơ chế tự neo cuộn của trình duyệt (tránh chỉnh 2 lần gây giật trên điện thoại) */
+#b-report { overflow-anchor: none; }
