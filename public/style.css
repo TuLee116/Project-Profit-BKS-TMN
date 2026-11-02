@@ -1936,3 +1936,39 @@ rect.lb-chip.lb-up { fill: #e6f6ef; } rect.lb-chip.lb-dn { fill: #fcebe4; } rect
 #b-report .jr { border-color: #e8ecf2; box-shadow: 0 1px 2px rgba(15,23,42,.03); }
 #b-report .cf { border-color: #ece2d4; }
 @media (max-width: 760px) { #b-report .th-head { margin-top: 28px; } #b-report .f-card.kx .f-val { font-size: 24px; } }
+
+/* ---------- Bản đồ phân bổ dự án ---------- */
+.map-sec .th-head { margin-top: 0; }
+.map-w { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; }
+.map-box { position: relative; }
+.map-c { height: 460px; border-radius: 14px; border: 1px solid #e7ddcf; overflow: hidden; background: #eef1f4; z-index: 0; }
+.map-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; font-size: 13px; color: #4a3c2f; background: rgba(255,253,249,.82); border-radius: 14px; z-index: 500; }
+.map-p { background: #f6f1e9; border: 1px solid #e7ddcf; border-radius: 14px; padding: 14px; min-width: 0; }
+.map-hot { background: #fffdf9; border: 1px solid #e7ddcf; border-left: 4px solid #c9a96a; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.map-hot .k { font-size: 10.5px; letter-spacing: .7px; text-transform: uppercase; color: #8a7b6b; font-weight: 700; }
+.map-hot .v { font-size: 19px; font-weight: 800; color: #1f2a44; margin: 3px 0; }
+.map-hot .s { font-size: 11.5px; color: #4a3c2f; }
+.map-pt { font-size: 12.5px; font-weight: 800; color: #1f2a44; margin-bottom: 4px; }
+.map-r { display: grid; grid-template-columns: minmax(0, 1fr) 64px 42px; gap: 6px; align-items: center; font-size: 12px; margin: 8px 0 2px; font-variant-numeric: tabular-nums; }
+.map-r small { color: #8a7b6b; font-size: 10.5px; margin-left: 4px; }
+.map-r b { text-align: right; } .map-r em { font-style: normal; text-align: right; color: #8a7b6b; font-size: 11px; }
+.map-tr { grid-column: 1 / -1; height: 6px; background: #efe7db; border-radius: 4px; overflow: hidden; } .map-tr i { display: block; height: 100%; background: #3462a3; border-radius: 4px; }
+.map-lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: #6b5d4f; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e3d8c8; }
+.map-lg i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.map-lg > div { flex-basis: 100%; color: #8a7b6b; }
+.map-miss { margin-top: 10px; font-size: 11.5px; color: #8a4a1c; background: #fbefe4; border-radius: 8px; padding: 7px 10px; }
+.map-seg button { border: 1px solid #e7ddcf; background: #fbf8f3; border-radius: 16px; padding: 4px 12px; font-size: 11.5px; font-weight: 600; box-shadow: none; cursor: pointer; color: #4a3c2f; }
+.map-seg button.on { background: #1f2a44; color: #fff; border-color: #1f2a44; }
+.map-lbl-w { background: none; border: 0; }
+.map-lbl { display: inline-block; background: #fffdf9; border: 1px solid #e7ddcf; border-radius: 6px; padding: 1px 6px; font: 700 10.5px Montserrat, Arial, sans-serif; color: #1f2a44; box-shadow: 0 1px 3px rgba(0,0,0,.12); white-space: nowrap; }
+.map-pp { font: 12px Montserrat, Arial, sans-serif; min-width: 220px; color: #2b2118; }
+.map-pp > b { color: #1f2a44; } .map-pp-s { color: #8a7b6b; margin-top: 2px; }
+.map-pp table { width: 100%; margin-top: 6px; border-collapse: collapse; } .map-pp td { padding: 2px 0; border: 0; background: none; } .map-pp td:last-child { text-align: right; font-weight: 700; }
+.map-pp-b { margin-top: 8px; border: 1px solid #1f2a44; background: #fff; color: #1f2a44; border-radius: 14px; padding: 3px 10px; font-weight: 700; font-size: 11px; cursor: pointer; box-shadow: none; }
+.map-in { display: flex; gap: 6px; } .map-in input { flex: 1; min-width: 0; } .map-in button { flex: none; white-space: nowrap; }
+.map-dlg { width: min(860px, calc(100vw - 24px)); }
+.map-pick { height: min(460px, 60vh); border-radius: 12px; border: 1px solid #e7ddcf; overflow: hidden; }
+.map-pick-v { font-size: 13px; }
+@media (max-width: 1000px) { .map-w { grid-template-columns: minmax(0, 1fr); } .map-c { height: 360px; } }
+@media (max-width: 760px) { .map-in { flex-wrap: wrap; } .map-in button { width: 100%; } }
+@media print { .map-c { height: 380px; } .map-seg { display: none; } }

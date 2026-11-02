@@ -1,0 +1,128 @@
+// =====================================================================
+// BẢN ĐỒ PHÂN BỔ DỰ ÁN (Leaflet 1.9.4 nhúng tại /vendor/leaflet, nền OpenStreetMap)
+// - Báo cáo: vòng tròn mỗi dự án (to nhỏ = doanh thu TĐ mới nhất · thực tế), màu theo tỷ suất hoặc trạng thái,
+//   khung Trọng điểm + doanh thu theo khu vực, danh sách dự án chưa có vị trí
+// - Form Dự án: hộp "Chọn trên bản đồ" để lấy tọa độ
+// =====================================================================
+const MAP_TILE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const MAP_ATTR = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+const MAP_HOME = [16.054, 108.202]; // mặc định: Đà Nẵng
+const MAP_ST = { 'Chuẩn bị': '#8a94a6', 'Đang thi công': '#3462a3', 'Tạm dừng': '#c9a227', 'Hoàn thành': '#0f7a4f' };
+let bMapObj = null;
+
+function mapLeaflet() {
+  if (!document.querySelector('link[data-leaflet]')) {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = '/vendor/leaflet/leaflet.css'; l.dataset.leaflet = '1';
+    document.head.appendChild(l);
+  }
+  return bLoad('/vendor/leaflet/leaflet.js');
+}
+const mapTiles = () => L.tileLayer(MAP_TILE, { maxZoom: 19, attribution: MAP_ATTR, referrerPolicy: 'strict-origin-when-cross-origin' }); // OSM yêu cầu gửi tên miền
+const mapTsCol = (ts) => (ts >= 0.15 ? '#0f7a4f' : ts >= 0.1 ? '#c9a227' : '#b4471c');
+
+// Số liệu từng dự án: doanh thu, chi phí, lợi nhuận TĐ mới nhất (thực tế hệ thống, cùng nguồn mục I-A)
+function mapData(list, v) {
+  const by = new Map(bMuc4Data(list, v).rows.map((x) => [x.d.id, x]));
+  return list.map((d) => { const x = by.get(d.id) || { t3: 0, c3: 0, l3: 0 };
+    return { d, dt: x.t3, cp: x.c3, ln: x.l3, kv: (d.khu_vuc || d.dia_diem || '').trim() || 'Chưa ghi khu vực',
+      co: Number.isFinite(d.vi_do) && Number.isFinite(d.kinh_do) && d.vi_do !== null && d.kinh_do !== null }; });
+}
+
+function bMapSection(list, v) {
+  if (!list.length) return '';
+  const R = mapData(list, v), tot = R.reduce((a, x) => a + Math.max(0, x.dt), 0);
+  const g = new Map(); for (const x of R) { const o = g.get(x.kv) || { dt: 0, n: 0 }; o.dt += Math.max(0, x.dt); o.n++; g.set(x.kv, o); }
+  const kv = [...g].sort((a, b) => b[1].dt - a[1].dt), top = kv[0];
+  const mode = BST.map_mode === 'tt' ? 'tt' : 'ts', thieu = R.filter((x) => !x.co);
+  const lg = mode === 'ts'
+    ? `<span><i style="background:#0f7a4f"></i>Tỷ suất ≥ 15%</span><span><i style="background:#c9a227"></i>10–15%</span><span><i style="background:#b4471c"></i>&lt; 10% / lỗ</span>`
+    : Object.entries(MAP_ST).map(([k, c]) => `<span><i style="background:${c}"></i>${k}</span>`).join('');
+  return `<section class="card b-sec map-sec no-print-break">
+    <div class="th-head"><span class="th-no">⌖</span><div class="th-ttl"><h3>Bản đồ phân bổ dự án</h3><p>Vòng tròn = doanh thu (TĐ mới nhất · thực tế) · màu = ${mode === 'ts' ? 'tỷ suất lợi nhuận' : 'trạng thái'} · bấm vòng tròn để xem chi tiết</p></div>
+      <div class="th-tags map-seg no-print"><button type="button" class="${mode === 'ts' ? 'on' : ''}" data-mapmode="ts">Tỷ suất</button><button type="button" class="${mode === 'tt' ? 'on' : ''}" data-mapmode="tt">Trạng thái</button></div></div>
+    <div class="map-w">
+      <div class="map-box"><div id="b-map" class="map-c" role="region" aria-label="Bản đồ phân bổ dự án"></div>
+        ${R.some((x) => x.co) ? '' : '<div class="map-empty">Chưa có dự án nào có vị trí. Nhập tọa độ ở tab <b>Dự án</b> (nút 📍 Chọn trên bản đồ).</div>'}</div>
+      <div class="map-p">
+        ${top && tot > 0 ? `<div class="map-hot"><div class="k">★ Trọng điểm</div><div class="v">${esc(top[0])}</div>
+          <div class="s">${top[1].n} dự án · ${bTy(top[1].dt)} tỷ · <b>${bpct(top[1].dt, tot)}</b> doanh thu</div></div>` : ''}
+        <div class="map-pt">Doanh thu theo khu vực</div>
+        ${kv.map(([k, o]) => `<div class="map-r"><span>${esc(k)} <small>${o.n} DA</small></span><b>${bTy(o.dt)}</b><em>${bpct(o.dt, tot)}</em><span class="map-tr"><i style="width:${tot ? Math.min(100, (o.dt / tot) * 100) : 0}%"></i></span></div>`).join('')}
+        <div class="map-lg">${lg}<div>Vòng to = doanh thu lớn · nhãn = mã dự án · tỷ đồng, ${v === 'gt' ? 'trước' : 'sau'} VAT</div></div>
+        ${thieu.length ? `<div class="map-miss"><b>${thieu.length} dự án chưa có vị trí:</b> ${thieu.map((x) => esc(x.d.ma_du_an)).join(', ')}. Nhập ở tab Dự án.</div>` : ''}
+      </div>
+    </div>
+  </section>`;
+}
+
+async function bMapInit(list, v) {
+  const el = document.getElementById('b-map');
+  if (bMapObj) { bMapObj.remove(); bMapObj = null; }
+  if (!el) return;
+  const R = mapData(list, v).filter((x) => x.co);
+  try { await mapLeaflet(); } catch { el.innerHTML = '<div class="map-empty">Không tải được thư viện bản đồ.</div>'; return; }
+  if (!document.body.contains(el)) return; // trang đã vẽ lại trong lúc tải
+  const m = bMapObj = L.map(el, { zoomControl: false, scrollWheelZoom: false });
+  L.control.zoom({ position: 'bottomright' }).addTo(m);
+  mapTiles().addTo(m);
+  if (!R.length) { m.setView(MAP_HOME, 12); return; }
+  const mode = BST.map_mode === 'tt' ? 'tt' : 'ts', mx = Math.max(...R.map((x) => Math.max(0, x.dt)), 1);
+  for (const x of [...R].sort((a, b) => b.dt - a.dt)) { // vòng lớn vẽ trước, vòng nhỏ nằm trên
+    const ts = x.dt ? x.ln / x.dt : 0, col = mode === 'ts' ? mapTsCol(ts) : (MAP_ST[x.d.trang_thai] || '#8a94a6');
+    const c = L.circleMarker([x.d.vi_do, x.d.kinh_do], { radius: 9 + Math.sqrt(Math.max(0, x.dt) / mx) * 22, color: '#fff', weight: 2.5, fillColor: col, fillOpacity: 0.82 }).addTo(m);
+    c.bindPopup(`<div class="map-pp"><b>${esc(x.d.ma_du_an)}</b> · ${esc(x.d.ten_du_an)}
+      <div class="map-pp-s">${esc(x.kv)} · ${esc(x.d.trang_thai)} · ${Number(x.d.tien_do) || 0}%${x.d.chu_dau_tu ? `<br>CĐT: ${esc(x.d.chu_dau_tu)}` : ''}</div>
+      <table><tr><td>Doanh thu</td><td>${bTy(x.dt)} tỷ</td></tr><tr><td>Chi phí</td><td>${bTy(x.cp)} tỷ</td></tr>
+      <tr><td>Lợi nhuận</td><td class="${x.ln < 0 ? 'neg' : ''}">${bTy(x.ln)} tỷ · ${bpct(x.ln, x.dt)}</td></tr></table>
+      <button type="button" class="map-pp-b" data-mapprj="${x.d.id}">Mở thẻ dự án →</button></div>`);
+    L.marker([x.d.vi_do, x.d.kinh_do], { interactive: false, keyboard: false,
+      icon: L.divIcon({ className: 'map-lbl-w', html: `<span class="map-lbl">${esc(x.d.ma_du_an)}</span>`, iconSize: null, iconAnchor: [-14, 10] }) }).addTo(m);
+  }
+  if (R.length === 1) m.setView([R[0].d.vi_do, R[0].d.kinh_do], 14);
+  else m.fitBounds(R.map((x) => [x.d.vi_do, x.d.kinh_do]), { padding: [60, 60], maxZoom: 15 });
+  m.on('focus click', () => m.scrollWheelZoom.enable()); // lăn chuột phóng to chỉ sau khi bấm vào bản đồ (tránh kẹt khi cuộn trang)
+  m.on('blur mouseout', () => m.scrollWheelZoom.disable());
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mapprj]');
+  if (b) { bMapObj?.closePopup(); return openProjectReport(Number(b.dataset.mapprj)); }
+  const md = e.target.closest('[data-mapmode]');
+  if (md && BC) { BST.map_mode = md.dataset.mapmode; bSave(); return renderKeepPos('.map-sec'); }
+});
+
+// ---------------------------------------------------------------------
+// Form Dự án: chọn vị trí trên bản đồ -> điền ô Tọa độ "vĩ độ, kinh độ"
+// ---------------------------------------------------------------------
+const mapParse = (s) => { const m = String(s || '').trim().match(/^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (!m) return null; const la = Number(m[1].replace(',', '.')), lo = Number(m[2].replace(',', '.'));
+  return Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? [la, lo] : null; };
+const mapFmt = (la, lo) => `${la.toFixed(6)}, ${lo.toFixed(6)}`;
+
+async function mapPicker(input) {
+  const dlg = document.createElement('dialog');
+  dlg.className = 'pass-dlg map-dlg';
+  dlg.innerHTML = `<div class="stack"><h3>Chọn vị trí công trình</h3>
+    <p class="muted small">Bấm vào bản đồ để đặt vị trí (kéo, lăn chuột để phóng to). Hoặc dán tọa độ từ Google Maps: bấm chuột phải vào điểm → chép dòng số đầu tiên.</p>
+    <div class="map-pick" id="map-pick"></div>
+    <div class="map-pick-v">Vị trí: <b id="map-pick-t">chưa chọn</b></div>
+    <div class="actions"><button type="button" class="primary" data-ok disabled>Dùng vị trí này</button><button type="button" data-clear>Xóa vị trí</button><button type="button" data-x>Hủy</button></div></div>`;
+  document.body.appendChild(dlg);
+  dlg.showModal();
+  const close = () => { pm?.remove(); dlg.remove(); };
+  let pm = null, pt = mapParse(input.value), mk = null;
+  dlg.addEventListener('close', close);
+  dlg.querySelector('[data-x]').onclick = () => dlg.close();
+  dlg.querySelector('[data-clear]').onclick = () => { input.value = ''; input.dispatchEvent(new Event('input')); dlg.close(); };
+  dlg.querySelector('[data-ok]').onclick = () => { if (pt) { input.value = mapFmt(pt[0], pt[1]); input.dispatchEvent(new Event('input')); } dlg.close(); };
+  try { await mapLeaflet(); } catch { dlg.querySelector('#map-pick').textContent = 'Không tải được thư viện bản đồ.'; return; }
+  pm = L.map('map-pick').setView(pt || MAP_HOME, pt ? 16 : 12);
+  mapTiles().addTo(pm);
+  const set = (la, lo) => { pt = [la, lo];
+    if (mk) mk.setLatLng(pt); else mk = L.circleMarker(pt, { radius: 10, color: '#fff', weight: 3, fillColor: '#b4471c', fillOpacity: 0.95 }).addTo(pm);
+    dlg.querySelector('#map-pick-t').textContent = mapFmt(la, lo); dlg.querySelector('[data-ok]').disabled = false; };
+  if (pt) set(pt[0], pt[1]);
+  pm.on('click', (e) => set(e.latlng.lat, e.latlng.lng));
+  setTimeout(() => pm.invalidateSize(), 60);
+}

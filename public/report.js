@@ -1319,6 +1319,8 @@ function renderReport() {
 
   ${bFinHtml(list, v)}
 
+  ${bMapSection(list, v)}
+
   ${bPcSection(list, v)}
 
   <div class="card b-detail-bar">
@@ -1400,6 +1402,7 @@ function renderReport() {
   <div class="b-foot">Nguồn: ${esc(BC.ten_he_thong || 'PROJECT PROFIT')} · ${esc(BC.phien_ban)} · Số liệu lấy tự động từ các tab Doanh thu, Chi phí, Thầu phụ, Tiền về tại thời điểm lập báo cáo.</div>`;
 
   bDrawCharts(list, v, one);
+  bMapInit(list, v);
 }
 
 function bProjectDetail(d, v, open) {

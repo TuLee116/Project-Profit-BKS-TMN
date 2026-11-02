@@ -237,6 +237,10 @@ pForm?.addEventListener('submit', async (e) => {
   const body = formData(pForm);
   const id = body.id;
   delete body.id;
+  // Ô Tọa độ "vĩ độ, kinh độ" -> 2 trường vi_do, kinh_do (trống = chưa có vị trí)
+  const td = String(body.toa_do || '').trim(); delete body.toa_do;
+  if (td && !mapParse(td)) return showMsg($('#p-msg'), 'Tọa độ không hợp lệ. Nhập dạng: 16.0689, 108.2230 (hoặc bấm 📍 Chọn trên bản đồ)', 'err');
+  [body.vi_do, body.kinh_do] = td ? mapParse(td) : [null, null];
   // Giá trị HĐ / Đã giải ngân nhập tay (cũ) đã thay bằng số liệu Doanh thu – Chi phí: giữ nguyên giá trị đang lưu
   const old = projects.find((x) => x.id === Number(id));
   body.gia_tri_hd = old ? old.gia_tri_hd : 0;
@@ -250,6 +254,7 @@ pForm?.addEventListener('submit', async (e) => {
     showMsg($('#p-msg'), err.message, 'err');
   }
 });
+$('#p-map-pick')?.addEventListener('click', () => mapPicker(pForm.elements.toa_do));
 $('#p-cancel')?.addEventListener('click', () => { resetProjectForm(); showMsg($('#p-msg'), ''); });
 $('#p-search').addEventListener('input', renderProjects);
 
@@ -265,6 +270,7 @@ $('#p-tbody').addEventListener('click', async (e) => {
     const r = projects.find((x) => x.id === Number(edit));
     if (!r) return;
     for (const [k, v] of Object.entries(r)) if (pForm.elements[k]) pForm.elements[k].value = v ?? '';
+    pForm.elements.toa_do.value = r.vi_do != null && r.kinh_do != null ? mapFmt(Number(r.vi_do), Number(r.kinh_do)) : '';
     $('#p-form-title').textContent = 'Sửa dự án ' + r.ma_du_an;
     pForm.scrollIntoView({ behavior: 'smooth' });
   }

@@ -67,6 +67,9 @@
           <label>Chủ đầu tư<input name="chu_dau_tu" maxlength="255"></label>
           <label>Loại công trình<input name="loai_cong_trinh" maxlength="100" placeholder="Nhà cao tầng, Nhà xưởng..."></label>
           <label>Địa điểm<input name="dia_diem" maxlength="150" placeholder="Quận 1, TP.HCM"></label>
+          <label>Khu vực (phường / quận) <small class="muted">– dùng tính trọng điểm trên bản đồ</small><input name="khu_vuc" maxlength="80" placeholder="Hải Châu"></label>
+          <label>Vị trí (tọa độ) <small class="muted">– vĩ độ, kinh độ</small>
+            <span class="map-in"><input name="toa_do" maxlength="60" placeholder="16.068900, 108.223000" autocomplete="off"><button type="button" id="p-map-pick" class="sm" title="Chọn vị trí trên bản đồ">📍 Chọn trên bản đồ</button></span></label>
           <label>Tiến độ (%)<input name="tien_do" type="number" min="0" max="100" step="0.01" value="0"></label>
           <label>Trạng thái<select name="trang_thai"></select></label>
           <label>Ngày bắt đầu <small class="muted">(trống = ngày ký HĐ đầu tiên)</small><input name="ngay_bat_dau" type="date"></label>
@@ -365,6 +368,7 @@
   <script src="/common.js"></script>
   <script src="/app.js"></script>
   <script src="/report.js"></script>
+  <script src="/map.js"></script>
   <script src="/assistant.js"></script>
 </body>
 </html>
