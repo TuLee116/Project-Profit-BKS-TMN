@@ -21,11 +21,18 @@ function mapLeaflet() {
 const mapTiles = () => L.tileLayer(MAP_TILE, { maxZoom: 19, attribution: MAP_ATTR, referrerPolicy: 'strict-origin-when-cross-origin' }); // OSM yêu cầu gửi tên miền
 const mapTsCol = (ts) => (ts >= 0.15 ? '#0f7a4f' : ts >= 0.1 ? '#c9a227' : '#b4471c');
 
+// Khu vực để gộp: lấy phần trước dấu phẩy, bỏ "quận / huyện / phường / Q. / P.", viết hoa chữ đầu mỗi từ
+// -> "Cẩm Lệ, Đà Nẵng", "Q. Cẩm Lệ", "quận cẩm lệ" đều thành "Cẩm Lệ"
+function mapKv(s) {
+  const t = String(s || '').split(',')[0].trim().replace(/^(quận|huyện|phường|xã|thị xã|thành phố|tp\.?|q\.|p\.)\s*/i, '').trim();
+  if (!t) return 'Chưa ghi khu vực';
+  return t.toLocaleLowerCase('vi').replace(/(^|\s)(\p{L})/gu, (m, a, c) => a + c.toLocaleUpperCase('vi'));
+}
 // Số liệu từng dự án: doanh thu, chi phí, lợi nhuận TĐ mới nhất (thực tế hệ thống, cùng nguồn mục I-A)
 function mapData(list, v) {
   const by = new Map(bMuc4Data(list, v).rows.map((x) => [x.d.id, x]));
   return list.map((d) => { const x = by.get(d.id) || { t3: 0, c3: 0, l3: 0 };
-    return { d, dt: x.t3, cp: x.c3, ln: x.l3, kv: (d.khu_vuc || d.dia_diem || '').trim() || 'Chưa ghi khu vực',
+    return { d, dt: x.t3, cp: x.c3, ln: x.l3, kv: mapKv(d.khu_vuc || d.dia_diem),
       co: Number.isFinite(d.vi_do) && Number.isFinite(d.kinh_do) && d.vi_do !== null && d.kinh_do !== null }; });
 }
 

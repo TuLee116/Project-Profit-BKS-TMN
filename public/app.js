@@ -15,6 +15,8 @@ let users = [];
 (async () => {
   try {
     [META, ME] = await Promise.all([api('/api/meta'), api('/api/auth/me')]);
+    // chờ các file giao diện còn lại (report.js, map.js…) tải xong rồi mới mở tab – mạng chậm thì /api trả về trước khi report.js kịp tải
+    if (document.readyState === 'loading') await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
   } catch (err) {
     return alert('Không tải được dữ liệu: ' + err.message);
   }
