@@ -1995,7 +1995,7 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
    ===================================================================== */
 @keyframes moUp { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes moX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes moDraw { to { stroke-dashoffset: 0; } }
+@keyframes moDraw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
 @keyframes moPop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
 @keyframes moRing { from { opacity: 0; transform: rotate(-120deg) scale(.7); } to { opacity: 1; transform: none; } }
 /* Khối trượt nhẹ vào khi cuộn tới */
@@ -2007,7 +2007,7 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 /* Cột biểu đồ mọc lên, đường lợi nhuận vẽ dần, điểm bật ra */
 #b-report .mo-in .cf-svg rect:not(.cf-sel):not(.cf-hit) { transform-box: fill-box; transform-origin: 50% 100%; animation: moUp .8s cubic-bezier(.2,.8,.2,1) both; }
 #b-report .mo-in .cf-svg rect:not(.cf-sel):not(.cf-hit):nth-of-type(odd) { animation-delay: .06s; }
-#b-report .mo-in .mo-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: moDraw 1s .35s ease forwards; }
+#b-report .mo-in .mo-line { animation: moDraw 1s .35s ease both; }
 #b-report .mo-in .cf-svg circle, #b-report .mo-in .cf-sp circle { transform-box: fill-box; transform-origin: center; animation: moPop .4s .9s cubic-bezier(.3,1.6,.5,1) both; }
 #b-report .mo-in .cf-svg text { animation: moPop .4s .7s ease both; transform-box: fill-box; transform-origin: center bottom; }
 /* Thanh ngang chạy ra, vòng cơ cấu vẽ dần */
