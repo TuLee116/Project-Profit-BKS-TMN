@@ -1914,3 +1914,11 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .c-block.c-thu .toolbar { margin-bottom: 0; }
 .c-block.c-thu { padding-top: 14px; padding-bottom: 14px; }
 @media print { .c-block.c-thu > .table-wrap { display: block; } .c-khoi-car { display: none; } }
+
+/* Doanh thu – xem tổng hợp tất cả dự án: ẩn form nhập, công cụ thêm tiền về */
+#tab-revenue.rev-all .rev-form, #tab-revenue.rev-all .tv-tools { display: none !important; }
+#tab-revenue.rev-all #r-project-info { color: #1f3b73; }
+
+/* Thanh mở bảng chi tiết chi phí (3 khối) */
+.c-blocks-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 20px; }
+@media print { .c-blocks-bar { display: none; } #c-blocks[hidden] { display: grid !important; } }

@@ -674,6 +674,20 @@ api.get('/du-an/:id/doanh-thu', wrap(async (req, res) => {
   res.json({ du_an, items, tong: summarize(items), tien_ve, tong_tien_ve: summarizeTienVe(tien_ve) });
 }));
 
+// Doanh thu tổng hợp TẤT CẢ dự án (chỉ xem): số HĐ/PL ghi kèm mã dự án để không gộp nhầm HĐ trùng số giữa các dự án
+api.get('/doanh-thu-tong', wrap(async (_req, res) => {
+  const projects = await store.listProjects();
+  const items = [], tien_ve = [];
+  for (const p of projects) {
+    const [rev, tv] = await Promise.all([store.listRevenue(p.id), store.listTienVe(p.id)]);
+    for (const r of sortRevenue(rev).map(calcLine))
+      items.push({ ...r, du_an_id: p.id, ma_du_an: p.ma_du_an, so_ma: r.so_ma ? `${p.ma_du_an} · ${r.so_ma}` : r.so_ma, so_hieu: `${p.ma_du_an} · ${r.so_hieu}` });
+    for (const t of sortTienVe(tv)) tien_ve.push({ ...t, du_an_id: p.id, ma_du_an: p.ma_du_an, nhan: `${p.ma_du_an} · ${tienVeLabel(t)}` });
+  }
+  res.json({ tat_ca: true, so_du_an: projects.length, du_an: { id: 0, ma_du_an: 'Tất cả', ten_du_an: `Tất cả dự án (${projects.length})`, chu_dau_tu: '' },
+    items, tong: summarize(items), tien_ve, tong_tien_ve: summarizeTienVe(tien_ve) });
+}));
+
 // ---------- Giá trị tiền về ----------
 api.post('/du-an/:id/tien-ve', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);

@@ -360,6 +360,9 @@ const dvT = (n, def = 'dong') => dvNum(n, def) + (dvKey(def) === def ? '' : ' ' 
 const vatBadge = (vat) => (vat ? `${vat}%` : '<span class="st st-tam-tinh">Tạm tính</span>');
 
 // Dựng 2 khối (HĐ/PL và HT/QT) từ một mẫu chung
+// Doanh thu: "Tất cả dự án" = chỉ xem tổng hợp (ẩn form nhập, khóa sửa / xóa / nhập tiền về)
+let revAll = (() => { try { return localStorage.getItem('revAll') === '1'; } catch { return false; } })();
+const canRv = (k) => can(k) && !revAll;
 function buildRevenueSections() {
   const wrap = $('#r-sections');
   if (wrap.dataset.built) return;
@@ -537,29 +540,36 @@ async function loadRevenueTab() {
   sel.hidden = !projects.length;
   if (!projects.length) return;
   if (!projects.some((p) => p.id === revProjectId)) revProjectId = projects[0].id;
-  sel.innerHTML = projects.map((p) => `<option value="${p.id}">${esc(p.ma_du_an)} – ${esc(p.ten_du_an)}</option>`).join('');
-  sel.value = revProjectId;
+  sel.innerHTML = `<option value="all">Tất cả dự án (${projects.length}) – chỉ xem tổng hợp</option>` +
+    projects.map((p) => `<option value="${p.id}">${esc(p.ma_du_an)} – ${esc(p.ten_du_an)}</option>`).join('');
+  sel.value = revAll ? 'all' : revProjectId;
   await loadRevenue();
 }
 
 $('#r-project').addEventListener('change', (e) => {
-  revProjectId = Number(e.target.value);
+  revAll = e.target.value === 'all';
+  try { localStorage.setItem('revAll', revAll ? '1' : ''); } catch {}
+  if (!revAll) revProjectId = Number(e.target.value);
   loadRevenue().catch((err) => alert(err.message));
 });
 
 let tvProject = null;
 async function loadRevenue() {
-  try { localStorage.setItem('revProject', revProjectId); } catch {}
-  if (tvProject !== revProjectId) {
+  if (!revAll) try { localStorage.setItem('revProject', revProjectId); } catch {}
+  const key = revAll ? 'all' : revProjectId;
+  if (tvProject !== key) {
     // Đổi công trình: bỏ dữ liệu đang nhập dở của công trình trước
-    tvProject = revProjectId;
+    tvProject = key;
     tvDrafts = null;
     tvEdits = {};
     $$('.rev-form').forEach(resetRevForm);
   }
-  revData = await api(`/api/du-an/${revProjectId}/doanh-thu`);
+  revData = await api(revAll ? '/api/doanh-thu-tong' : `/api/du-an/${revProjectId}/doanh-thu`);
   const p = revData.du_an;
-  $('#r-project-info').innerHTML = `Mã: <b>${esc(p.ma_du_an)}</b> · Chủ đầu tư: <b>${esc(p.chu_dau_tu || '—')}</b>`;
+  $('#r-project-info').innerHTML = revAll
+    ? `<b>Tổng hợp ${revData.so_du_an} dự án</b> · chỉ xem – muốn nhập, sửa doanh thu hãy chọn từng dự án`
+    : `Mã: <b>${esc(p.ma_du_an)}</b> · Chủ đầu tư: <b>${esc(p.chu_dau_tu || '—')}</b>`;
+  $('#tab-revenue').classList.toggle('rev-all', revAll);
   $('#r-body').hidden = false;
   renderRevenue();
   // Cập nhật ô chọn Loại theo dữ liệu mới, không xóa nội dung đang nhập
@@ -579,7 +589,7 @@ function renderRevenue() {
   $('#r-k-tv-sub').textContent = `Tạm ứng ${dvT(tv.tam_ung)} · Thanh toán ${dvT(tv.thanh_toan)} · Quyết toán ${dvT(tv.quyet_toan)}`;
 
   for (const loai of Object.keys(REV_LABEL)) {
-    const cols = can('hd') ? 10 : 9;
+    const cols = canRv('hd') ? 10 : 9;
     const card = $(`.rev-card[data-loai="${loai}"]`);
     const rows = items.filter((r) => r.loai === loai);
     if (loai === 'hd') {
@@ -592,7 +602,7 @@ function renderRevenue() {
         <td class="num">${dvm(t.gia_tri)}</td><td></td>
         <td class="num">${dvm(t.tien_vat)}</td>
         <td class="num">${dvm(t.sau_vat)}</td>
-        <td colspan="${can('hd') ? 3 : 2}"></td>
+        <td colspan="${canRv('hd') ? 3 : 2}"></td>
       </tr>`;
   }
   updateQtToggleAll();
@@ -620,7 +630,7 @@ function qtGroupList(rows) {
   return [...groups.values()].sort((a, b) => (a.k ? order.get(a.k) : 1e6) - (b.k ? order.get(b.k) : 1e6));
 }
 function qtGroupsHtml(rows) {
-  const edit = can('hd');
+  const edit = canRv('hd');
   // Giá trị HĐ (gồm PL, sau VAT) của từng HĐ để tính % đã nghiệm thu
   const hdVal = new Map();
   for (const g of hdGroups(revData.items.filter((r) => r.loai === 'hd'))) {
@@ -701,7 +711,7 @@ function hdRowHtml(r, stt, { child = false, head = false, toggle = '' } = {}) {
       <td class="num strong">${dvm(r.sau_vat)}</td>
       <td class="wrap">${esc(r.ghi_chu)}</td>
       <td class="muted">${esc(r.nguoi_cap_nhat || '')}</td>
-      ${can('hd') ? `<td class="row-actions"><button data-redit="${r.id}">Sửa</button><button class="danger" data-rdel="${r.id}">Xóa</button></td>` : ''}
+      ${canRv('hd') ? `<td class="row-actions"><button data-redit="${r.id}">Sửa</button><button class="danger" data-rdel="${r.id}">Xóa</button></td>` : ''}
     </tr>`;
 }
 
@@ -715,7 +725,7 @@ function hdGroupsHtml(rows) {
       : '<span class="grp-toggle-sp"></span>';
     let html = '';
     if (g.head) html += hdRowHtml(g.head, n, { toggle });
-    else html += `<tr class="hd-head hd-orphan"><td class="num muted">${n}</td><td colspan="${can('hd') ? 9 : 8}">${toggle}${can('hd') ? `<b class="so-ma-pick" data-soma="${esc(g.so_ma)}" title="Nhấp đúp để thêm dòng cho ${esc(g.so_ma)}">${esc(g.so_ma)}</b>` : `<b>${esc(g.so_ma)}</b>`} <span class="st st-tam-tinh">Chưa có HĐ gốc</span></td></tr>`;
+    else html += `<tr class="hd-head hd-orphan"><td class="num muted">${n}</td><td colspan="${canRv('hd') ? 9 : 8}">${toggle}${canRv('hd') ? `<b class="so-ma-pick" data-soma="${esc(g.so_ma)}" title="Nhấp đúp để thêm dòng cho ${esc(g.so_ma)}">${esc(g.so_ma)}</b>` : `<b>${esc(g.so_ma)}</b>`} <span class="st st-tam-tinh">Chưa có HĐ gốc</span></td></tr>`;
     if (!closed) g.pls.forEach((r, i) => { html += hdRowHtml(r, `${n}.${i + 1}`, { child: true }); });
     if (g.pls.length) {
       const sum = (f) => members.reduce((s, r) => s + r[f], 0);
@@ -727,7 +737,7 @@ function hdGroupsHtml(rows) {
           <td class="num">${dvm(sum('gia_tri'))}</td><td></td>
           <td class="num">${dvm(sum('tien_vat'))}</td>
           <td class="num">${dvm(sum('sau_vat'))}</td>
-          <td colspan="${can('hd') ? 3 : 2}"></td>
+          <td colspan="${canRv('hd') ? 3 : 2}"></td>
         </tr>`;
     }
     return html;
@@ -915,10 +925,10 @@ const tvDirty = (r) => !r.id || Boolean(tvEdits[r.key]);
 function tvRows() {
   const heads = tvHeads();
   const saved = revData.tien_ve.map((r) => ({ ...r, key: 'id' + r.id }));
-  if (tvDrafts === null && (saved.length || !can('tien') || heads.length)) {
+  if (tvDrafts === null && (saved.length || !canRv('tien') || heads.length)) {
     // Công trình chưa có dữ liệu: gợi ý sẵn mẫu Tạm ứng / TT Đợt 1 / Quyết toán cho HĐ đầu tiên
     const hd_id = heads[0]?.id;
-    tvDrafts = saved.length || !can('tien') ? [] : [
+    tvDrafts = saved.length || !canRv('tien') ? [] : [
       { key: 'd' + ++tvSeq, loai: 'tam_ung', hd_id },
       { key: 'd' + ++tvSeq, loai: 'dot', dot: 1, hd_id },
       { key: 'd' + ++tvSeq, loai: 'quyet_toan', hd_id },
@@ -935,7 +945,7 @@ function tvRows() {
 function renderTienVe() {
   const heads = tvHeads();
   const rows = tvRows();
-  const edit = can('tien');
+  const edit = canRv('tien');
   const cols = edit ? 7 : 6;
   const hdName = (id) => heads.find((h) => h.id === Number(id))?.so_hieu;
   $('#tv-total').textContent = dvT(revData.tong_tien_ve.tong);
@@ -1077,7 +1087,7 @@ async function tvReload() {
 
 function bindTienVe() {
   const card = $('#tv-card');
-  if (!can('tien')) return;
+  if (!canRv('tien')) return;
   $('#tv-hd-pick').addEventListener('change', updateTvButtons);
   // Ghi nhận nội dung đang sửa
   card.addEventListener('input', (e) => {
@@ -1163,7 +1173,15 @@ const costOpen = new Set();
 // 3 khối chi phí (trực tiếp / gián tiếp / tài chính): mặc định thu gọn, chỉ hiện tiêu đề + Tổng; bấm tiêu đề để mở
 const cKhoiMo = new Set();
 const khoiOfNhom = (code) => NHOM().find((n) => n.code === code)?.khoi;
-const moKhoiCua = (code) => { const k = khoiOfNhom(code); if (k) cKhoiMo.add(k); }; // vừa thêm / mở nhóm -> mở khối chứa nhóm          // nhóm / hạng mục đang mở: 'thau_phu', 'vat_tu', 'vat_tu:chinh'...
+let cBlocksOn = false; // cả 3 khối chi tiết: mặc định ẩn, bấm "Hiện bảng chi tiết chi phí" để xem
+function cBlocksShow(on) {
+  cBlocksOn = on;
+  const w = $('#c-blocks'), b = $('#c-blocks-toggle'); if (!w || !b) return;
+  w.hidden = !on; b.setAttribute('aria-expanded', String(on));
+  b.textContent = on ? 'Ẩn bảng chi tiết chi phí ▴' : 'Hiện bảng chi tiết chi phí ▾';
+  b.classList.toggle('primary', !on);
+}
+const moKhoiCua = (code) => { const k = khoiOfNhom(code); if (k) cKhoiMo.add(k); cBlocksShow(true); }; // vừa thêm / mở nhóm -> hiện bảng, mở khối chứa nhóm          // nhóm / hạng mục đang mở: 'thau_phu', 'vat_tu', 'vat_tu:chinh'...
 const cForm = $('#c-form');
 const NHOM = () => META.nhom_chi_phi || [];
 const KHOI = () => META.khoi_chi_phi || [];
@@ -1538,6 +1556,8 @@ function renderCost() {
   for (const k of KHOI()) {
     const card = $(`.c-block[data-khoi="${k.code}"]`);
     card.classList.toggle('c-thu', !cKhoiMo.has(k.code));
+    cBlocksShow(cBlocksOn);
+    if ($('#c-blocks-sum')) $('#c-blocks-sum').textContent = `Trực tiếp · Gián tiếp · Tài chính – ${tong.so_dong} dòng chi phí`;
     const t = tong.theo_khoi[k.code];
     $('[data-ktotal]', card).textContent = dvT(t.sau_vat);
     $('tbody', card).innerHTML = blockRows(k);
@@ -1557,6 +1577,7 @@ $('#tab-cost').addEventListener('dblclick', (e) => {
 
 $('#tab-cost').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-ckhoi]')) { e.preventDefault(); e.target.click(); } });
 $('#tab-cost').addEventListener('click', async (e) => {
+  if (e.target.closest('#c-blocks-toggle')) return cBlocksShow(!cBlocksOn);
   const kh = e.target.closest('[data-ckhoi]');
   if (kh) { const k = kh.dataset.ckhoi; cKhoiMo.has(k) ? cKhoiMo.delete(k) : cKhoiMo.add(k); kh.closest('.c-block').classList.toggle('c-thu', !cKhoiMo.has(k)); return; }
   const { cgrp, cadd, csub, cedit, cdel, tpopen, tpdel } = e.target.dataset;

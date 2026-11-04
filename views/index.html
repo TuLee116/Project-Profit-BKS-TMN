@@ -211,7 +211,11 @@
         </div>
 
         <!-- B1 / B2 / B3: dựng từ danh mục khối chi phí -->
-        <div id="c-blocks" class="section-stack"></div>
+        <div class="card c-blocks-bar">
+          <button type="button" class="primary" id="c-blocks-toggle" aria-expanded="false">Hiện bảng chi tiết chi phí ▾</button>
+          <span class="muted small" id="c-blocks-sum"></span>
+        </div>
+        <div id="c-blocks" class="section-stack" hidden></div>
       </div>
       <div id="c-empty" class="card empty" hidden>Chưa có công trình nào. Hãy thêm công trình ở tab <b>Dự án</b> trước.</div>
     </section>
