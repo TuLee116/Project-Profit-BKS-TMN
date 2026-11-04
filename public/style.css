@@ -1990,3 +1990,18 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .th-more { border: 0; background: none; box-shadow: none; color: #2f6bd8; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 10px; }
 .th-more:hover { text-decoration: underline; }
 @media print { .th-more-row { display: none; } .th-table tr[hidden] { display: table-row !important; } }
+.i-doi.off { opacity: .5; cursor: default; }
+/* Bảng dự án mục I–III: cùng khuôn (cột chung cùng độ rộng, cột số đều nhau) để số liên kết giữa các mục / các TĐ dóng thẳng hàng */
+#b-report .th-table:not(.iv-table) { table-layout: fixed; width: 100%; }
+#b-report .th-table:not(.iv-table) th:nth-child(1) { width: 46px; }
+#b-report .th-table:not(.iv-table) th:nth-child(2) { width: 112px; }
+#b-report .th-table:not(.iv-table) th:nth-child(4) { width: 128px; }
+#b-report .th-table:not(.iv-table) th.num { width: 116px; }
+#b-report .th-table:not(.iv-table) th.th-ht { width: 128px; }
+#b-report .th-table:not(.iv-table) td { overflow: hidden; text-overflow: ellipsis; }
+#b-report .th-table:not(.iv-table) td.num, #b-report .th-table:not(.iv-table) th.num { font-variant-numeric: tabular-nums; }
+#b-report .th-table:not(.iv-table) td.th-name { white-space: nowrap; }
+#b-report .th-table:not(.iv-table) td.th-ht .f-meter { max-width: 110px; }
+@media (max-width: 1100px) { #b-report .th-table:not(.iv-table) { table-layout: auto; } }
+#b-report .th-table:not(.iv-table) th.th-stt { width: 46px; }
+#b-report .th-table:not(.iv-table) thead th { white-space: normal; line-height: 1.25; vertical-align: bottom; }

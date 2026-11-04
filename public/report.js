@@ -540,18 +540,18 @@ function bTongHopHtml(list, v, P) {
         const tip = `So với TĐ${k - 1}: DT ${r.dt - r.b.dt >= 0 ? '+' : '−'}${bTy(Math.abs(r.dt - r.b.dt))} · CP ${r.cp - r.b.cp >= 0 ? '+' : '−'}${bTy(Math.abs(r.cp - r.b.cp))} · LN ${d >= 0 ? '+' : '−'}${bTy(Math.abs(d))} ${TY()}`;
         return `<td class="num i-dc" title="${tip}"><span class="i-dl ${Math.abs(d) < 1e6 ? 'eq' : d > 0 ? 'up' : 'dn'}">${Math.abs(d) < 1e6 ? '=' : d > 0 ? '▲' : '▼'} ${bTy(Math.abs(d))}</span></td>`; };
       return `${thHead('I', `Doanh thu – Chi phí – Lợi nhuận ${TEN[2]}`, TEN[1], [TEN[0], vt[0].toUpperCase() + vt.slice(1)])}
-    <div class="i-tdbar">${seg}${k > 1 ? `<label class="i-doi"><input type="checkbox" data-idoi ${chiDoi ? 'checked' : ''}> Chỉ dự án có thay đổi <b>${nDoi}</b>/${R.length}</label>` : ''}<span class="muted small">Mũi tên ▲▼ = tăng / giảm so với TĐ liền trước</span></div>
+    <div class="i-tdbar">${seg}<label class="i-doi ${k > 1 ? '' : 'off'}" title="${k > 1 ? '' : 'TĐ1 là mốc đầu – không có thay đổi để lọc'}"><input type="checkbox" data-idoi ${chiDoi ? 'checked' : ''} ${k > 1 ? '' : 'disabled'}> Chỉ dự án có thay đổi <b>${k > 1 ? nDoi : 0}</b>/${R.length}</label><span class="muted small">Mũi tên ▲▼ = tăng / giảm so với TĐ liền trước</span></div>
     <div class="f-grid th-grid3">
       ${card('dt', `Doanh thu ${TEN[2]}`, TT.dt, k === 1 ? [`${rows.length} dự án · giá trị HĐ khi ký`, `${rows.filter((x) => x.td1).length}/${rows.length} dự án đã chốt TĐ1`] : [sub('dt', true), `${rows.length} dự án`])}
       ${card('cp', `Chi phí ${TEN[2]}`, TT.cp, k === 1 ? [`Bằng <b>${bpct(TT.cp, TT.dt)}</b> doanh thu`, 'Dự toán chi phí khi ký HĐ'] : [sub('cp', false), `Bằng <b>${bpct(TT.cp, TT.dt)}</b> doanh thu`])}
       ${card('ln', `Lợi nhuận ${TEN[2]}`, TT.ln, [`Tỷ suất <b>${bpct(TT.ln, TT.dt)}</b>${k > 1 ? ` · TĐ${k - 1} ${bpct(P0.ln, P0.dt)}` : ''}`, k > 1 ? sub('ln', true) : `Bình quân <b>${rows.length ? bTy(TT.ln / rows.length) : '0'}</b> ${TY()} / dự án`])}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', ...(k > 1 ? [`± LN so TĐ${k - 1}`] : []), 'Hoàn thành', 'Tỷ lệ LN'])}
+      ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', '± LN so TĐ trước', 'Hoàn thành', 'Tỷ lệ LN'])}
       <tbody>${RR.map((r, i) => `<tr>${prj(r.x, i)}<td class="num">${bTy(r.dt)}</td><td class="num">${bTy(r.cp)}</td>
-        <td class="num strong ${r.ln < 0 ? 'neg' : 'pos'}">${bTy(r.ln)}</td>${k > 1 ? dCell(r) : ''}<td class="th-ht">${meter(r.dt ? r.ln / r.dt : 0, 0.3, BCOL.dk)}</td>
+        <td class="num strong ${r.ln < 0 ? 'neg' : 'pos'}">${bTy(r.ln)}</td>${k > 1 ? dCell(r) : '<td class="num i-dc"><span class="i-dl eq">—</span></td>'}<td class="th-ht">${meter(r.dt ? r.ln / r.dt : 0, 0.3, BCOL.dk)}</td>
         <td class="num"><b class="${r.ln < 0 ? 'neg' : ''}">${bpct(r.ln, r.dt)}${k === 1 && !r.x.td1 ? '<sup class="th-tt" title="Chưa chốt TĐ1: lấy HĐ gốc và chi phí trên hệ thống">*</sup>' : ''}</b></td></tr>`).join('')}</tbody>
-      ${foot([`${bTy(TT.dt)}${k > 1 ? `<div>${dl(TT.dt, P0.dt, true)}</div>` : ''}`, `${bTy(TT.cp)}${k > 1 ? `<div>${dl(TT.cp, P0.cp, false)}</div>` : ''}`, `${ty(TT.ln)}`, ...(k > 1 ? [dl(TT.ln, P0.ln, true)] : []), '', bpct(TT.ln, TT.dt)])}
+      ${foot([bTy(TT.dt), bTy(TT.cp), ty(TT.ln), k > 1 ? dl(TT.ln, P0.ln, true) : '<span class="i-dl eq">—</span>', '', bpct(TT.ln, TT.dt)])}
     </table></div>
     ${k === 1 ? `<p class="muted small f-note">Số dự kiến theo TĐ1 đã chốt (Doanh thu, Chi phí khi ký HĐ – nhập ở bảng TĐ của từng dự án). <b>(*)</b> Dự án chưa chốt TĐ1: lấy HĐ gốc với CĐT, thầu phụ theo HĐ gốc và chi phí khác đã ghi nhận trên hệ thống. Xem sau VAT: doanh thu quy đổi theo VAT của HĐ gốc, chi phí theo tỷ lệ VAT của chi phí dự án, làm tròn tới 0,1 tỷ. Cột Hoàn thành: thanh đầy = tỷ suất LN 30%.</p>` : `<p class="muted small f-note">${k === 2 ? 'TĐ2 = hợp đồng gốc + phụ lục tăng / giảm với CĐT; chi phí = thầu phụ theo HĐ + PL và chi phí khác đã ghi nhận.' : 'TĐ3 = giá trị quyết toán; dự án / hợp đồng chưa quyết toán tạm tính theo TĐ2.'} Mũi tên: tăng / giảm so với TĐ${k - 1} (xanh = có lợi, đỏ = bất lợi). Cột Hoàn thành: thanh đầy = tỷ suất LN 30%.</p>`}`;
     })()}
@@ -579,7 +579,7 @@ function bTongHopHtml(list, v, P) {
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu (TĐ mới nhất)', 'Thực chi', 'Còn lại', 'Hoàn thành', '% thực chi / DT'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.hd_sv)}</td><td class="num">${bTy(x.chi)}</td>
-        <td class="num strong">${ty(x.hd_sv - x.chi)}</td><td class="th-ht">${meter(x.chi, x.hd_sv, BCOL.chi)}</td><td class="num"><b>${bpct(x.chi, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
+        <td class="num strong ${x.hd_sv - x.chi < 0 ? 'neg' : 'pos'}">${bTy(x.hd_sv - x.chi)}</td><td class="th-ht">${meter(x.chi, x.hd_sv, BCOL.chi)}</td><td class="num"><b>${bpct(x.chi, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.hd_sv), bTy(T.chi), ty(T.hd_sv - T.chi), '', bpct(T.chi, T.hd_sv)])}
     </table></div>
     ${bMuc4Html(list, v)}`;
