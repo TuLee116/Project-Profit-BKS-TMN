@@ -398,7 +398,7 @@ function bFinHtml(list, v) {
   return `
   <section class="card b-sec f-sec">
     <div class="f-head">
-      <h2>Tổng quan tài chính · ${esc(P.label)}</h2>
+      <h2>BẢNG TỔNG HỢP THEO DÕI THỜI ĐIỂM</h2>
       <button type="button" class="f-range f-range-btn" data-kypick title="Bấm để chọn kỳ báo cáo">📅 ${P.range}${P.prev ? ` <span class="muted">· so với ${ymTxt(P.prev.from)}${P.prev.from !== P.prev.to ? ' – ' + ymTxt(P.prev.to) : ''}</span>` : ''} <span class="f-caret">▾</span></button>
     </div>
     ${bTongHopHtml(list, v, P)}
