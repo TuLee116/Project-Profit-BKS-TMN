@@ -831,6 +831,22 @@ api.get('/du-an/:id/chi-phi', wrap(async (req, res) => {
   res.json({ du_an, items, thau_phu, hd_cdt, tong_tp: summarizeContracts(thau_phu), tong: summarizeCost([...items, ...tpAsCost]) });
 }));
 
+// Chi phí tổng hợp TẤT CẢ dự án (chỉ xem): ghép dữ liệu từng dự án, tính tổng bằng cùng hàm như từng dự án
+api.get('/chi-phi-tong', wrap(async (_req, res) => {
+  const projects = await store.listProjects();
+  const items = [], thau_phu = [], hd_cdt = [];
+  for (const p of projects) {
+    const [cost, tp, rev] = await Promise.all([store.listCost(p.id), store.listTp(p.id), store.listRevenue(p.id)]);
+    for (const r of sortCost(cost).map(costLine)) items.push({ ...r, du_an_id: p.id, ma_du_an: p.ma_du_an });
+    for (const c of buildContracts(tp)) thau_phu.push({ ...c, du_an_id: p.id, ma_du_an: p.ma_du_an });
+    for (const r of sortRevenue(rev.filter((x) => x.loai === 'hd' && x.ma_loai === 'HĐ')))
+      hd_cdt.push({ id: r.id, so_ma: r.so_ma, so_hieu: `${p.ma_du_an} · ${r.so_hieu}`, ngay: r.ngay, du_an_id: p.id });
+  }
+  const tpAsCost = thau_phu.map((c) => ({ nhom: c.nhom || 'thau_phu', gia_tri: c.qt_gia_tri, tien_vat: c.qt_tien_vat, sau_vat: c.qt_sau_vat, tam_tinh: c.tam_tinh }));
+  res.json({ tat_ca: true, so_du_an: projects.length, du_an: { id: 0, ma_du_an: 'Tất cả', ten_du_an: `Tất cả dự án (${projects.length})`, chu_dau_tu: '' },
+    items, thau_phu, hd_cdt, tong_tp: summarizeContracts(thau_phu), tong: summarizeCost([...items, ...tpAsCost]) });
+}));
+
 api.post('/du-an/:id/chi-phi', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return bad(res, 'ID không hợp lệ');

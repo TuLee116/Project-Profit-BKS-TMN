@@ -95,7 +95,7 @@ function bDashRender(list, v, one) {
     const q = m4.get(x.d.id) || { t3: 0, l3: 0 };
     const qt = q['t' + k] || 0, ql = q['l' + k] || 0;
     const ts = qt ? ql / qt : 0, th = x.hd_sv ? x.thu / x.hd_sv : 0;
-    return `<tr><td class="num db-stt">${i + 1}</td><td class="db-ma"><b>${esc(x.d.ma_du_an)}</b></td><td class="db-ten" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td>
+    return `<tr class="db-row" data-dbrow="${x.d.id}" title="Bấm để xem vị trí trên bản đồ"><td class="num db-stt">${i + 1}</td><td class="db-ma"><button type="button" class="db-lnk" data-dbprj="${x.d.id}" title="Xem dashboard riêng dự án ${esc(x.d.ma_du_an)}">${esc(x.d.ma_du_an)} ›</button></td><td class="db-ten" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td>
       <td><span class="st st-${slug(x.d.trang_thai)}">${esc(x.d.trang_thai)}</span></td>
       <td class="num">${bTy(qt)}</td><td class="num strong ${ql < 0 ? 'neg' : 'pos'}">${bTy(ql)}</td>
       <td class="db-pc">${bar(ts, 0.3, ts < 0 ? '#d92d35' : DBC.ln)}<b>${pc(ql, qt)}</b></td>
@@ -149,6 +149,18 @@ function bDashRender(list, v, one) {
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-dbtd]'); if (!b) return;
   BST.db_td = Number(b.dataset.dbtd); bSave(); renderKeepPos('[data-dbtd="' + b.dataset.dbtd + '"]');
+});
+// Bảng Danh mục dự án: bấm Mã DA -> dashboard riêng dự án đó; bấm dòng -> bản đồ bay tới dự án, mở thông tin
+document.addEventListener('click', (e) => {
+  const pj = e.target.closest('[data-dbprj]');
+  if (pj) { BST.project = pj.dataset.dbprj; bSave(); renderReport(); document.getElementById('b-report')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  const tr = e.target.closest('tr[data-dbrow]'); if (!tr) return;
+  const k = bMapObj?._bks?.MK.get(Number(tr.dataset.dbrow));
+  document.querySelectorAll('.db-row.on').forEach((x) => x.classList.toggle('on', x === tr)); tr.classList.add('on');
+  if (!k) { showTip?.('Dự án chưa có tọa độ trên bản đồ', e.clientX, e.clientY); setTimeout(() => hideTip?.(), 1500); return; }
+  bMapObj._bks.khoa?.();
+  document.querySelector('.db-c-map')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  bMapObj.flyTo(k.c.getLatLng(), Math.max(bMapObj.getZoom(), 15), { duration: 0.8 }); bMapObj.once('moveend', () => k.c.openPopup());
 });
 // Chuyển chế độ xem Báo cáo / Dashboard
 document.getElementById('b-view')?.addEventListener('click', (e) => {

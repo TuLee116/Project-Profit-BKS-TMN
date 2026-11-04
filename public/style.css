@@ -1801,3 +1801,28 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .db-arrow i svg { display: block; }
 @media (max-width: 1100px) { .db-flow > .db-arrow:nth-child(4)::before { display: none; } }
 @media (max-width: 760px) { .db-flow > .db-arrow::before { left: 50%; right: auto; top: -6px; bottom: -6px; border-top: 0; border-left: 2px dashed #b9c7dc; } }
+
+/* Chi phí – xem tổng hợp tất cả dự án: nhãn mã dự án trước mỗi dòng */
+.c-da { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 6px; background: #eef2fb; color: #1f3b73; font-size: 10.5px; font-weight: 700; white-space: nowrap; vertical-align: 1px; }
+#tab-cost.cost-all #c-project-info { color: #1f3b73; }
+/* Dashboard: dòng bảng bấm được (bản đồ bay tới), Mã DA mở dashboard riêng dự án */
+.db-row { cursor: pointer; }
+.db-row.on td { background: #e8f0ff !important; }
+.db-lnk { border: 0; background: none; box-shadow: none; padding: 0; font: inherit; font-weight: 800; color: #1f3b73; cursor: pointer; white-space: nowrap; }
+.db-lnk:hover { color: #2f6bd8; text-decoration: underline; }
+/* Màn hình dưới 1600px: bảng chiếm hết chiều ngang, bản đồ xuống dưới (không phải cuộn ngang) */
+@media (max-width: 1600px) { .db-row3 { grid-template-columns: minmax(0, 1fr); } .db-mapc { height: 400px; min-height: 400px; } .db-table .db-ten { max-width: 320px; } }
+/* Ô ngày: nhập tay dd/mm/yyyy + nút lịch bên phải */
+.dmy-wrap { position: relative; display: block; width: 100%; min-width: 0; }
+.dmy-wrap > input:not(.dmy-cal) { width: 100%; padding-right: 32px; }
+.dmy-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; padding: 0; display: grid; place-items: center;
+  border: 0; border-radius: 7px; background: transparent; color: #64748b; box-shadow: none; cursor: pointer; }
+.dmy-btn:hover { background: #eef3fb; color: #2f6bd8; }
+.dmy-cal { position: absolute; right: 4px; bottom: 0; width: 26px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+@media print { .dmy-btn { display: none; } }
+/* Chi tiết HĐ đầu vào: tổng trước VAT (màu mờ như số tính phía trên), đường kẻ tách bảng HĐ/PL – thanh toán */
+.tp-dtl tfoot td.tp-sum-mo { color: #8a94a6; font-weight: 700; }
+.tp-sep { margin-top: 22px; padding-top: 16px; border-top: 2px solid #dfe6f0; }
+.tp-dtl tbody tr + tr td { border-top: 1px solid #e8edf4; }
+td .dmy-wrap, .tp-dtl .dmy-wrap { min-width: 128px; }
+td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }

@@ -147,6 +147,35 @@ function attachDateInput(input) {
   });
   input.addEventListener('blur', () => {
     input.classList.toggle('invalid', dmyToIso(input.value) === null);
+  });  attachDatePicker(input);
+}
+
+// Nút lịch cạnh ô ngày: bấm để chọn ngày trên lịch, vẫn nhập tay được; chọn xong điền dd/mm/yyyy vào ô
+function attachDatePicker(input) {
+  if (input.dataset.dmyPick || input.disabled || input.readOnly) return;
+  input.dataset.dmyPick = '1';
+  const wrap = document.createElement('span');
+  wrap.className = 'dmy-wrap';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'dmy-btn'; btn.tabIndex = -1; btn.title = 'Chọn ngày trên lịch';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const cal = document.createElement('input');
+  cal.type = 'date'; cal.className = 'dmy-cal'; cal.tabIndex = -1; cal.setAttribute('aria-hidden', 'true');
+  wrap.append(btn, cal);
+  btn.addEventListener('click', () => {
+    const iso = dmyToIso(input.value);
+    cal.value = iso || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    try { if (cal.showPicker) return cal.showPicker(); } catch {}
+    cal.focus(); cal.click();
+  });
+  cal.addEventListener('change', () => {
+    if (!cal.value) return;
+    input.value = isoToDmy(cal.value);
+    input.classList.remove('invalid');
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.focus();
   });
 }
 
