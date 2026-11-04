@@ -1979,3 +1979,14 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .th-table td .i-dl { margin-top: 1px; }
 .th-table tfoot td .i-dl { font-size: 10.5px; }
 @media print { .i-tdseg { display: none; } }
+
+/* Mục I: ô thay đổi LN gọn, lọc dự án có thay đổi; bảng dài: nút Xem thêm */
+.th-table td.i-dc { white-space: nowrap; }
+.th-table td.i-dc .i-dl { font-size: 12px; }
+.i-doi { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #334155; cursor: pointer; padding: 5px 12px; border-radius: 999px; background: #fff; border: 1px solid #e1e7f0; }
+.i-doi input { width: auto; margin: 0; accent-color: #2f6bd8; }
+.i-doi b { color: #1f3b73; }
+.th-more-row td { text-align: center; padding: 6px !important; background: #fafbfd; }
+.th-more { border: 0; background: none; box-shadow: none; color: #2f6bd8; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 10px; }
+.th-more:hover { text-decoration: underline; }
+@media print { .th-more-row { display: none; } .th-table tr[hidden] { display: table-row !important; } }
