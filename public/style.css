@@ -1509,3 +1509,10 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .dv-pick select option { color: #1f2937; }
 @media (max-width: 640px) { .dv-pick span { display: none; } .dv-pick select { padding: 4px 20px 4px 8px; } }
 @media print { .dv-pick { display: none; } }
+
+/* Nút Xuất (trang Báo cáo) trên thanh trên cùng */
+.xuat-grp[hidden] { display: none !important; }
+.xuat-btn { background: rgba(255,255,255,.95) !important; color: var(--navy) !important; font-weight: 800; }
+.xuat-grp .tab-menu { min-width: 190px; }
+@media print { .xuat-grp { display: none !important; } }
+@media (max-width: 640px) { .xuat-grp .tab-menu { left: 0 !important; right: auto !important; transform: none !important; min-width: 200px; } }

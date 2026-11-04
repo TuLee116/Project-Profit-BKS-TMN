@@ -58,6 +58,8 @@ function applyBranding(s) {
 const loaders = { projects: loadProjects, revenue: loadRevenueTab, cost: loadCostTab, users: () => (can('tai_khoan') ? loadUsers() : Promise.resolve()).then(() => loadLogs()), settings: loadSettings, profile: async () => {}, contact: loadContact, report: () => { BST.chi_tiet = false; return loadReport(); } }; // mỗi lần vào tab Báo cáo: chi tiết ẩn
 
 const NHAP_LIEU = ['projects', 'revenue', 'cost'];
+// Menu Xuất: chọn xong một mục thì đóng menu
+$('#xuat-grp .tab-menu')?.addEventListener('click', (e) => { if (e.target.closest('button')) setTimeout(closeMenus); });
 // Chọn đơn vị tiền (toàn hệ thống): lưu theo trình duyệt rồi vẽ lại trang đang xem
 if ($('#dv-pick')) {
   $('#dv-pick').value = DV_CHON;
@@ -75,6 +77,7 @@ function showTab(name) {
   $$('.topbar [data-tab], #subnav [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
   $$('.tab-grp').forEach((g) => g.classList.toggle('active', Boolean($(`[data-tab="${name}"]`, g))));
   $('#subnav').hidden = !NHAP_LIEU.includes(name);
+  if ($('#xuat-grp')) $('#xuat-grp').hidden = name !== 'report'; // nút Xuất chỉ hiện ở trang Báo cáo
   $$('main > .tab-panel').forEach((p) => (p.hidden = p.id !== 'tab-' + name));
   try { localStorage.setItem('tab', name); } catch {}
   return Promise.resolve(loaders[name]()).catch((err) => alert(err.message));

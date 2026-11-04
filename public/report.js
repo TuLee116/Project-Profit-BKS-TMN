@@ -1932,9 +1932,10 @@ const bStamp = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
 const bFileScope = () => { const { one } = bScope(); return one ? one.ma_du_an.replace(/[^\w-]+/g, '') : 'TatCaDuAn'; };
 async function bBusy(btn, fn) {
   const t = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Đang xuất...';
+  const xt = $('#xuat-txt'), x0 = xt?.textContent; // nút Xuất trên thanh trên cùng cũng báo đang xuất
+  btn.disabled = true; btn.textContent = 'Đang xuất...'; if (xt) xt.textContent = `⏳ ${t}...`;
   try { await fn(); showMsg($('#b-msg'), ''); } catch (err) { showMsg($('#b-msg'), err.message, 'err'); }
-  btn.disabled = false; btn.textContent = t;
+  btn.disabled = false; btn.textContent = t; if (xt) xt.textContent = x0;
 }
 
 // ---------- Excel ----------
