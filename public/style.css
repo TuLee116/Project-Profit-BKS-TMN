@@ -1597,3 +1597,12 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 /* Cột Hoàn thành: chỉ thanh mức đạt, tỷ lệ % ở cột bên phải */
 .th-table td.th-ht .f-meter { display: block; width: 100%; max-width: 140px; margin: 0; }
 .th-table th.th-ht { text-align: left; }
+
+/* Nhãn tình trạng dự án: mỗi trạng thái một màu riêng + chấm màu (cùng màu bản đồ) */
+.st-chuan-bi, .st-dang-thi-cong, .st-hoan-thanh, .st-tam-dung { display: inline-flex; align-items: center; gap: 5px; border: 1px solid transparent; }
+.st-chuan-bi::before, .st-dang-thi-cong::before, .st-hoan-thanh::before, .st-tam-dung::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.st-chuan-bi { color: #9a5b0a; background: #fdf0d9; border-color: #f6dcae; }
+.st-dang-thi-cong { color: #2c5291; background: #e4edfb; border-color: #c9daf3; }
+.st-hoan-thanh { color: #0f6b44; background: #dcf3e6; border-color: #b6e3c8; }
+.st-tam-dung { color: #b4232a; background: #fde4e5; border-color: #f7c6c9; }
+@media print { .st-chuan-bi, .st-dang-thi-cong, .st-hoan-thanh, .st-tam-dung { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

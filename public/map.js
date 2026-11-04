@@ -7,7 +7,7 @@
 const MAP_TILE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const MAP_ATTR = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 const MAP_HOME = [16.054, 108.202]; // mặc định: Đà Nẵng
-const MAP_ST = { 'Chuẩn bị': '#8a94a6', 'Đang thi công': '#3462a3', 'Tạm dừng': '#c9a227', 'Hoàn thành': '#0f7a4f' };
+const MAP_ST = { 'Chuẩn bị': '#d08a1e', 'Đang thi công': '#3462a3', 'Tạm dừng': '#c0392b', 'Hoàn thành': '#0f7a4f' }; // cùng màu nhãn tình trạng
 let bMapObj = null;
 
 function mapLeaflet() {
