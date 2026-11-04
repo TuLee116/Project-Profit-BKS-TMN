@@ -1581,3 +1581,15 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 #b-report .b-proj-title { color: var(--cfb-navy); }
 @media print { #b-report th, #b-report tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 #b-report .card h2::before { background: linear-gradient(180deg, #c9a96a 0%, #8a6a3e 100%); }
+
+/* Bảng dự án mục I–III: cột Mã DA, Tên dự án, Tình trạng, Hoàn thành tách riêng */
+.th-table .th-ma { white-space: nowrap; color: var(--navy); }
+.th-table td.th-prj { min-width: 200px; }
+.th-table .th-tt2 { white-space: nowrap; }
+.th-table .th-tt2 .th-st { margin-left: 0; }
+.th-table .th-ht { white-space: nowrap; width: 120px; }
+.th-table td.th-ht { font-variant-numeric: tabular-nums; }
+.th-htb { display: inline-block; width: 56px; height: 6px; border-radius: 99px; background: #ece6dc; vertical-align: middle; margin-right: 6px; overflow: hidden; }
+.th-htb i { display: block; height: 100%; border-radius: 99px; background: #3462a3; }
+.th-table td.th-ht b { font-size: 12px; color: #475569; font-weight: 700; }
+@media print { .th-htb { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
