@@ -60,20 +60,21 @@ function bDashRender(list, v, one) {
       <header><span class="db-no">${no}</span><div><h4>${title}</h4><p>${sub}</p></div></header>
       <div class="db-big"><span>${bigLab}</span><b class="${big < 0 ? 'neg' : ''}">${bTy(big)} <small>${TY()}</small></b></div>
       ${body}<footer>${go(no)}</footer></section>`;
-  const arrow = (lab) => `<div class="db-arrow" aria-hidden="true"><span>${lab}</span><i></i></div>`;
+  // Nối giữa các khối: đường nét đứt + mũi tên tròn (không chữ)
+  const arrow = () => `<div class="db-arrow" aria-hidden="true"><i><svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i></div>`;
   const flow = [
     blk('I', 'b1', 'Kế hoạch lúc ký', 'TĐ1 – ký hợp đồng', T.ln1, `Lợi nhuận dự kiến · ${pc(T.ln1, T.dt1)}`,
       `<ul class="db-lines">${line('Doanh thu', T.dt1, mx1, DBC.dt)}${line('Chi phí', T.cp1, mx1, DBC.cp)}${line('Lợi nhuận', T.ln1, mx1, DBC.ln)}</ul>
       <div class="db-note2">${rows.filter((x) => x.td1).length}/${rows.length} dự án đã chốt TĐ1 · chi phí bằng <b>${pc(T.cp1, T.dt1)}</b> doanh thu</div>`),
-    arrow('thực hiện'),
+    arrow(),
     blk('II', 'b2', 'Dòng tiền thực tế', `Lũy kế đến hôm nay`, T.con, 'Còn lại (thu − chi)',
       `<ul class="db-lines">${line('Dòng thu', T.thu, mx2, DBC.thu)}${line('Dòng chi', T.chi, mx2, DBC.chi)}${line('Còn lại', T.con, mx2, DBC.ln)}</ul>
       <div class="db-note2">Đã thu <b>${pc(T.thu, T.hd_sv)}</b> doanh thu HĐ · không gồm tiền vay, trả nợ gốc</div>`),
-    arrow('đối chiếu'),
+    arrow(),
     blk('III', 'b3', 'Còn phải thu – chi', 'Doanh thu mới nhất − thực chi', T.hd_sv - T.chi, `Còn lại · thực chi ${pc(T.chi, T.hd_sv)} DT`,
       `<ul class="db-lines">${line('Doanh thu', T.hd_sv, mx3, DBC.dt)}${line('Thực chi', T.chi, mx3, DBC.cp)}${line('Còn lại', T.hd_sv - T.chi, mx3, DBC.ln)}</ul>
       <div class="db-note2">Còn phải thu CĐT <b>${n(T.phai_thu)}</b> ${TY()} (doanh thu − đã thu)</div>`),
-    arrow('quyết toán'),
+    arrow(),
     blk('IV', 'b4', 'Lợi nhuận TĐ1 → TĐ3', 'Hợp đồng → điều chỉnh → quyết toán', MT.l3, `LN mới nhất · ${dlt(MT.l3, MT.l1)}`,
       `<div class="db-steps">${step}</div>`),
   ].join('');

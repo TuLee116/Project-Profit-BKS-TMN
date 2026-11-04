@@ -1791,3 +1791,13 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .db-table tfoot td { background: #eef3fb; border-top-color: #1f3b73; }
 @media (max-width: 1280px) { .db-kpis { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { .db-kgr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .db-kgr > .db-kpi:last-child { grid-column: 1 / -1; } .db-tdseg button { padding: 5px 9px; } }
+/* Nối khối dashboard: đường nét đứt xuyên qua + nút mũi tên tròn viền mảnh (bỏ chữ) */
+.db-arrow { position: relative; }
+.db-arrow::before { content: ''; position: absolute; left: -2px; right: -2px; top: 50%; border-top: 2px dashed #b9c7dc; }
+.db-arrow span { display: none !important; }
+.db-arrow i { position: relative; z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #2f6bd8;
+  border: 2px solid #cfdcf0; box-shadow: 0 6px 14px -8px rgba(31,59,115,.55); }
+.db-arrow i::after { content: none; }
+.db-arrow i svg { display: block; }
+@media (max-width: 1100px) { .db-flow > .db-arrow:nth-child(4)::before { display: none; } }
+@media (max-width: 760px) { .db-flow > .db-arrow::before { left: 50%; right: auto; top: -6px; bottom: -6px; border-top: 0; border-left: 2px dashed #b9c7dc; } }
