@@ -1826,3 +1826,6 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .tp-dtl tbody tr + tr td { border-top: 1px solid #e8edf4; }
 td .dmy-wrap, .tp-dtl .dmy-wrap { min-width: 128px; }
 td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
+.unlock-bar { background: #fff7e6; border-color: #f3d29a; color: #8a5a00; }
+.tp-qt-row td:first-child b { color: #0f6b44; }
+.lock-bar .sm { margin-left: 8px; }

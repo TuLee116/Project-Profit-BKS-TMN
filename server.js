@@ -96,6 +96,7 @@ const api = express.Router();
 const quyen = (k) => auth.requireRole(...QUYEN[k]);
 const canHd = quyen('hd'), canTien = quyen('tien'), canTd = quyen('td'), canXoaDa = quyen('xoa_da');
 const canAny = auth.requireRole(...new Set([...QUYEN.hd, ...QUYEN.tien, ...QUYEN.ns]));
+const canMoKhoa = auth.requireRole(...new Set([...QUYEN.hd, ...QUYEN.tien])); // mở khóa HĐ đầu vào: người sửa HĐ/PL hoặc thanh toán
 api.use(security.sameOrigin);
 api.use(auth.csrfGuard);
 
@@ -873,9 +874,21 @@ api.delete('/chi-phi/:id', canTien, wrap(async (req, res) => {
 }));
 
 // ---------- Thầu phụ theo hợp đồng ----------
-const LOCK_MSG = 'Hợp đồng thầu phụ đã quyết toán – đã khóa số. Muốn điều chỉnh, xóa dòng Quyết toán (cần Passcode) để mở khóa.';
+const LOCK_MSG = 'Hợp đồng đã thanh toán đủ (còn lại = 0) – đã khóa số. Muốn điều chỉnh, bấm Mở khóa (cần Passcode).';
+// Mở khóa tạm (sau khi nhập đúng Passcode): tpId -> hết hạn; khóa lại khi đóng bảng chi tiết hoặc sau 60 phút
+const tpMoKhoa = new Map();
+const TP_MO_KHOA_MS = 60 * 60 * 1000;
+async function tpIsLocked(tpId) {
+  const exp = tpMoKhoa.get(tpId);
+  if (exp && exp > Date.now()) return false;
+  if (exp) tpMoKhoa.delete(tpId);
+  const tp = await store.getTp(tpId);
+  if (!tp) return false;
+  const c = buildContracts(await store.listTp(tp.du_an_id)).find((x) => x.id === tpId);
+  return Boolean(c?.khoa);
+}
 async function lockedErr(res, tpId) {
-  if (await store.tpLocked(tpId)) { bad(res, LOCK_MSG, 423); return true; }
+  if (await tpIsLocked(tpId)) { bad(res, LOCK_MSG, 423); return true; }
   return false;
 }
 async function tpOf(req, res) {
@@ -956,8 +969,22 @@ api.post('/thau-phu/:id/thanh-toan', canTien, wrap(async (req, res) => {
   const { data, errors } = validateTpPay(req.body || {});
   if (errors.length) return bad(res, errors);
   const r = await store.createTpPay(tp.id, data, req.user.id);
-  if (data.loai === 'quyet_toan') console.log(`[NHẬT KÝ] ${new Date().toISOString()} ${req.user.username} đã QUYẾT TOÁN & KHÓA SỐ HĐ thầu phụ "${tp.so_ma}" (quyết toán ${data.so_tien}đ)`);
   res.status(201).json(r);
+}));
+
+// Mở khóa tạm HĐ đầu vào đã thanh toán đủ (cần Passcode); số liệu giữ nguyên
+api.post('/thau-phu/:id/mo-khoa', canMoKhoa, wrap(async (req, res) => {
+  const tp = await tpOf(req, res); if (!tp) return;
+  if (!(await requirePasscode(req, res))) return;
+  tpMoKhoa.set(tp.id, Date.now() + TP_MO_KHOA_MS);
+  console.log(`[NHẬT KÝ] ${new Date().toISOString()} ${req.user.username} đã MỞ KHÓA HĐ đầu vào "${tp.so_ma}" (#${tp.id}) để điều chỉnh`);
+  res.json({ ok: true, het_han: TP_MO_KHOA_MS / 60000 });
+}));
+// Khóa lại (đóng bảng chi tiết): nếu Còn lại vẫn = 0 thì tự khóa như cũ
+api.post('/thau-phu/:id/khoa', canMoKhoa, wrap(async (req, res) => {
+  const tp = await tpOf(req, res); if (!tp) return;
+  tpMoKhoa.delete(tp.id);
+  res.json({ ok: true });
 }));
 
 api.put('/tp-thanh-toan/:id', canTien, wrap(async (req, res) => {
@@ -975,12 +1002,7 @@ api.delete('/tp-thanh-toan/:id', canTien, wrap(async (req, res) => {
   const id = parseId(req.params.id);
   const cur = id && (await store.getTpPay(id));
   if (!cur) return bad(res, 'Không tìm thấy dòng thanh toán', 404);
-  if (cur.loai === 'quyet_toan') {
-    // Xóa dòng Quyết toán = mở khóa số -> bắt buộc Passcode
-    if (!(await requirePasscode(req, res))) return;
-    const tp = await store.getTp(cur.tp_id);
-    console.log(`[NHẬT KÝ] ${new Date().toISOString()} ${req.user.username} đã MỞ KHÓA HĐ thầu phụ "${tp?.so_ma}" (xóa quyết toán ${cur.so_tien}đ)`);
-  } else if (await lockedErr(res, cur.tp_id)) return;
+  if (await lockedErr(res, cur.tp_id)) return;
   await store.deleteTpPay(id);
   res.status(204).end();
 }));
@@ -993,7 +1015,7 @@ app.use((err, req, res, _next) => {
   if (err.code === '23505') {
     const msg = /thau-phu$|thau-phu\/\d+$/.test(req.path) ? 'Số hợp đồng này đã có trong công trình (thầu phụ, vật tư, MMTB, nhân công dùng chung danh sách số HĐ)'
       : req.path.includes('hd-pl') ? 'Loại HĐ/PL này đã có trong hợp đồng thầu phụ'
-      : req.path.includes('thanh-toan') ? 'Trùng dữ liệu: số đợt thanh toán đã có, hoặc đã có dòng Quyết toán'
+      : req.path.includes('thanh-toan') ? 'Trùng dữ liệu: số đợt thanh toán / quyết toán này đã có'
       : req.path.includes('tien-ve')
       ? 'Trùng dữ liệu: số đợt thanh toán này đã có trong HĐ, hoặc HĐ đã có dòng Quyết toán'
       : /users/.test(err.table || err.detail || '') || req.path.includes('/users') || req.path.includes('/setup')
