@@ -1744,10 +1744,11 @@ function renderTpCard() {
   const leTot = leNhoms.reduce((a, k) => a + leSv(k), 0);
   const leHtml = !leNhoms.length ? '' : `<tr class="tv-head-row tp-le-head">
       <td class="num">${groups.length + 1}</td>
-      <td colspan="2"><span class="kind-tag tp-le-tag">Mua lẻ</span> <b>Không có hợp đồng</b> <span class="muted small">(${leNhoms.reduce((a, k) => a + leOf(k).length, 0)} dòng chi phí)</span></td>
+      <td colspan="2"><button class="grp-toggle" data-tpgrp="le" title="${tpOpen.has('le') ? 'Thu gọn' : 'Mở chi tiết'}">${tpOpen.has('le') ? '▾' : '▸'}</button>
+        <span class="kind-tag tp-le-tag">Mua lẻ</span> <b>Không có hợp đồng</b> <span class="muted small">(${leNhoms.reduce((a, k) => a + leOf(k).length, 0)} dòng chi phí)</span></td>
       <td class="num strong">${mtr(leTot)}</td><td class="num strong">${mtr(leTot)}</td><td class="num strong">${mtr(leTot)}</td>
       <td class="num tv-head-sum">${mtr(0)}</td><td colspan="2" class="muted small">Nhập ở bảng chi phí bên dưới</td></tr>` +
-    leNhoms.map((k, i) => `<tr class="tv-child tp-le-row">
+    (!tpOpen.has('le') ? [] : leNhoms).map((k, i) => `<tr class="tv-child tp-le-row">
       <td class="num muted">${groups.length + 1}.${i + 1}</td>
       <td class="indent tp-hd"><div class="tp-l1"><span class="tp-kind tp-k-${k}">${TP_NGAN[k]}</span><b>Mua lẻ</b></div><div class="tp-l2"><span>${leOf(k).length} dòng chứng từ</span></div></td>
       <td class="c-dt tp-dt muted">Nhiều đối tác</td>
@@ -1798,7 +1799,7 @@ function renderTpCard() {
 }
 
 $('#tp-toggle-all').addEventListener('click', () => {
-  const ks = tpGroups(costData.thau_phu).map((g) => g.k);
+  const ks = [...tpGroups(costData.thau_phu).map((g) => g.k), 'le']; // gồm cả nhóm Mua lẻ
   const close = ks.every((k) => tpOpen.has(k));
   ks.forEach((k) => (close ? tpOpen.delete(k) : tpOpen.add(k)));
   renderTpCard();
@@ -1812,7 +1813,7 @@ $('#tp-tbody').addEventListener('click', (e) => {
   }
   const k = e.target.dataset.tpgrp;
   if (k === undefined) return;
-  const n = Number(k);
+  const n = k === 'le' ? 'le' : Number(k); // 'le' = nhóm Mua lẻ (không HĐ)
   tpOpen.has(n) ? tpOpen.delete(n) : tpOpen.add(n);
   renderTpCard();
 });
