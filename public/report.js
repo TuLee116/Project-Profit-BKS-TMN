@@ -1110,7 +1110,13 @@ function renderReport() {
       <h1>BÁO CÁO TỔNG QUAN TÀI CHÍNH DỰ ÁN</h1>
       <div class="b-tag">Theo dõi nhanh hiệu quả kinh doanh và tình hình tài chính</div>
       <div class="b-meta">Phạm vi: <b>${esc(scope)}</b> · Đơn vị: VNĐ (${vt} trừ khi ghi khác) · Lập lúc ${lap.toLocaleString('vi-VN')} · Người lập: ${esc(BC.nguoi_lap)} · ${esc(BC.phien_ban)}</div>
-    </div></div>
+    </div></div>    ${(() => { // Dòng tiền lũy kế đến hôm nay (= mục II khi xem Toàn bộ thời gian): thu − chi, không gồm vay / trả gốc
+      const { T: C } = bTongHopData(list, v, { to: '9999-12' });
+      const it = (k, lab, x) => `<div class="b-cash-i ${k}"><span><i></i>${lab}</span><b class="${x < 0 ? 'neg' : ''}">${bTy(x)}</b></div>`;
+      return `<div class="b-cash" title="Lũy kế · ${vt} · không gồm tiền vay, trả nợ gốc">
+        ${it('thu', 'Dòng thu', C.thu)}${it('chi', 'Thực chi', C.chi)}${it('con', 'Còn lại (thu − chi)', C.con)}
+        <div class="b-cash-u">${TYD()} · ${vt} · lũy kế đến hôm nay</div></div>`;
+    })()}
   </div>
 
   ${bFinHtml(list, v)}

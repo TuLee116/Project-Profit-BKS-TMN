@@ -1516,3 +1516,19 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .xuat-grp .tab-menu { min-width: 190px; }
 @media print { .xuat-grp { display: none !important; } }
 @media (max-width: 640px) { .xuat-grp .tab-menu { left: 0 !important; right: auto !important; transform: none !important; min-width: 200px; } }
+
+/* Khối dòng tiền lũy kế cạnh tiêu đề báo cáo (như main) */
+.b-head > .b-brand { flex: 1 1 420px; min-width: 0; }
+.b-brand { display: flex; gap: 16px; align-items: center; flex: 1 1 auto; min-width: 0; }
+.b-head { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.b-cash { flex: 0 0 auto; min-width: 230px; font-variant-numeric: tabular-nums; }
+.b-cash-i { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 3px 0; }
+.b-cash-i span { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+.b-cash-i i { width: 8px; height: 8px; border-radius: 2px; background: #2c5fa3; }
+.b-cash-i.chi i { background: #c27a3e; } .b-cash-i.con i { background: #16968a; }
+.b-cash-i b { font-size: 16px; color: var(--navy); }
+.b-cash-i.con { border-top: 1px solid #cdd8e5; margin-top: 3px; padding-top: 6px; }
+.b-cash-i.con span { color: var(--navy); font-weight: 700; } .b-cash-i.con b { font-size: 18px; }
+.b-cash-u { font-size: 11px; color: var(--muted); text-align: right; }
+@media (max-width: 760px) { .b-cash { width: 100%; min-width: 0; } }
+.b-brand img { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 12px; padding: 6px; box-shadow: 0 2px 8px rgba(15,23,42,.12); }
