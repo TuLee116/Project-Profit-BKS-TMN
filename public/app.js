@@ -1246,9 +1246,9 @@ function setCostMode() {
     dt.setAttribute('list', 'bank-list');
     dt.placeholder = 'Gõ hoặc chọn tên ngân hàng';
   } else if (tp) {
-    dt.setAttribute('list', 'tp-dt-list'); // nhà thầu / nhà cung cấp đã có trong hệ thống
+    dt.removeAttribute('list'); // gợi ý nhà thầu bằng danh sách tự làm (attachCombo)
     dt.placeholder = 'Gõ tên – gợi ý từ các HĐ đã nhập';
-    tpGoiYLoad().then(() => { fillTpDtList(); fillTpHmSug(); });
+    tpGoiYLoad();
   } else {
     dt.removeAttribute('list');
     dt.placeholder = '';
@@ -1266,20 +1266,26 @@ async function tpGoiYLoad(force) {
   return tpGoiY;
 }
 const tpGoiYOf = (ten) => (tpGoiY || []).find((x) => x.doi_tac.toLowerCase() === String(ten || '').trim().toLowerCase());
-function fillTpDtList() {
-  const nhom = cForm?.elements.nhom.value;
-  const L = (tpGoiY || []).slice().sort((a, b) => (b.nhom === nhom) - (a.nhom === nhom));
-  $('#tp-dt-list').innerHTML = L.map((x) => `<option value="${esc(x.doi_tac)}">${x.so_hd} HĐ${x.hang_muc[0] ? ' · ' + esc(x.hang_muc[0].ten) : ''}</option>`).join('');
-}
-function fillTpHmSug() {
-  const box = $('#tp-hm-sug'); if (!box || !cForm) return;
-  const g = tpGoiYOf(cForm.elements.doi_tac.value);
-  const hm = g?.hang_muc || [];
-  // ô Hạng mục: gợi ý của nhà thầu này trước, sau đó các hạng mục khác đã có
-  const all = [...hm.map((h) => h.ten), ...new Set((tpGoiY || []).flatMap((x) => x.hang_muc.map((h) => h.ten)))];
-  $('#tp-hm-list').innerHTML = [...new Set(all)].slice(0, 60).map((t) => `<option value="${esc(t)}">`).join('');
-  box.innerHTML = hm.length ? `<span class="muted">Đã từng thi công:</span> ${hm.slice(0, 6).map((h) =>
-    `<button type="button" class="tp-hm-chip" data-hm="${esc(h.ten)}" title="${h.n} HĐ · ${esc(h.du_an.join(', '))}">${esc(h.ten)}<small>${esc(h.du_an.slice(0, 2).join(', '))}</small></button>`).join('')}` : '';
+// Danh sách gợi ý: nhà thầu (cùng loại HĐ lên trước) · hạng mục (của nhà thầu đang nhập lên trước)
+const tpDtItems = () => {
+  if (!cForm || !costTpMode()) return [];
+  const nhom = cForm.elements.nhom.value;
+  return (tpGoiY || []).slice().sort((a, b) => (b.nhom === nhom) - (a.nhom === nhom))
+    .map((x) => ({ v: x.doi_tac, sub: `${x.so_hd} HĐ${x.hang_muc[0] ? ' · ' + x.hang_muc.map((h) => h.ten).slice(0, 2).join(', ') : ''}` }));
+};
+const tpHmItems = (ten) => {
+  const g = tpGoiYOf(ten);
+  const mine = (g?.hang_muc || []).map((h) => ({ v: h.ten, sub: h.du_an.slice(0, 3).join(', '), top: true }));
+  const seen = new Set(mine.map((x) => x.v.toLowerCase()));
+  const other = [];
+  for (const x of tpGoiY || []) for (const h of x.hang_muc) if (!seen.has(h.ten.toLowerCase())) { seen.add(h.ten.toLowerCase()); other.push({ v: h.ten, sub: x.doi_tac }); }
+  return [...mine, ...other];
+};
+// Gõ / chọn nhà thầu đã có -> tự điền hạng mục gần nhất (chỉ khi ô hạng mục trống hoặc đang là số tự điền trước đó)
+function tpHmAuto(input, hm) {
+  const g = tpGoiYOf(input.value);
+  if (!hm || !g?.hang_muc.length) return;
+  if (!hm.value.trim() || hm.dataset.auto === '1') { hm.value = g.hang_muc[0].ten; hm.dataset.auto = '1'; }
 }
 
 // Gợi ý ô Nội dung đúng theo nhóm / hạng mục đang chọn
@@ -1341,11 +1347,15 @@ function initCostForm() {
   updateCostPreview();
 }
 
-cForm?.elements.doi_tac?.addEventListener('input', () => { if (costTpMode()) fillTpHmSug(); });
-$('#tp-hm-sug')?.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-hm]'); if (!b) return;
-  cForm.elements.hang_muc.value = b.dataset.hm; cForm.elements.hang_muc.focus();
-});
+if (cForm?.elements.hang_muc) {
+  const e0 = cForm.elements;
+  attachCombo(e0.doi_tac, tpDtItems, () => tpHmAuto(e0.doi_tac, e0.hang_muc));
+  attachCombo(e0.hang_muc, () => (costTpMode() ? tpHmItems(e0.doi_tac.value) : []));
+  e0.doi_tac.addEventListener('input', () => { if (costTpMode()) tpHmAuto(e0.doi_tac, e0.hang_muc); });
+  // bấm vào ô: nạp lại bộ nhớ gợi ý nếu đã cũ rồi vẽ lại danh sách
+  [e0.doi_tac, e0.hang_muc].forEach((el) => el.addEventListener('focus', () => { if (costTpMode()) tpGoiYLoad().then(() => document.activeElement === el && el._cbRender?.()); }));
+  e0.hang_muc.addEventListener('input', (ev) => { if (ev.isTrusted) delete e0.hang_muc.dataset.auto; }); // tự gõ -> không tự điền đè
+}
 function resetCostForm(nhom, sub) {
   const keepNhom = nhom || cForm.elements.nhom.value;
   const keepSub = sub || cForm.elements.nhom_con.value;
@@ -1926,8 +1936,8 @@ function renderTpDlg() {
     ${canInfo ? `<div class="grid-form tp-info" data-k="info">
       <label>Loại hợp đồng<select data-f="nhom">${HDV.map((k) => `<option value="${k}" ${k === (c.nhom || 'thau_phu') ? 'selected' : ''}>${esc(TPN()[k])}</option>`).join('')}</select></label>
       <label>Số HĐ *<input data-f="so_ma" value="${esc(c.so_ma)}" maxlength="120"></label>
-      <label>${TP_DT[c.nhom || 'thau_phu']}<input data-f="doi_tac" value="${esc(c.doi_tac)}" maxlength="200" list="tp-dt-list"></label>
-      <label class="span-2">Hạng mục thi công<input data-f="hang_muc" value="${esc(c.hang_muc || '')}" maxlength="300" list="tp-hm-list" placeholder="VD: Móng, kết cấu BTCT"></label>
+      <label>${TP_DT[c.nhom || 'thau_phu']}<input data-f="doi_tac" value="${esc(c.doi_tac)}" maxlength="200"></label>
+      <label class="span-2">Hạng mục thi công<input data-f="hang_muc" value="${esc(c.hang_muc || '')}" maxlength="300" placeholder="VD: Móng, kết cấu BTCT"></label>
       <label>Thuộc HĐ chủ đầu tư<select data-f="hd_cdt_id">${hdCdtOptions(c.hd_cdt_id)}</select></label>
       <label class="span-2">Ghi chú<input data-f="ghi_chu" value="${esc(c.ghi_chu)}" maxlength="500"></label>
       <div class="actions"><button class="primary sm" data-save hidden>Lưu thông tin</button></div>
@@ -1969,6 +1979,13 @@ function renderTpDlg() {
   if (edit) {
     $$('input.money', dlg).forEach(attachMoneyInput);
     $$('input.date-dmy', dlg).forEach(attachDateInput);
+  }
+  // Ô nhà thầu / hạng mục trong bảng chi tiết: danh sách gợi ý từ bộ nhớ
+  const fDt = $('[data-k="info"] [data-f="doi_tac"]', dlg), fHm = $('[data-k="info"] [data-f="hang_muc"]', dlg);
+  if (fDt && fHm) {
+    tpGoiYLoad();
+    attachCombo(fDt, () => (tpGoiY || []).map((x) => ({ v: x.doi_tac, sub: `${x.so_hd} HĐ` })));
+    attachCombo(fHm, () => tpHmItems(fDt.value), () => fHm.dispatchEvent(new Event('input', { bubbles: true })));
   }
   // Điền lại số đang nhập dở, hiện nút Lưu, tính lại sau VAT
   keep.forEach((vals, k) => {

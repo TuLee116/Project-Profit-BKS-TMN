@@ -1888,3 +1888,18 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .tp-hm-chip:hover { background: #1f3b73; color: #fff; } .tp-hm-chip:hover small { color: #cbd5e1; }
 .tp-note .tp-hm { display: block; color: #1f2a44; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .tp-note small { display: block; overflow: hidden; text-overflow: ellipsis; }
+
+/* Ô có danh sách gợi ý (nhà thầu, hạng mục) */
+.cb-wrap { position: relative; display: block; width: 100%; }
+.cb-wrap > input { width: 100%; }
+.cb-list { position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 4px); max-height: 260px; overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+  background: #fff; border: 1px solid #dfe6f0; border-radius: 12px; box-shadow: 0 14px 30px -14px rgba(15,23,42,.35); }
+.cb-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1f2a44; text-transform: none; letter-spacing: 0; }
+.cb-list li b { font-weight: 600; }
+.cb-list li span { font-size: 11px; color: #94a3b8; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.cb-list li.top b { color: #1f3b73; }
+.cb-list li.top::before { content: '★'; color: #e0a43a; font-size: 10px; margin-right: -4px; }
+.cb-list li:hover, .cb-list li.hl { background: #eef4fd; }
+.cb-list li.on { background: #e4edfb; }
+.cb-list li b { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-list li.top::before { margin-right: 2px; }

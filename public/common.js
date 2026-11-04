@@ -166,17 +166,63 @@ function attachDatePicker(input) {
   wrap.append(btn, cal);
   btn.addEventListener('click', () => {
     const iso = dmyToIso(input.value);
-    cal.value = iso || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    cal.value = iso || ''; // ô trống: lịch vẫn mở ở tháng hiện tại; không điền sẵn để nút "Hôm nay" luôn ghi nhận
     try { if (cal.showPicker) return cal.showPicker(); } catch {}
     cal.focus(); cal.click();
   });
-  cal.addEventListener('change', () => {
-    if (!cal.value) return;
+  const pick = () => {
+    if (!cal.value || isoToDmy(cal.value) === input.value) return;
     input.value = isoToDmy(cal.value);
     input.classList.remove('invalid');
     input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     input.focus();
+  };
+  cal.addEventListener('change', pick);
+  cal.addEventListener('input', pick);
+}
+
+// ---------- Ô nhập có danh sách gợi ý (tự làm, thay datalist): bấm vào ô luôn hiện đủ danh sách,
+// gõ để lọc; đã chọn 1 mục vẫn bấm lại để chọn mục khác. getItems() -> [{ v, sub, top }] ----------
+function attachCombo(input, getItems, onPick) {
+  if (input.dataset.combo) return;
+  input.dataset.combo = '1';
+  input.setAttribute('autocomplete', 'off');
+  input.removeAttribute('list');
+  const wrap = document.createElement('span');
+  wrap.className = 'cb-wrap';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  const list = document.createElement('ul');
+  list.className = 'cb-list'; list.hidden = true;
+  wrap.appendChild(list);
+  let all = false, idx = -1;
+  const norm = (x) => (typeof normVn === 'function' ? normVn(x) : String(x).toLowerCase());
+  const render = () => {
+    const items = getItems() || [];
+    if (!items.length) { list.hidden = true; return; }
+    const q = norm(input.value);
+    const exact = items.some((x) => norm(x.v) === q);
+    const show = all || !q || exact ? items : items.filter((x) => norm(x.v).includes(q));
+    if (!show.length) { list.hidden = true; return; }
+    idx = -1;
+    list.innerHTML = show.slice(0, 80).map((x) => `<li data-v="${esc(x.v)}" class="${x.top ? 'top' : ''} ${norm(x.v) === q ? 'on' : ''}"><b>${esc(x.v)}</b>${x.sub ? `<span>${esc(x.sub)}</span>` : ''}</li>`).join('');
+    list.hidden = false;
+  };
+  const choose = (v) => { input.value = v; list.hidden = true; input.dispatchEvent(new Event('input', { bubbles: true })); onPick?.(v); };
+  input.addEventListener('focus', () => { all = true; render(); });
+  input.addEventListener('click', () => { all = true; render(); });
+  input.addEventListener('input', (e) => { if (e.isTrusted) { all = false; render(); } });
+  input.addEventListener('keydown', (e) => {
+    if (list.hidden) return;
+    const li = [...list.children];
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + li.length) % li.length; li.forEach((x, i) => x.classList.toggle('hl', i === idx)); li[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (e.key === 'Enter' && idx >= 0) { e.preventDefault(); choose(li[idx].dataset.v); }
+    else if (e.key === 'Escape') list.hidden = true;
   });
+  list.addEventListener('mousedown', (e) => { const li = e.target.closest('li'); if (li) { e.preventDefault(); choose(li.dataset.v); } });
+  input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 120));
+  input._cbRender = render;
 }
 
 // ---------- Ô tìm kiếm có gợi ý (chọn từ danh sách) ----------
