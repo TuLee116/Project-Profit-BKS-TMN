@@ -1922,3 +1922,33 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 /* Thanh mở bảng chi tiết chi phí (3 khối) */
 .c-blocks-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 20px; }
 @media print { .c-blocks-bar { display: none; } #c-blocks[hidden] { display: grid !important; } }
+
+/* =====================================================================
+   Đường kẻ phân cách cột – theo loại bảng
+   · Nhập liệu (doanh thu, tiền về, chi phí, HĐ đầu vào, chi tiết HĐ): kẻ mảnh rõ vừa – dóng cột số khi nhập
+   · Báo cáo / dashboard: kẻ rất nhạt cho thoáng; ranh giới nhóm cột (f-sep, TĐ, nhóm) đậm hơn
+   · Dòng tổng nền tối: kẻ trắng mờ · Ô thao tác (nút), ô gộp nhiều cột của dòng nhóm: không kẻ
+   · Điện thoại (bảng dạng thẻ): bỏ kẻ cột
+   ===================================================================== */
+.table-wrap table { --col-line: #e9eef5; --col-line-h: #d9e2ee; }
+.table-wrap table th + th, .table-wrap table td + td { border-left: 1px solid var(--col-line); }
+.table-wrap table thead th + th { border-left-color: var(--col-line-h); }
+.table-wrap table td.row-actions, .table-wrap table th:empty:last-child, .table-wrap table td.tp-act { border-left-color: transparent; }
+/* Bảng nhập liệu */
+.rev-card table, .tv-table, .cost-table, #tp-card table, .tp-dtl { --col-line: #e6ecf4; --col-line-h: #d3dce9; }
+.cost-table tr.c-g1 td + td, .cost-table tr.c-g2 td + td { border-left-color: rgba(31, 59, 115, .08); }
+.cost-table tr.c-g1 td:nth-child(2), .cost-table tr.c-g2 td:nth-child(2) { border-left-color: transparent; }
+.cost-table tfoot td + td, .table-wrap table tfoot td + td { border-left-color: rgba(31, 59, 115, .10); }
+.cost-table tfoot td + td { border-left-color: rgba(255, 255, 255, .16); }
+.tp-dtl td { border-left-color: #edf1f7; }
+/* Báo cáo, dashboard: nhạt hơn; nhóm cột đậm hơn */
+#b-report .table-wrap table, .db-table { --col-line: #f0f3f8; --col-line-h: #e3e9f2; }
+#b-report .table-wrap table .f-sep, #b-report .td-mx .td-h { border-left: 1px solid #cfd9e6 !important; }
+#b-report .th-table td.th-stt + td, #b-report .th-table th.th-stt + th { border-left-color: transparent; }
+#b-report th.grp { border-left-color: #d3dce9; }
+.db-table td.db-stt + td, .db-table th:first-child + th { border-left-color: transparent; }
+/* Điện thoại: bảng dạng thẻ -> không kẻ cột */
+@media screen and (max-width: 640px) {
+  table.m-card th + th, table.m-card td + td { border-left: 0 !important; }
+}
+@media print { .table-wrap table { --col-line: #d6dde8; --col-line-h: #c3cedd; } }
