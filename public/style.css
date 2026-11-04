@@ -1965,3 +1965,17 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 #b-report .th-sec + .th-sec { margin-top: 30px; }
 @media (max-width: 640px) { #b-report .th-sec { padding: 12px 10px 14px; border-radius: 14px; } }
 @media print { #b-report .th-sec { box-shadow: none; break-inside: auto; border-color: #cfd8e3; } }
+
+/* Mục I: chọn TĐ1 / TĐ2 / TĐ3, mũi tên tăng / giảm so với TĐ trước */
+.i-tdbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.i-tdseg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: #eef2f8; border: 1px solid #e1e7f0; }
+.i-tdseg button { border: 0; background: transparent; box-shadow: none; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #64748b; cursor: pointer; white-space: nowrap; }
+.i-tdseg button b { color: #1b2b4b; margin-right: 3px; }
+.i-tdseg button.on { background: linear-gradient(135deg, #1f3b73, #2f6bd8); color: #e6eeff; box-shadow: 0 4px 10px -5px rgba(47,107,216,.8); }
+.i-tdseg button.on b { color: #fff; }
+.i-tdseg button:not(.on):hover { background: #fff; color: #1b2b4b; }
+.i-dl { display: inline-block; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.i-dl.up { color: #1e7d4f; } .i-dl.dn { color: #c62828; } .i-dl.eq { color: #94a3b8; font-weight: 600; }
+.th-table td .i-dl { margin-top: 1px; }
+.th-table tfoot td .i-dl { font-size: 10.5px; }
+@media print { .i-tdseg { display: none; } }
