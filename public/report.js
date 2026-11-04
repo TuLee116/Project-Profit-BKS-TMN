@@ -450,6 +450,24 @@ const thHead = (no, title, desc, tags, extra = '') => `<div class="th-head">
       <div class="th-ttl"><h3>${title}</h3><p>${desc}</p></div>
       <div class="th-tags">${tags.map((t) => `<span>${t}</span>`).join('')}<span>Đơn vị: ${TYD()}</span>${extra}</div>
     </div>`;
+// Mỗi mục I–IV một khung riêng: gom tiêu đề mục + nội dung phía sau (đến tiêu đề mục kế tiếp) vào <section class="th-sec">
+function bWrapSections() {
+  const ROMAN = ['I', 'II', 'III', 'IV'];
+  document.querySelectorAll('#b-report .th-head').forEach((h) => {
+    const no = h.querySelector('.th-no')?.textContent.trim();
+    if (!ROMAN.includes(no) || h.parentElement.classList.contains('th-sec')) return;
+    const sec = document.createElement('section');
+    sec.className = `th-sec th-sec-${no}`;
+    h.parentNode.insertBefore(sec, h);
+    let n = h;
+    while (n) {
+      const next = n.nextElementSibling;
+      sec.appendChild(n);
+      if (!next || (next.classList.contains('th-head') && next !== h)) break;
+      n = next;
+    }
+  });
+}
 function bTongHopHtml(list, v, P) {
   const { to, rows, T } = bTongHopData(list, v, P);
   const vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
@@ -1207,6 +1225,7 @@ function renderReport() {
   </div>
   <div class="b-foot">Nguồn: ${esc(BC.ten_he_thong || 'PROJECT PROFIT')} · ${esc(BC.phien_ban)} · Số liệu lấy tự động từ các tab Doanh thu, Chi phí, Thầu phụ, Tiền về tại thời điểm lập báo cáo.</div>`;
 
+  bWrapSections();
   bDrawCharts(list, v, one);
   if (typeof bMapInit === 'function') bMapInit(list, v);
 }

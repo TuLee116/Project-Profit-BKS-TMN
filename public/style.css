@@ -1952,3 +1952,16 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
   table.m-card th + th, table.m-card td + td { border-left: 0 !important; }
 }
 @media print { .table-wrap table { --col-line: #d6dde8; --col-line-h: #c3cedd; } }
+
+/* Báo cáo: mỗi mục I–IV một khung riêng, màu nhấn riêng để phân biệt */
+#b-report .th-sec { --sec: #2f6bd8; position: relative; margin: 26px 0 0; padding: 16px 18px 18px; border-radius: 18px; background: #fff;
+  border: 1px solid #e3e9f1; box-shadow: 0 10px 26px -22px rgba(27,43,75,.55); }
+#b-report .th-sec::before { content: ''; position: absolute; left: 0; top: 18px; bottom: 18px; width: 4px; border-radius: 0 4px 4px 0; background: var(--sec); }
+#b-report .th-sec-I { --sec: #2f6bd8; } #b-report .th-sec-II { --sec: #1f3b73; } #b-report .th-sec-III { --sec: #e07b39; } #b-report .th-sec-IV { --sec: #12a58b; }
+#b-report .th-sec > .th-head { margin-top: 0; border-left-color: var(--sec); background: linear-gradient(90deg, color-mix(in srgb, var(--sec) 9%, #fff) 0%, #fbfcfe 60%, #fff 100%); }
+#b-report .th-sec > .th-head .th-no { background: var(--sec); box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--sec) 70%, transparent); }
+#b-report .th-sec > .th-head::after { background: var(--sec); }
+#b-report .th-sec > :last-child { margin-bottom: 0; }
+#b-report .th-sec + .th-sec { margin-top: 30px; }
+@media (max-width: 640px) { #b-report .th-sec { padding: 12px 10px 14px; border-radius: 14px; } }
+@media print { #b-report .th-sec { box-shadow: none; break-inside: auto; border-color: #cfd8e3; } }
