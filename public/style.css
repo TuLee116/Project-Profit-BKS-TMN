@@ -1851,40 +1851,16 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .tp-st-lock { background: #0f7a4f; color: #fff; border: 1px solid #0f7a4f; }
 .tp-st-vuot { background: #fde4e5; color: #b4232a; border: 1px solid #f7c6c9; }
 
-/* Chi phí: xem nhanh theo nhóm */
-.c-focus { padding: 16px 20px; }
-.cf-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-.cf-head h3 { margin: 0; font-size: 14px; color: var(--navy); text-transform: uppercase; letter-spacing: .4px; }
-.cf-chips { display: grid; gap: 8px; }
-.cf-grp { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.cf-kl { width: 72px; flex: none; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .3px; }
-.cf-chip { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 12px; border-radius: 999px; border: 1px solid #dfe6f0; background: #fff; color: #334155;
-  font-size: 12.5px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
-.cf-chip b { font-size: 12px; color: #1f3b73; font-variant-numeric: tabular-nums; }
-.cf-chip:hover { border-color: #2f6bd8; }
-.cf-chip.on { background: linear-gradient(135deg, #1f3b73, #2f6bd8); border-color: transparent; color: #fff; box-shadow: 0 6px 14px -8px rgba(47,107,216,.9); }
-.cf-chip.on b { color: #fff; }
-.cf-chip.zero:not(.on) { opacity: .55; }
-.cf-det { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr) auto; gap: 16px; align-items: center; margin-top: 14px; padding: 14px 16px;
-  border-radius: 14px; background: linear-gradient(120deg, #f2f6fd 0%, #f6fbf9 100%); border: 1px solid #e1e8f2; }
-.cf-main { display: grid; gap: 4px; }
-.cf-name { font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .3px; }
-.cf-big { font-size: 24px; font-weight: 800; color: #1f3b73; font-variant-numeric: tabular-nums; }
-.cf-share { display: block; height: 6px; border-radius: 99px; background: #e3e9f2; overflow: hidden; }
-.cf-share i { display: block; height: 100%; background: linear-gradient(90deg, #2f6bd8, #12a58b); }
-.cf-main small { font-size: 11.5px; color: #64748b; }
-.cf-its { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-.cf-it { background: #fff; border: 1px solid #e6ecf4; border-radius: 10px; padding: 8px 11px; min-width: 0; }
-.cf-it span { display: block; font-size: 11px; color: #64748b; font-weight: 600; }
-.cf-it b { display: block; font-size: 15px; color: #1f2a44; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cf-it small { font-size: 10.5px; color: #94a3b8; }
-.cf-it.hl b { color: #b4501a; } .cf-it.neg b { color: #c62828; }
-tr.cf-flash td { animation: cfFlash 1.6s ease; }
-@keyframes cfFlash { 0%, 60% { background: #fff3c4; } 100% { } }
-@media (max-width: 900px) { .cf-det { grid-template-columns: minmax(0, 1fr); } .cf-kl { width: 100%; } }
-@media print { .c-focus { display: none; } }
-@media (min-width: 1200px) { .cf-its { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; } }
-.cf-det { grid-template-columns: 240px minmax(0, 1fr); }
-.cf-go { justify-self: start; margin-top: 4px; }
-.cf-it b { font-size: 14px; }
-@media (max-width: 900px) { .cf-det { grid-template-columns: minmax(0, 1fr); } }
+
+/* 4 thẻ tổng chạy theo bộ lọc Hợp đồng đầu vào */
+.kpis { position: relative; }
+.kpis.kpi-tp { padding-top: 34px; }
+.kpis.kpi-tp .kpi { box-shadow: 0 10px 22px -16px var(--tpk, #1f3b73); border-color: color-mix(in srgb, var(--tpk, #1f3b73) 25%, #fff); }
+.kpis.kpi-tp .kpi::before, .kpis.kpi-tp .kpi::after { background: var(--tpk, #1f3b73) !important; }
+.kpis.kpi-tp .kpi .value { color: var(--tpk, #1f3b73); }
+.kpis.kpi-tp .kpi:last-child .value:not(.neg) { color: #b4501a; }
+.kpis[data-tk="thau_phu"] { --tpk: #1f3a6e; } .kpis[data-tk="vat_tu"] { --tpk: #b25a12; } .kpis[data-tk="nhan_cong"] { --tpk: #0f6f66; } .kpis[data-tk="may_moc"] { --tpk: #5b3e94; }
+.kpi-tp-tag { position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; border: 0;
+  background: var(--tpk, #1f3b73); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px -6px var(--tpk, #1f3b73); }
+.kpi-tp-tag span { opacity: .8; margin-left: 6px; font-weight: 500; }
+.kpi-tp-tag:hover span { opacity: 1; text-decoration: underline; }
