@@ -1751,3 +1751,43 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
   .db-c-flow { grid-column: auto; }
   .db-mapc { min-height: 320px; height: 320px; }
 }
+
+/* ---------- Dashboard tổng: bảng màu mới (xanh dương – cam đất – xanh ngọc lục, nền sáng) + nhóm chỉ số có chọn TĐ ---------- */
+.db { --db-navy: #1b2b4b; --db-mut: #6b7280; --db-bd: #e3e8f0; --db-cream: #f3f6fb; }
+.db-head { background: linear-gradient(110deg, #16233f 0%, #1f3b73 50%, #18707a 100%); }
+.db-head::after { background: radial-gradient(circle, rgba(18,165,139,.45), transparent 70%); }
+.db-co { color: #9fe3d6; }
+.db-kpis { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.db-kg { background: #fff; border: 1px solid var(--db-bd); border-radius: 16px; padding: 10px 12px 12px; min-width: 0; box-shadow: 0 8px 20px -18px rgba(27,43,75,.5); }
+.db-kg2 { background: linear-gradient(180deg, #f7f9fd 0%, #fff 60%); }
+.db-kgh { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0 2px 9px; }
+.db-kgh > span { font-size: 12px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--db-navy); }
+.db-kgr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.db-kpi { border-color: #e8edf5; border-radius: 12px; }
+.db-kpi::before { width: auto; height: 3px; right: 0; bottom: auto; }
+.db-kv { font-size: 21px; }
+.db-tdseg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: #eef2f8; border: 1px solid #e1e7f0; }
+.db-tdseg button { border: 0; background: transparent; box-shadow: none; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; white-space: nowrap; }
+.db-tdseg button b { color: #1b2b4b; margin-right: 2px; }
+.db-tdseg button.on { background: linear-gradient(135deg, #1f3b73, #2f6bd8); color: #e6eeff; box-shadow: 0 4px 10px -5px rgba(47,107,216,.8); }
+.db-tdseg button.on b { color: #fff; }
+.db-tdseg button:not(.on):hover { background: #fff; color: #1b2b4b; }
+/* Dòng chảy */
+.db-flow { background: linear-gradient(120deg, #f2f6fd 0%, #f4fbf9 100%); border-color: #e1e8f2; }
+.db-blk { border-color: #e6ecf4; box-shadow: 0 10px 22px -20px rgba(27,43,75,.6); background: linear-gradient(180deg, color-mix(in srgb, var(--db-k) 6%, #fff) 0%, #fff 38%); }
+.db-blk.b1 { --db-k: #2f6bd8; } .db-blk.b2 { --db-k: #1f3b73; } .db-blk.b3 { --db-k: #e07b39; } .db-blk.b4 { --db-k: #12a58b; }
+.db-no { box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--db-k) 70%, transparent); }
+.db-bar { background: #edf1f7; }
+.db-note2 { background: #f5f8fc; }
+.db-blk footer { border-top-color: #e6ecf4; }
+.db-go { color: #2f6bd8; }
+.db-arrow span { color: #5b6b86; }
+.db-arrow i { background: linear-gradient(135deg, #2f6bd8, #12a58b); box-shadow: 0 4px 10px -4px rgba(47,107,216,.7); }
+/* Thẻ, bảng */
+.db-card { border-color: var(--db-bd); }
+.db-card h5::before { background: linear-gradient(180deg, #2f6bd8, #12a58b); }
+.db-table th { background: #f1f5fb; color: #46597a; }
+.db-table tbody tr:hover td { background: #f7faff; }
+.db-table tfoot td { background: #eef3fb; border-top-color: #1f3b73; }
+@media (max-width: 1280px) { .db-kpis { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .db-kgr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .db-kgr > .db-kpi:last-child { grid-column: 1 / -1; } .db-tdseg button { padding: 5px 9px; } }
