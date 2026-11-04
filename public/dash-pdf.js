@@ -8,10 +8,10 @@ const DP = { dt: '#3462a3', cp: '#b07338', ln: '#2a9d8f', navy: '#1f2a44', gold:
 function dpHtml(list, v) {
   const A = bMuc4Data(list, v), T = A.T, C = bTongHopData(list, v, { to: '9999-12' }), TC = C.T;
   const vt = v === 'gt' ? 'trước VAT' : 'sau VAT', n = A.rows.length;
-  const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTy(x)}</span>`;
+  const ty = (x) => `<span class="${x < 0 ? 'neg' : ''}">${bTyFix(x)}</span>`;
   const pc = (a, b) => (b ? `${((a / b) * 100).toFixed(1).replace('.', ',')}%` : '–');
   const d = (cur, base, good) => { const x = cur - base; if (Math.abs(x) < 5e6) return '<span class="dp-eq">— không đổi so với lúc ký</span>';
-    return `<span class="${(x > 0) === good ? 'dp-ok' : 'dp-bad'}">${x > 0 ? '▲' : '▼'} ${bTy(Math.abs(x))}</span> <span class="dp-eq">so với lúc ký</span>`; };
+    return `<span class="${(x > 0) === good ? 'dp-ok' : 'dp-bad'}">${x > 0 ? '▲' : '▼'} ${bTyFix(Math.abs(x))}</span> <span class="dp-eq">so với lúc ký</span>`; };
   const ngay = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const one = list.length === 1 ? list[0] : null;
   // 6 chỉ số
@@ -33,15 +33,15 @@ function dpHtml(list, v) {
   for (let t = 0; t <= hi + 1; t += step) svg += `<line x1="${L}" x2="${W}" y1="${Y(t)}" y2="${Y(t)}" stroke="#ece6dc"/><text x="${L - 5}" y="${Y(t) + 3}" text-anchor="end" font-size="8" fill="#8a7b6b">${(t / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</text>`;
   TV.forEach((g, i) => { const cx = L + gw * (i + 0.5);
     g.forEach((x, j) => { const xx = cx + (j - 1.5) * (bw + 4) + 2, col = [DP.dt, DP.cp, x < 0 ? DP.bad : DP.ln][j];
-      svg += `<rect x="${xx}" y="${Y(x)}" width="${bw}" height="${Math.max(1, B - Y(x))}" rx="3" fill="${col}"/><text x="${xx + bw / 2}" y="${Y(x) - 3}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2b2118">${bTy(x)}</text>`; });
+      svg += `<rect x="${xx}" y="${Y(x)}" width="${bw}" height="${Math.max(1, B - Y(x))}" rx="3" fill="${col}"/><text x="${xx + bw / 2}" y="${Y(x) - 3}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2b2118">${bTyFix(x)}</text>`; });
     svg += `<text x="${cx}" y="${B + 14}" text-anchor="middle" font-size="9" font-weight="700" fill="#1f2a44">TĐ${i + 1} · ${['Theo HĐ gốc', 'HĐ + phụ lục', 'Quyết toán'][i]}</text>`; });
   // Vòng cơ cấu doanh thu TĐ3
   const lp = T.t3 > 0 ? Math.max(0, Math.min(1, T.l3 / T.t3)) : 0, r0 = 46, C0 = 2 * Math.PI * r0;
   const donut = `<svg viewBox="0 0 120 120" width="${A.rows.length > 6 ? 92 : 112}" height="${A.rows.length > 6 ? 92 : 112}"><circle cx="60" cy="60" r="${r0}" fill="none" stroke="${T.l3 < 0 ? DP.bad : DP.cp}" stroke-width="16"/>
     ${lp ? `<circle cx="60" cy="60" r="${r0}" fill="none" stroke="${DP.ln}" stroke-width="16" stroke-dasharray="${(C0 * lp).toFixed(1)} ${C0.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ''}
-    <text x="60" y="58" text-anchor="middle" font-size="15" font-weight="800" fill="#2b2118">${bTy(T.t3)}</text><text x="60" y="72" text-anchor="middle" font-size="8" fill="#8a7b6b">tỷ doanh thu</text></svg>`;
+    <text x="60" y="58" text-anchor="middle" font-size="15" font-weight="800" fill="#2b2118">${bTyFix(T.t3)}</text><text x="60" y="72" text-anchor="middle" font-size="8" fill="#8a7b6b">tỷ doanh thu</text></svg>`;
   // Thanh ngang
-  const bar = (rows, max, col) => rows.map(([nm, x, e]) => `<div class="dp-hb"><span class="dp-hn" title="${esc(nm)}">${esc(nm)}</span><span class="dp-tr"><i style="width:${max ? Math.min(100, (Math.abs(x) / max) * 100) : 0}%;background:${x < 0 ? DP.bad : col}"></i></span><b>${bTy(x)}</b><em>${e}</em></div>`).join('');
+  const bar = (rows, max, col) => rows.map(([nm, x, e]) => `<div class="dp-hb"><span class="dp-hn" title="${esc(nm)}">${esc(nm)}</span><span class="dp-tr"><i style="width:${max ? Math.min(100, (Math.abs(x) / max) * 100) : 0}%;background:${x < 0 ? DP.bad : col}"></i></span><b>${bTyFix(x)}</b><em>${e}</em></div>`).join('');
   const prj = [...A.rows].sort((a, b) => b.l3 - a.l3), pmx = Math.max(1, ...prj.map((x) => Math.abs(x.l3)));
   const kvM = new Map(); for (const x of A.rows) { const k = typeof mapKv === 'function' ? mapKv(x.d.khu_vuc || x.d.dia_diem) : (x.d.khu_vuc || x.d.dia_diem || '–'); kvM.set(k, (kvM.get(k) || 0) + Math.max(0, x.t3)); }
   const kv = [...kvM].sort((a, b) => b[1] - a[1]), kvT = kv.reduce((a, [, x]) => a + x, 0);
@@ -55,10 +55,10 @@ function dpHtml(list, v) {
   const st = {}; A.rows.forEach((x) => { st[x.d.trang_thai] = (st[x.d.trang_thai] || 0) + 1; });
   const cell = (ic, lab, main, sub) => `<div class="dp-in"><span class="dp-ic">${ic}</span><div><div class="dp-il">${lab}</div><div class="dp-iv">${main}</div><div class="dp-is">${sub}</div></div></div>`;
   const ins = [
-    cell('★', 'Lãi cao nhất', best ? `${esc(best.d.ma_du_an)} · ${bTy(best.l3)} tỷ` : '–', best ? `${esc(best.d.ten_du_an)} · tỷ suất ${pc(best.l3, best.t3)}` : ''),
+    cell('★', 'Lãi cao nhất', best ? `${esc(best.d.ma_du_an)} · ${bTyFix(best.l3)} tỷ` : '–', best ? `${esc(best.d.ten_du_an)} · tỷ suất ${pc(best.l3, best.t3)}` : ''),
     cell('%', 'Tỷ suất thấp nhất', low ? `${esc(low.d.ma_du_an)} · ${pc(low.l3, low.t3)}` : '–', low ? esc(low.d.ten_du_an) : ''),
-    cell('₫', 'Còn phải thu lớn nhất', owe ? `${esc(owe.d.ma_du_an)} · ${bTy(owe.t3 - (byThu.get(owe.d.id) || 0))} tỷ` : '–', `Tổng còn phải thu ${bTy(T.t3 - TC.thu)} tỷ`),
-    cell('▣', 'Tình trạng dự án', Object.entries(st).map(([k, x]) => `${x} ${esc(({ 'Đang thi công': 'thi công', 'Hoàn thành': 'xong', 'Chuẩn bị': 'chuẩn bị', 'Tạm dừng': 'tạm dừng' })[k] || k.toLowerCase())}`).join(' · '), `Lợi nhuận ${T.l3 - T.l1 >= 0 ? 'tăng' : 'giảm'} ${bTy(Math.abs(T.l3 - T.l1))} tỷ so với lúc ký`),
+    cell('₫', 'Còn phải thu lớn nhất', owe ? `${esc(owe.d.ma_du_an)} · ${bTyFix(owe.t3 - (byThu.get(owe.d.id) || 0))} tỷ` : '–', `Tổng còn phải thu ${bTyFix(T.t3 - TC.thu)} tỷ`),
+    cell('▣', 'Tình trạng dự án', Object.entries(st).map(([k, x]) => `${x} ${esc(({ 'Đang thi công': 'thi công', 'Hoàn thành': 'xong', 'Chuẩn bị': 'chuẩn bị', 'Tạm dừng': 'tạm dừng' })[k] || k.toLowerCase())}`).join(' · '), `Lợi nhuận ${T.l3 - T.l1 >= 0 ? 'tăng' : 'giảm'} ${bTyFix(Math.abs(T.l3 - T.l1))} tỷ so với lúc ký`),
   ].join('');
   // Bảng dự án: tối đa 12 dòng, còn lại gộp 1 dòng
   const MAXR = 8, rowsT = [...A.rows].sort((a, b) => b.t3 - a.t3), shown = rowsT.slice(0, MAXR), rest = rowsT.slice(MAXR);
@@ -66,7 +66,7 @@ function dpHtml(list, v) {
   const tr = (x, i) => { const c = byC.get(x.d.id) || { thu: 0 };
     return `<tr><td>${i + 1}</td><td><b>${esc(x.d.ma_du_an)}</b></td><td class="dp-nm">${esc(x.d.ten_du_an)}</td><td>${esc(x.d.trang_thai)}</td><td>${Number(x.d.tien_do) || 0}%</td>
       <td>${ty(x.t3)}</td><td>${ty(x.c3)}</td><td class="dp-lnc"><b>${ty(x.l3)}</b></td><td>${pc(x.l3, x.t3)}</td><td>${dl(x.l3, x.l1)}</td><td>${ty(c.thu)}</td><td>${ty(x.t3 - c.thu)}</td></tr>`; };
-  const dl = (a, b0) => { const x = a - b0; return Math.abs(x) < 5e6 ? '<span class="dp-eq">—</span>' : `<span class="${x > 0 ? 'dp-ok' : 'dp-bad'}">${x > 0 ? '▲' : '▼'} ${bTy(Math.abs(x))}</span>`; };
+  const dl = (a, b0) => { const x = a - b0; return Math.abs(x) < 5e6 ? '<span class="dp-eq">—</span>' : `<span class="${x > 0 ? 'dp-ok' : 'dp-bad'}">${x > 0 ? '▲' : '▼'} ${bTyFix(Math.abs(x))}</span>`; };
   const S = (arr, k) => arr.reduce((a, x) => a + x[k], 0), thuR = rest.reduce((a, x) => a + (byC.get(x.d.id)?.thu || 0), 0);
   return `<div class="dp">
     <div class="dp-hd"><img src="/img/logo-icon.png" alt=""><div class="dp-ht"><div class="dp-co">${esc(BC.ten_cong_ty || '')}</div><h1>DASHBOARD TÀI CHÍNH DỰ ÁN</h1>
@@ -78,8 +78,8 @@ function dpHtml(list, v) {
         <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${svg}</svg>
         <table class="dp-mini"><tr><th></th><th>TĐ1</th><th>TĐ2</th><th>TĐ3</th></tr>${[['Tỷ suất', 2], ['CP / DT', 1]].map(([lb, j]) => `<tr><td>${lb}</td>${TV.map((g) => `<td>${pc(g[j], g[0])}</td>`).join('')}</tr>`).join('')}</table></div>
       <div class="dp-c"><div class="dp-ct">Cơ cấu doanh thu · TĐ3</div><div class="dp-dn">${donut}<div>
-        <div class="dp-li"><i style="background:${DP.cp}"></i>Chi phí<b>${pc(T.c3, T.t3)}</b><small>${bTy(T.c3)} tỷ</small></div>
-        <div class="dp-li"><i style="background:${DP.ln}"></i>Lợi nhuận<b>${pc(T.l3, T.t3)}</b><small>${bTy(T.l3)} tỷ</small></div></div></div>
+        <div class="dp-li"><i style="background:${DP.cp}"></i>Chi phí<b>${pc(T.c3, T.t3)}</b><small>${bTyFix(T.c3)} tỷ</small></div>
+        <div class="dp-li"><i style="background:${DP.ln}"></i>Lợi nhuận<b>${pc(T.l3, T.t3)}</b><small>${bTyFix(T.l3)} tỷ</small></div></div></div>
         <div class="dp-ct dp-ct2">Doanh thu theo khu vực</div>${bar(kv.slice(0, A.rows.length > 6 ? 4 : 5).map(([k, x]) => [k, x, pc(x, kvT)]), kv[0]?.[1] || 0, DP.dt)}</div>
       <div class="dp-c"><div class="dp-ct">Lợi nhuận theo dự án · TĐ3</div>${bar(prj.slice(0, nTop).map((x) => [`${x.d.ma_du_an}`, x.l3, pc(x.l3, x.t3)]), pmx, DP.ln)}
         ${prj.length > nTop ? `<div class="dp-note">… và ${prj.length - nTop} dự án khác</div>` : ''}

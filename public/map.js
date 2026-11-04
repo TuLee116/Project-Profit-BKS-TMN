@@ -55,12 +55,12 @@ function bMapSection(list, v) {
         ${R.some((x) => x.co) ? '' : '<div class="map-empty">Chưa có dự án nào có vị trí. Nhập tọa độ ở tab <b>Dự án</b> (nút 📍 Chọn trên bản đồ).</div>'}</div>
       <div class="map-p">
         ${top && tot > 0 ? `<div class="map-hot"><div class="k">★ Trọng điểm</div><div class="v">${esc(top[0])}</div>
-          <div class="s">${top[1].n} dự án · ${bTy(top[1].dt)} tỷ · <b>${bpct(top[1].dt, tot)}</b> doanh thu</div></div>` : ''}
+          <div class="s">${top[1].n} dự án · ${bTy(top[1].dt)} ${TY()} · <b>${bpct(top[1].dt, tot)}</b> doanh thu</div></div>` : ''}
         <div class="map-pt">Doanh thu theo khu vực <small>· bấm để phóng tới</small></div>
         ${kv.map(([k, o]) => `<button type="button" class="map-r" data-mapkv="${esc(k)}" title="Phóng tới ${esc(k)}"><span>${esc(k)} <small>${o.n} DA</small></span><b>${bTy(o.dt)}</b><em>${bpct(o.dt, tot)}</em><span class="map-tr"><i style="width:${tot ? Math.min(100, (o.dt / tot) * 100) : 0}%"></i></span></button>`).join('')}
         ${R.some((x) => x.co) ? `<div class="map-pt map-pt2">Đi tới dự án ${R.filter((x) => x.co).length > 1 ? '<button type="button" class="map-all" data-mapall>⤢ Xem tất cả</button>' : ''}</div>
           <div class="map-go">${R.filter((x) => x.co).sort((a, b) => b.dt - a.dt).map((x) => `<button type="button" data-mapgo="${x.d.id}" title="${esc(x.d.ten_du_an)}"><i style="background:${mapTsCol(x.dt ? x.ln / x.dt : 0)}"></i>${esc(x.d.ma_du_an)}</button>`).join('')}</div>` : ''}
-        <div class="map-lg">${lg}<div>Vòng to = doanh thu lớn · nhãn = mã dự án · tỷ đồng, ${v === 'gt' ? 'trước' : 'sau'} VAT</div></div>
+        <div class="map-lg">${lg}<div>Vòng to = doanh thu lớn · nhãn = mã dự án · ${TYD()}, ${v === 'gt' ? 'trước' : 'sau'} VAT</div></div>
         ${thieu.length ? `<div class="map-miss"><b>${thieu.length} dự án chưa có vị trí:</b> ${thieu.map((x) => esc(x.d.ma_du_an)).join(', ')}. Nhập ở tab Dự án.</div>` : ''}
       </div>
     </div>
@@ -85,8 +85,8 @@ async function bMapInit(list, v) {
     const c = L.circleMarker([x.d.vi_do, x.d.kinh_do], { radius: 9 + Math.sqrt(Math.max(0, x.dt) / mx) * 22, color: '#fff', weight: 2.5, fillColor: col, fillOpacity: 0.82 }).addTo(m);
     c.bindPopup(`<div class="map-pp"><b>${esc(x.d.ma_du_an)}</b> · ${esc(x.d.ten_du_an)}
       <div class="map-pp-s">${esc(x.kv)} · ${esc(x.d.trang_thai)} · ${Number(x.d.tien_do) || 0}%${x.d.chu_dau_tu ? `<br>CĐT: ${esc(x.d.chu_dau_tu)}` : ''}</div>
-      <table><tr><td>Doanh thu</td><td>${bTy(x.dt)} tỷ</td></tr><tr><td>Chi phí</td><td>${bTy(x.cp)} tỷ</td></tr>
-      <tr><td>Lợi nhuận</td><td class="${x.ln < 0 ? 'neg' : ''}">${bTy(x.ln)} tỷ · ${bpct(x.ln, x.dt)}</td></tr></table>
+      <table><tr><td>Doanh thu</td><td>${bTy(x.dt)} ${TY()}</td></tr><tr><td>Chi phí</td><td>${bTy(x.cp)} ${TY()}</td></tr>
+      <tr><td>Lợi nhuận</td><td class="${x.ln < 0 ? 'neg' : ''}">${bTy(x.ln)} ${TY()} · ${bpct(x.ln, x.dt)}</td></tr></table>
       <button type="button" class="map-pp-b" data-mapprj="${x.d.id}">Mở thẻ dự án →</button></div>`);
     L.marker([x.d.vi_do, x.d.kinh_do], { interactive: false, keyboard: false,
       icon: L.divIcon({ className: 'map-lbl-w', html: `<span class="map-lbl">${esc(x.d.ma_du_an)}</span>`, iconSize: null, iconAnchor: [-14, 10] }) }).addTo(m);

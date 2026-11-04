@@ -1502,3 +1502,10 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
   .cost-table tr.c-g2 { border-left: 4px solid var(--gcl) !important; background: var(--gcs); }
   .cost-table tr.c-row { border-left: 4px solid var(--gcl) !important; }
 }
+/* Chọn đơn vị tiền (thanh trên cùng) */
+.dv-pick { display: inline-flex !important; flex-direction: row !important; align-items: center; margin: 0; white-space: nowrap; gap: 6px; font-size: 12px; color: rgba(255,255,255,.8); cursor: pointer; }
+.dv-pick select { appearance: none; -webkit-appearance: none; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 8px center;
+  color: #fff; font: inherit; font-weight: 700; padding: 5px 24px 5px 10px; border-radius: 999px; cursor: pointer; }
+.dv-pick select option { color: #1f2937; }
+@media (max-width: 640px) { .dv-pick span { display: none; } .dv-pick select { padding: 4px 20px 4px 8px; } }
+@media print { .dv-pick { display: none; } }

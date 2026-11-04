@@ -74,6 +74,28 @@ function attachPwChecklist(input) {
   return () => !input.value || render();
 }
 
+// ---------- Đơn vị hiển thị số tiền (chọn ở thanh trên cùng, lưu theo trình duyệt) ----------
+// 'auto' = mỗi màn hình theo đơn vị mặc định của nó (nhập liệu: đồng · HĐ đầu vào: triệu · báo cáo: tỷ).
+// Chỉ đổi cách HIỂN THỊ; ô nhập liệu, xuất Excel/PowerPoint/PDF giữ đơn vị gốc. Rê chuột vào số để xem số đồng đầy đủ.
+const DV = {
+  dong: { k: 1, ten: 'đồng', ngan: 'đ', d: [0, 0] },
+  nghin: { k: 1e3, ten: 'nghìn đồng', ngan: 'nghìn', d: [0, 0] },
+  trieu: { k: 1e6, ten: 'triệu đồng', ngan: 'tr', d: [0, 2] },
+  ty: { k: 1e9, ten: 'tỷ đồng', ngan: 'tỷ', d: [2, 2] },
+};
+let DV_CHON = 'auto';
+try { const x = localStorage.getItem('dv_tien'); if (DV[x]) DV_CHON = x; } catch {}
+const dvKey = (def) => (DV_CHON === 'auto' ? def : DV_CHON);
+const dvU = (def) => DV[dvKey(def)];
+const DV_NF = new Map();
+// Số theo đơn vị đang chọn; autoD = số lẻ riêng của màn hình khi để Tự động
+function dvNum(n, def, autoD) {
+  const u = dvU(def), [a, b] = (DV_CHON === 'auto' && autoD) || u.d, key = `${a}-${b}`;
+  if (!DV_NF.has(key)) DV_NF.set(key, new Intl.NumberFormat('vi-VN', { minimumFractionDigits: a, maximumFractionDigits: b }));
+  const x = DV_NF.get(key).format((Number(n) || 0) / u.k);
+  return /^-0(,0+)?$/.test(x) ? x.slice(1) : x;
+}
+
 // ---------- Ô nhập tiền: hiển thị 1.234.567, cho phép số âm (phụ lục giảm) ----------
 const moneyFmt = new Intl.NumberFormat('vi-VN');
 const parseMoney = (s) => {
