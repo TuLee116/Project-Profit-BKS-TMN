@@ -1370,8 +1370,43 @@ async function saveCost() {
 }
 
 // ---------- Bảng cây: Nhóm -> Hạng mục -> Chi tiết ----------
+// ---------- Xem nhanh chi phí theo nhóm (dưới 4 thẻ tổng): chọn Thầu phụ / Vật tư / ... -> hiện số của nhóm ----------
+let cFocus = (() => { try { return localStorage.getItem('cFocus') || 'thau_phu'; } catch { return 'thau_phu'; } })();
+const C_KHOI_NGAN = { B1: 'Trực tiếp', B2: 'Gián tiếp', B3: 'Tài chính' };
+function renderCostFocus() {
+  const box = $('#c-focus'); if (!box || !costData) return;
+  const { tong } = costData;
+  const ngan = (n) => (n.code === 'may_moc' ? 'MMTB' : (typeof NHOM_NGAN !== 'undefined' && NHOM_NGAN[n.code]) || n.ten);
+  if (!NHOM().some((n) => n.code === cFocus)) cFocus = NHOM()[0]?.code;
+  const chips = KHOI().map((k) => `<div class="cf-grp"><span class="cf-kl">${C_KHOI_NGAN[k.code] || esc(k.ten)}</span>${nhomOf(k.code).map((n) => {
+    const g = tong.theo_nhom[n.code] || { sau_vat: 0 };
+    return `<button type="button" class="cf-chip ${n.code === cFocus ? 'on' : ''} ${g.sau_vat || HDV.includes(n.code) ? '' : 'zero'}" data-cfocus="${n.code}" title="${esc(n.ten)}">
+      <span>${esc(ngan(n))}</span><b>${dvT(g.sau_vat)}</b></button>`;
+  }).join('')}</div>`).join('');
+  const n = NHOM().find((x) => x.code === cFocus);
+  const g = tong.theo_nhom[cFocus] || { sau_vat: 0, gia_tri: 0, tien_vat: 0, so_dong: 0 };
+  const pct = tong.sau_vat ? (g.sau_vat / tong.sau_vat) * 100 : 0;
+  const it = (lab, val, sub = '', cls = '') => `<div class="cf-it ${cls}"><span>${lab}</span><b>${val}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  let extra = '';
+  const hs = HDV.includes(cFocus) ? costData.thau_phu.filter((c) => (c.nhom || 'thau_phu') === cFocus) : [];
+  if (hs.length) { // nhóm có hợp đồng đầu vào: thêm số HĐ, đã thanh toán, còn lại
+    const S = (f) => hs.reduce((a, c) => a + c[f], 0);
+    const le = (costData.items || []).filter((r) => r.nhom === cFocus).reduce((a, r) => a + r.sau_vat, 0);
+    extra = it('Số hợp đồng', `${hs.length} HĐ`, `${hs.filter((c) => c.khoa || c.da_qt).length} đã QT`) +
+      it('Giá trị HĐ', dvT(S('hd_sau_vat')), 'HĐ + PL, sau VAT') + it('Đã thanh toán', dvT(S('da_tt')), le ? `+ mua lẻ ${dvT(le)}` : '') +
+      it('Còn phải trả', dvT(S('con_lai')), 'HT/QT − đã thanh toán', S('con_lai') < 0 ? 'neg' : 'hl');
+  }
+  box.innerHTML = `<div class="cf-head"><h3>Xem nhanh theo nhóm chi phí</h3><span class="muted small">Bấm một nhóm để xem số · sau VAT</span></div>
+    <div class="cf-chips">${chips}</div>
+    ${n ? `<div class="cf-det"><div class="cf-main"><span class="cf-name">${esc(n.ten)}</span><b class="cf-big">${dvT(g.sau_vat)}</b>
+        <span class="cf-share"><i style="width:${Math.min(100, pct).toFixed(1)}%"></i></span><small>${pct.toFixed(1).replace('.', ',')}% tổng chi phí · ${g.so_dong} dòng</small>
+        <button type="button" class="sm cf-go" data-cfgo="${n.code}">Xem trong bảng ›</button></div>
+      <div class="cf-its">${it('Trước VAT', dvT(g.gia_tri))}${it('Tiền VAT', dvT(g.tien_vat))}${extra}</div></div>` : ''}`;
+}
+
 function renderCost() {
   const { items, tong } = costData;
+  renderCostFocus();
   const edit = can('tien') && !costAll;
   const daTag = (r) => (costAll && r.ma_du_an ? `<span class="c-da">${esc(r.ma_du_an)}</span>` : ''); // xem tổng hợp: ghi mã dự án
   const pct = (v) => (tong.sau_vat ? ((v / tong.sau_vat) * 100).toFixed(1) + '%' : '—');
@@ -1501,6 +1536,16 @@ function renderCost() {
 const blockKeys = (khoi) => nhomOf(khoi).flatMap((n) => [n.code, ...n.sub.map((sc) => `${n.code}:${sc.code}`),
   ...(HDV.includes(n.code) && costData ? [...new Set(costData.thau_phu.filter((c) => (c.nhom || 'thau_phu') === n.code).map((c) => c.hd_cdt_id || 0))].map((k) => `${n.code}:hd${k}`) : [])]);
 
+$('#c-focus')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cfocus]');
+  if (b) { cFocus = b.dataset.cfocus; try { localStorage.setItem('cFocus', cFocus); } catch {} return renderCostFocus(); }
+  const go = e.target.closest('[data-cfgo]');
+  if (go) { // mở nhóm trong bảng chi phí và cuộn tới
+    const code = go.dataset.cfgo; costOpen.add(code); renderCost();
+    const tr = [...document.querySelectorAll('#tab-cost tr.c-g1')].find((x) => x.querySelector(`[data-cgrp="${code}"], [data-cadd="${code}"]`));
+    if (tr) { tr.scrollIntoView({ behavior: 'smooth', block: 'center' }); tr.classList.add('cf-flash'); setTimeout(() => tr.classList.remove('cf-flash'), 1600); }
+  }
+});
 $('#tab-cost').addEventListener('dblclick', (e) => {
   const el = e.target.closest('.tp-open');
   if (el) { window.getSelection?.().removeAllRanges(); openTp(Number(el.dataset.tp)); }
