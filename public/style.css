@@ -1864,3 +1864,17 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
   background: var(--tpk, #1f3b73); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px -6px var(--tpk, #1f3b73); }
 .kpi-tp-tag span { opacity: .8; margin-left: 6px; font-weight: 500; }
 .kpi-tp-tag:hover span { opacity: 1; text-decoration: underline; }
+
+/* Bảng chi phí: chỉ đậm số cần thiết (Sau VAT của nhóm cấp 1 và dòng tổng); hạng mục, chi tiết dùng chữ thường */
+.cost-table td.num { font-weight: 500; }
+.cost-table td.num.strong { font-weight: 500; color: #1f2a44; }
+.cost-table tr.c-g1 td.num { font-weight: 500; color: #475569; }
+.cost-table tr.c-g1 td.num:nth-child(4) { font-weight: 800; color: #1f2a44; } /* Sau VAT của nhóm */
+.cost-table tr.c-g1 td.num:first-child { color: var(--gcc); font-weight: 800; }
+.cost-table tr.c-g1 td b { font-weight: 800; }
+.cost-table tr.c-g2 td, .cost-table tr.c-g2 td.num { font-weight: 500; color: #475569; }
+.cost-table tr.c-g2 td b { font-weight: 600; }
+.cost-table tr.c-row td b { font-weight: 600; color: #1f2a44; }
+.cost-table tr.c-row td { color: #334155; }
+.cost-table tfoot td, .cost-table tfoot td.num { font-weight: 800; }
+.cost-table td.c-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }

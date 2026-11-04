@@ -1401,7 +1401,7 @@ function renderCost() {
       <td class="num">${dvm(r.gia_tri)}</td>
       <td class="num strong">${dvm(r.sau_vat)}<div class="c-vat">${r.vat ? `VAT ${r.vat}%` : r.khong_vat ? 'Không VAT' : vatBadge(0)}</div></td>
       <td></td>
-      <td class="c-note">${esc(r.ghi_chu)}</td>
+      <td class="c-note" title="${esc(r.ghi_chu)}">${esc(r.ghi_chu)}</td>
       <td class="row-actions">${edit ? `<button class="sm" data-cedit="${r.id}">Sửa</button><button class="danger sm" data-cdel="${r.id}">Xóa</button>` : ''}</td>
     </tr>`;
 
@@ -1435,7 +1435,7 @@ function renderCost() {
             <td class="c-dt">${esc(c.doi_tac)}</td><td></td>
             <td class="num">${dvm(c.qt_gia_tri)}</td>
             <td class="num strong">${dvm(c.qt_sau_vat)}<div class="c-vat">HT/QT</div></td>
-            <td></td><td class="c-note">${esc(c.ghi_chu)}</td>
+            <td></td><td class="c-note" title="${esc(c.ghi_chu)}">${esc(c.ghi_chu)}</td>
             <td class="row-actions"><button class="sm" data-tpopen="${c.id}">Chi tiết</button></td>
           </tr>`;
         });
