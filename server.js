@@ -909,12 +909,27 @@ api.post('/du-an/:id/thau-phu', canHd, wrap(async (req, res) => {
   res.status(201).json(await store.createTp(id, t.data, l.data, req.user.id));
 }));
 
+// Gợi ý khi nhập HĐ đầu vào: nhà thầu đã có + hạng mục từng thi công (gộp theo tên, không phân biệt hoa thường)
+api.get('/thau-phu-goi-y', wrap(async (_req, res) => {
+  const m = new Map();
+  for (const r of await store.listTpGoiY()) {
+    const k = r.doi_tac.trim().toLowerCase(); if (!k) continue;
+    const o = m.get(k) || { doi_tac: r.doi_tac.trim(), nhom: r.nhom, so_hd: 0, hang_muc: [] };
+    o.so_hd++;
+    const hm = String(r.hang_muc || '').trim();
+    if (hm) { const h = o.hang_muc.find((x) => x.ten.toLowerCase() === hm.toLowerCase()); if (h) { h.n++; if (!h.du_an.includes(r.ma_du_an)) h.du_an.push(r.ma_du_an); } else o.hang_muc.push({ ten: hm, n: 1, du_an: [r.ma_du_an] }); }
+    m.set(k, o);
+  }
+  res.json([...m.values()].map((o) => ({ ...o, hang_muc: o.hang_muc.sort((a, b) => b.n - a.n) })).sort((a, b) => b.so_hd - a.so_hd || a.doi_tac.localeCompare(b.doi_tac, 'vi')));
+}));
+
 api.put('/thau-phu/:id', canHd, wrap(async (req, res) => {
   const tp = await tpOf(req, res); if (!tp) return;
   const body = req.body || {};
   const { data, errors } = validateTp(body);
   if (errors.length) return bad(res, errors);
   if (!('hd_cdt_id' in body)) data.hd_cdt_id = tp.hd_cdt_id ?? null; // không gửi -> giữ nguyên liên kết
+  if (!('hang_muc' in body)) data.hang_muc = tp.hang_muc || '';   // không gửi -> giữ nguyên hạng mục
   if (data.hd_cdt_id) { const e = await checkHeadRef(data.hd_cdt_id, tp.du_an_id); if (e) return bad(res, 'HĐ chủ đầu tư: ' + e); }
   await store.updateTp(tp.id, data, req.user.id);
   res.json({ id: tp.id });

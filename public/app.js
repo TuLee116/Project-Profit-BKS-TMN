@@ -1245,6 +1245,10 @@ function setCostMode() {
     $('#bank-list').innerHTML = banks.map((b) => `<option value="${esc(b)}">`).join('');
     dt.setAttribute('list', 'bank-list');
     dt.placeholder = 'Gõ hoặc chọn tên ngân hàng';
+  } else if (tp) {
+    dt.setAttribute('list', 'tp-dt-list'); // nhà thầu / nhà cung cấp đã có trong hệ thống
+    dt.placeholder = 'Gõ tên – gợi ý từ các HĐ đã nhập';
+    tpGoiYLoad().then(() => { fillTpDtList(); fillTpHmSug(); });
   } else {
     dt.removeAttribute('list');
     dt.placeholder = '';
@@ -1252,6 +1256,30 @@ function setCostMode() {
   $('#c-ngay-label').textContent = tp ? 'Ngày ký HĐ' : 'Ngày';
   $('#c-gt-label').textContent = tp ? 'Giá trị HĐ (trước VAT) *' : 'Giá trị (trước VAT) *';
   $('button[type=submit]', cForm).textContent = cForm.elements.id.value ? 'Lưu thay đổi' : tp ? `Tạo HĐ ${(TPN()[cForm.elements.nhom.value] || '').toLowerCase()}` : 'Thêm dòng';
+}
+
+// ---------- Bộ nhớ gợi ý HĐ đầu vào: nhà thầu đã có + hạng mục từng thi công (mọi dự án) ----------
+let tpGoiY = null, tpGoiYAt = 0;
+async function tpGoiYLoad(force) {
+  if (!force && tpGoiY && Date.now() - tpGoiYAt < 60000) return tpGoiY;
+  try { tpGoiY = await api('/api/thau-phu-goi-y'); tpGoiYAt = Date.now(); } catch { tpGoiY = tpGoiY || []; }
+  return tpGoiY;
+}
+const tpGoiYOf = (ten) => (tpGoiY || []).find((x) => x.doi_tac.toLowerCase() === String(ten || '').trim().toLowerCase());
+function fillTpDtList() {
+  const nhom = cForm?.elements.nhom.value;
+  const L = (tpGoiY || []).slice().sort((a, b) => (b.nhom === nhom) - (a.nhom === nhom));
+  $('#tp-dt-list').innerHTML = L.map((x) => `<option value="${esc(x.doi_tac)}">${x.so_hd} HĐ${x.hang_muc[0] ? ' · ' + esc(x.hang_muc[0].ten) : ''}</option>`).join('');
+}
+function fillTpHmSug() {
+  const box = $('#tp-hm-sug'); if (!box || !cForm) return;
+  const g = tpGoiYOf(cForm.elements.doi_tac.value);
+  const hm = g?.hang_muc || [];
+  // ô Hạng mục: gợi ý của nhà thầu này trước, sau đó các hạng mục khác đã có
+  const all = [...hm.map((h) => h.ten), ...new Set((tpGoiY || []).flatMap((x) => x.hang_muc.map((h) => h.ten)))];
+  $('#tp-hm-list').innerHTML = [...new Set(all)].slice(0, 60).map((t) => `<option value="${esc(t)}">`).join('');
+  box.innerHTML = hm.length ? `<span class="muted">Đã từng thi công:</span> ${hm.slice(0, 6).map((h) =>
+    `<button type="button" class="tp-hm-chip" data-hm="${esc(h.ten)}" title="${h.n} HĐ · ${esc(h.du_an.join(', '))}">${esc(h.ten)}<small>${esc(h.du_an.slice(0, 2).join(', '))}</small></button>`).join('')}` : '';
 }
 
 // Gợi ý ô Nội dung đúng theo nhóm / hạng mục đang chọn
@@ -1313,6 +1341,11 @@ function initCostForm() {
   updateCostPreview();
 }
 
+cForm?.elements.doi_tac?.addEventListener('input', () => { if (costTpMode()) fillTpHmSug(); });
+$('#tp-hm-sug')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-hm]'); if (!b) return;
+  cForm.elements.hang_muc.value = b.dataset.hm; cForm.elements.hang_muc.focus();
+});
 function resetCostForm(nhom, sub) {
   const keepNhom = nhom || cForm.elements.nhom.value;
   const keepSub = sub || cForm.elements.nhom_con.value;
@@ -1338,12 +1371,13 @@ async function saveCost() {
     try {
       const so = e.so_tp.value.trim(), nhom = e.nhom.value;
       await api(`/api/du-an/${revProjectId}/thau-phu`, { method: 'POST', body: JSON.stringify({
-        nhom, so_ma: so, doi_tac: e.doi_tac.value, ghi_chu: e.ghi_chu.value, hd_cdt_id: e.hd_cdt.value,
+        nhom, so_ma: so, doi_tac: e.doi_tac.value, hang_muc: e.hang_muc?.value || '', ghi_chu: e.ghi_chu.value, hd_cdt_id: e.hd_cdt.value,
         hd: { ngay, gia_tri: parseMoney(e.gia_tri.value), vat: e.vat.value },
       }) });
       costOpen.add(nhom);
       tpOpen.add(Number(e.hd_cdt.value) || 0); // mở nhóm HĐ CĐT vừa thêm
       const hinh = e.hinh_thuc.value;
+      tpGoiYAt = 0; // nạp lại bộ nhớ gợi ý (có nhà thầu / hạng mục mới)
       resetCostForm(nhom);
       e.hinh_thuc.value = hinh; setCostMode();
       showMsg(msg, `Đã tạo HĐ ${(TPN()[nhom] || '').toLowerCase()} ${so}. Nhấp đúp vào số HĐ ở bảng "1. Hợp đồng đầu vào" để nhập PL, HT/QT, thanh toán.`);
@@ -1435,7 +1469,7 @@ function renderCost() {
             <td class="c-dt">${esc(c.doi_tac)}</td><td></td>
             <td class="num">${dvm(c.qt_gia_tri)}</td>
             <td class="num strong">${dvm(c.qt_sau_vat)}<div class="c-vat">HT/QT</div></td>
-            <td></td><td class="c-note" title="${esc(c.ghi_chu)}">${esc(c.ghi_chu)}</td>
+            <td></td><td class="c-note" title="${esc([c.hang_muc, c.ghi_chu].filter(Boolean).join(' · '))}">${esc(c.hang_muc || c.ghi_chu)}</td>
             <td class="row-actions"><button class="sm" data-tpopen="${c.id}">Chi tiết</button></td>
           </tr>`;
         });
@@ -1655,7 +1689,7 @@ function renderTpCard() {
   const q = normVn(tpFilter.q);
   const list = all.filter((c) =>
     (!tpFilter.loc || (tpFilter.loc === 'con' ? ['con', 'vuot'].includes(tpTT(c)) : tpTT(c) === tpFilter.loc)) &&
-    (!q || normVn(`${c.so_ma} ${c.doi_tac} ${c.ghi_chu} ${hdCdtName(c.hd_cdt_id)}`).includes(q)));
+    (!q || normVn(`${c.so_ma} ${c.doi_tac} ${c.hang_muc || ''} ${c.ghi_chu} ${hdCdtName(c.hd_cdt_id)}`).includes(q)));
   const filtered = list.length !== tatCa.length;
   const sumOf = (rows, f) => rows.reduce((s, c) => s + c[f], 0);
   const T = filtered ? { so_hd: list.length, hd_sau_vat: sumOf(list, 'hd_sau_vat'), qt_sau_vat: sumOf(list, 'qt_sau_vat'), da_tt: sumOf(list, 'da_tt'), con_lai: sumOf(list, 'con_lai') } : costData.tong_tp;
@@ -1691,7 +1725,7 @@ function renderTpCard() {
       <td class="num">${mtr(c.qt_sau_vat)}</td>
       <td class="num">${mtr(c.da_tt)}</td>
       <td class="num strong ${c.con_lai < 0 ? 'neg' : ''}">${mtr(c.con_lai)}</td>
-      <td class="c-note tp-note" title="${esc(c.ghi_chu)}">${esc(c.ghi_chu)}</td>
+      <td class="c-note tp-note" title="${esc([c.hang_muc, c.ghi_chu].filter(Boolean).join(' · '))}">${c.hang_muc ? `<span class="tp-hm">${esc(c.hang_muc)}</span>` : ''}${c.ghi_chu ? `<small class="muted">${esc(c.ghi_chu)}</small>` : ''}</td>
       <td class="row-actions tp-act"><button class="sm" data-tpopen="${c.id}">Chi tiết</button>${edit ? `<button class="danger sm" data-tpdel="${c.id}" title="Xóa hợp đồng">Xóa</button>` : ''}</td>
     </tr>`;
   $('#tp-tbody').innerHTML = list.length ? groups.map((g, gi) => {
@@ -1753,7 +1787,7 @@ $('#tp-tbody').addEventListener('change', async (e) => {
   const cu = c.nhom || 'thau_phu';
   sel.disabled = true;
   try {
-    await api(`/api/thau-phu/${c.id}`, { method: 'PUT', body: JSON.stringify({ nhom: sel.value, so_ma: c.so_ma, doi_tac: c.doi_tac, ghi_chu: c.ghi_chu, hd_cdt_id: c.hd_cdt_id ?? '' }) });
+    await api(`/api/thau-phu/${c.id}`, { method: 'PUT', body: JSON.stringify({ nhom: sel.value, so_ma: c.so_ma, doi_tac: c.doi_tac, hang_muc: c.hang_muc || '', ghi_chu: c.ghi_chu, hd_cdt_id: c.hd_cdt_id ?? '' }) });
     showMsg($('#c-msg'), `Đã chuyển HĐ ${c.so_ma} từ ${TPN()[cu]} sang ${TPN()[sel.value]}.`);
     costOpen.add(sel.value);
     await loadCost();
@@ -1892,7 +1926,8 @@ function renderTpDlg() {
     ${canInfo ? `<div class="grid-form tp-info" data-k="info">
       <label>Loại hợp đồng<select data-f="nhom">${HDV.map((k) => `<option value="${k}" ${k === (c.nhom || 'thau_phu') ? 'selected' : ''}>${esc(TPN()[k])}</option>`).join('')}</select></label>
       <label>Số HĐ *<input data-f="so_ma" value="${esc(c.so_ma)}" maxlength="120"></label>
-      <label>${TP_DT[c.nhom || 'thau_phu']}<input data-f="doi_tac" value="${esc(c.doi_tac)}" maxlength="200"></label>
+      <label>${TP_DT[c.nhom || 'thau_phu']}<input data-f="doi_tac" value="${esc(c.doi_tac)}" maxlength="200" list="tp-dt-list"></label>
+      <label class="span-2">Hạng mục thi công<input data-f="hang_muc" value="${esc(c.hang_muc || '')}" maxlength="300" list="tp-hm-list" placeholder="VD: Móng, kết cấu BTCT"></label>
       <label>Thuộc HĐ chủ đầu tư<select data-f="hd_cdt_id">${hdCdtOptions(c.hd_cdt_id)}</select></label>
       <label class="span-2">Ghi chú<input data-f="ghi_chu" value="${esc(c.ghi_chu)}" maxlength="500"></label>
       <div class="actions"><button class="primary sm" data-save hidden>Lưu thông tin</button></div>
@@ -1995,7 +2030,8 @@ async function onTpDlgClick(e) {
   if (t.dataset.save !== undefined) {
     delete tr.dataset.dirty; // dòng đang lưu: vẽ lại theo số trên máy chủ
     if (k === 'info') {
-      if (await call(`/api/thau-phu/${c.id}`, 'PUT', { nhom: v('nhom'), so_ma: v('so_ma'), doi_tac: v('doi_tac'), ghi_chu: v('ghi_chu'), hd_cdt_id: v('hd_cdt_id') })) {
+      if (await call(`/api/thau-phu/${c.id}`, 'PUT', { nhom: v('nhom'), so_ma: v('so_ma'), doi_tac: v('doi_tac'), hang_muc: v('hang_muc'), ghi_chu: v('ghi_chu'), hd_cdt_id: v('hd_cdt_id') })) {
+        tpGoiYAt = 0;
         tpOpen.add(Number(v('hd_cdt_id')) || 0);
         await after('Đã lưu thông tin hợp đồng');
       }

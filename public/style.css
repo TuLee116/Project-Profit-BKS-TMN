@@ -1878,3 +1878,13 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .cost-table tr.c-row td { color: #334155; }
 .cost-table tfoot td, .cost-table tfoot td.num { font-weight: 800; }
 .cost-table td.c-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+/* HĐ đầu vào: hạng mục thi công + gợi ý từ bộ nhớ */
+.tp-hm-sug { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 11.5px; font-weight: 500; }
+.tp-hm-sug:empty { display: none; }
+.tp-hm-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid #c9daf3; background: #eef4fd; color: #1f3b73;
+  font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: none; }
+.tp-hm-chip small { font-size: 10px; color: #64748b; font-weight: 500; }
+.tp-hm-chip:hover { background: #1f3b73; color: #fff; } .tp-hm-chip:hover small { color: #cbd5e1; }
+.tp-note .tp-hm { display: block; color: #1f2a44; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.tp-note small { display: block; overflow: hidden; text-overflow: ellipsis; }

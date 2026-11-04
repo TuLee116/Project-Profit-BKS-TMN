@@ -166,7 +166,9 @@
             <label class="c-tp"><span id="c-so-label">Số HĐ thầu phụ *</span><input name="so_tp" maxlength="120" placeholder="Số mới: gõ · Số đã có: nhấp đúp" title="Số HĐ mới: gõ trực tiếp. Số đã có: nhấp đúp để mở bảng chi tiết"></label>
             <label class="span-2 c-gen">Nội dung *<input name="noi_dung" maxlength="300"></label>
             <label><span id="c-dt-label">Đối tác / Nhà cung cấp</span><input name="doi_tac" maxlength="200"></label>
-            <datalist id="bank-list"></datalist>
+            <datalist id="bank-list"></datalist><datalist id="tp-dt-list"></datalist><datalist id="tp-hm-list"></datalist>
+            <label class="c-tp span-2 tp-hm-wrap">Hạng mục thi công<input name="hang_muc" maxlength="300" list="tp-hm-list" placeholder="VD: Móng, kết cấu BTCT · Điện, nước, PCCC" autocomplete="off">
+              <span class="tp-hm-sug" id="tp-hm-sug"></span></label>
             <label class="c-gen">Số HĐ / Chứng từ<input name="so_ct" maxlength="100"></label>
             <label><span id="c-ngay-label">Ngày</span><input name="ngay" class="date-dmy"></label>
             <label><span id="c-gt-label">Giá trị (trước VAT) *</span><input name="gia_tri" placeholder="0"></label>
@@ -200,7 +202,7 @@
             <table class="tp-table">
               <thead><tr>
                 <th class="num">#</th><th>Hợp đồng</th><th>Đối tác</th>
-                <th class="num">Giá trị HĐ</th><th class="num">Giá trị HT/QT</th><th class="num">Đã thanh toán</th><th class="num">Còn lại</th><th>Ghi chú</th><th></th>
+                <th class="num">Giá trị HĐ</th><th class="num">Giá trị HT/QT</th><th class="num">Đã thanh toán</th><th class="num">Còn lại</th><th>Hạng mục / Ghi chú</th><th></th>
               </tr></thead>
               <tbody id="tp-tbody"></tbody>
               <tfoot id="tp-tfoot"></tfoot>
