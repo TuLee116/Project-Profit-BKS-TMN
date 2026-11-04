@@ -18,7 +18,28 @@ function mapLeaflet() {
   }
   return bLoad('/vendor/leaflet/leaflet.js');
 }
-const mapTiles = () => L.tileLayer(MAP_TILE, { maxZoom: 19, attribution: MAP_ATTR, referrerPolicy: 'strict-origin-when-cross-origin' }); // OSM yêu cầu gửi tên miền
+// Nền dự phòng (OSM Humanitarian – máy chủ openstreetmap.fr, cùng dữ liệu OpenStreetMap): dùng khi máy người xem không tải được ảnh nền OSM (mạng chặn, máy chủ OSM từ chối)
+const MAP_TILE2 = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+function mapTiles() {
+  const osm = L.tileLayer(MAP_TILE, { maxZoom: 19, attribution: MAP_ATTR, referrerPolicy: 'strict-origin-when-cross-origin' }); // OSM yêu cầu gửi tên miền
+  let err = 0, ok = 0;
+  osm.on('tileload', () => { ok++; });
+  osm.on('tileerror', () => {
+    const m = osm._map;
+    if (++err < 3 || ok || !m) return; // vài ô lỗi lẻ tẻ thì bỏ qua; lỗi liên tục, chưa ô nào tải được -> đổi nền
+    m.removeLayer(osm);
+    L.tileLayer(MAP_TILE2, { maxZoom: 19, subdomains: 'abc', attribution: `${MAP_ATTR} · nền HOT (openstreetmap.fr)` }).addTo(m);
+  });
+  return osm;
+}
+// Ô bản đồ đổi kích thước (vẽ lúc đang ẩn, đổi bố cục, xoay điện thoại, mở/đóng khung bên) -> Leaflet tính lại và tải đủ nền
+function mapWatch(m, el) {
+  if (!('ResizeObserver' in window)) return;
+  let t = 0;
+  const ro = new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => { if (m._container === el && document.body.contains(el)) m.invalidateSize(); }, 120); });
+  ro.observe(el);
+  m.on('unload', () => ro.disconnect());
+}
 const mapTsCol = (ts) => (ts >= 0.15 ? '#0f7a4f' : ts >= 0.1 ? '#c9a227' : '#b4471c');
 
 // Khu vực để gộp: lấy phần trước dấu phẩy, bỏ "quận / huyện / phường / Q. / P.", viết hoa chữ đầu mỗi từ
@@ -77,6 +98,7 @@ async function bMapInit(list, v) {
   const m = bMapObj = L.map(el, { zoomControl: false, scrollWheelZoom: false });
   L.control.zoom({ position: 'bottomright' }).addTo(m);
   mapTiles().addTo(m);
+  mapWatch(m, el);
   if (!R.length) { m.setView(MAP_HOME, 12); return; }
   const mode = BST.map_mode === 'tt' ? 'tt' : 'ts', mx = Math.max(...R.map((x) => Math.max(0, x.dt)), 1);
   const MK = new Map(); // id dự án -> vòng tròn (để bấm "Đi tới dự án")
@@ -155,6 +177,7 @@ async function mapPicker(input) {
   try { await mapLeaflet(); } catch { dlg.querySelector('#map-pick').textContent = 'Không tải được thư viện bản đồ.'; return; }
   pm = L.map('map-pick').setView(pt || MAP_HOME, pt ? 16 : 12);
   mapTiles().addTo(pm);
+  mapWatch(pm, pm.getContainer());
   const set = (la, lo) => { pt = [la, lo];
     if (mk) mk.setLatLng(pt); else mk = L.circleMarker(pt, { radius: 10, color: '#fff', weight: 3, fillColor: '#b4471c', fillOpacity: 0.95 }).addTo(pm);
     dlg.querySelector('#map-pick-t').textContent = mapFmt(la, lo); dlg.querySelector('[data-ok]').disabled = false; };
