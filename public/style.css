@@ -1474,3 +1474,31 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .dp-in > div { min-width: 0; } .dp-il { font-size: 6.4pt; font-weight: 700; letter-spacing: .3pt; text-transform: uppercase; color: #8a7b6b; }
 .dp-iv { font-size: 8.6pt; font-weight: 800; color: #1f2a44; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dp-is { font-size: 6.6pt; color: #6b5d4f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Bảng chi phí (nhập liệu): gọn, mỗi nhóm một màu nền, chỉ cấp nhóm có tỷ trọng ---------- */
+.cost-table { font-size: 13px; }
+.cost-table th, .cost-table td { padding: 7px 8px; }
+.cost-table thead th { font-size: 10.5px; letter-spacing: .4px; }
+.cost-table tbody td { border-bottom-color: #eef2f7; }
+.cost-table tr.c-g1 td { font-size: 13.5px; border-top: 6px solid #fff; }
+.cost-table tr.c-g1 td:first-child { box-shadow: inset 4px 0 0 var(--gcc); color: var(--gcc); font-weight: 800; }
+.cost-table tr.c-g1 td { background: var(--gcb); }
+.cost-table tr.c-g2 td { background: var(--gcs); font-size: 12.5px; }
+.cost-table tr.c-g2 td:first-child, .cost-table tr.c-row td:first-child { box-shadow: inset 4px 0 0 var(--gcl); }
+.cost-table tr.c-row td { background: #fff; font-size: 12.5px; }
+.cost-table tr.c-g1.c-empty td, .cost-table tr.c-g2.c-empty td { color: #94a3b8; } .cost-table tr.c-empty b { color: #64748b; }
+.cost-table tr.c-g2.c-empty td.num { color: #cbd5e1; }
+.cost-table .c-gc0 { --gcc: #2c5fa3; --gcb: #eaf1fb; --gcs: #f5f8fd; --gcl: #c9daf2; }
+.cost-table .c-gc1 { --gcc: #b07338; --gcb: #f8efe5; --gcs: #fcf8f3; --gcl: #ead6c0; }
+.cost-table .c-gc2 { --gcc: #16968a; --gcb: #e6f5f2; --gcs: #f3faf9; --gcl: #bfe4de; }
+.cost-table .c-gc3 { --gcc: #7e5aa6; --gcb: #f1ecf8; --gcs: #f8f6fc; --gcl: #dacdee; }
+.cost-table .c-gc4 { --gcc: #a3485e; --gcb: #f9ecef; --gcs: #fcf6f7; --gcl: #ecccd4; }
+.cost-table .c-gc5 { --gcc: #5f7a2e; --gcb: #eff4e6; --gcs: #f8faf3; --gcl: #d5e2bf; }
+.cost-table tfoot td { background: #1f3a6e !important; color: #fff; font-weight: 800; border: 0; }
+.cost-table tfoot td.num { color: #fff; }
+@media screen and (max-width: 640px) { /* điện thoại: bảng thành thẻ -> viền màu nằm ở cạnh trái thẻ */
+  .cost-table tr.c-g1 td, .cost-table tr.c-g1 td:first-child, .cost-table tr.c-g2 td:first-child, .cost-table tr.c-row td:first-child { box-shadow: none; border-top: 0; }
+  .cost-table tr.c-g1 { border-left: 4px solid var(--gcc) !important; background: var(--gcb); }
+  .cost-table tr.c-g2 { border-left: 4px solid var(--gcl) !important; background: var(--gcs); }
+  .cost-table tr.c-row { border-left: 4px solid var(--gcl) !important; }
+}

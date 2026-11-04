@@ -1359,21 +1359,22 @@ function renderCost() {
     $(`#c-k-${k.code}-sub`).textContent = `${pct(t.sau_vat)} tổng chi phí · ${t.so_dong} dòng`;
   }
 
-  const sumCells = (t, cls = '') => `
+  // Tỷ trọng chỉ hiện ở cấp nhóm và dòng tổng; hạng mục con, chi tiết để trống cho gọn
+  const sumCells = (t, cls = '', showPct = true) => `
       <td class="num ${cls}">${money(t.gia_tri)}</td>
       <td class="num ${cls}">${money(t.sau_vat)}</td>
-      <td class="num">${pct(t.sau_vat)}</td>`;
+      <td class="num">${showPct ? pct(t.sau_vat) : ''}</td>`;
   const toggle = (key, n) => (n ? `<button class="grp-toggle" data-cgrp="${key}">${costOpen.has(key) ? '▾' : '▸'}</button>` : '<span class="grp-toggle-sp"></span>');
   const addBtn = (nhom, sub) => (edit ? `<button class="sm" data-cadd="${nhom}" data-csub="${sub || ''}" title="Thêm chi phí vào mục này">+</button>` : '');
   const ngoaiCp = (r) => Boolean(NHOM().find((n) => n.code === r.nhom)?.sub.find((sc) => sc.code === r.nhom_con)?.khong_tinh_cp);
-  const detail = (r, no, indent) => `
-    <tr class="c-row${ngoaiCp(r) ? ' ngoai-cp' : ''}" data-cid="${r.id}" title="${esc(r.nguoi_cap_nhat ? 'Cập nhật bởi ' + r.nguoi_cap_nhat : '')}">
+  const detail = (r, no, indent, gc = '') => `
+    <tr class="c-row ${gc}${ngoaiCp(r) ? ' ngoai-cp' : ''}" data-cid="${r.id}" title="${esc(r.nguoi_cap_nhat ? 'Cập nhật bởi ' + r.nguoi_cap_nhat : '')}">
       <td class="num muted">${no}</td>
       <td class="indent-${indent}"><span class="tree">└</span>${esc(r.noi_dung)}</td>
       <td class="c-dt">${esc(r.doi_tac)}${r.so_ct ? `<div class="muted small">${esc(r.so_ct)}</div>` : ''}</td><td>${dmy(r.ngay)}</td>
       <td class="num">${money(r.gia_tri)}</td>
       <td class="num strong">${money(r.sau_vat)}<div class="c-vat">${r.vat ? `VAT ${r.vat}%` : r.khong_vat ? 'Không VAT' : vatBadge(0)}</div></td>
-      <td class="num muted">${ngoaiCp(r) ? '—' : pct(r.sau_vat)}</td>
+      <td></td>
       <td class="c-note">${esc(r.ghi_chu)}</td>
       <td class="row-actions">${edit ? `<button class="sm" data-cedit="${r.id}">Sửa</button><button class="danger sm" data-cdel="${r.id}">Xóa</button>` : ''}</td>
     </tr>`;
@@ -1386,8 +1387,8 @@ function renderCost() {
       const g = tong.theo_nhom[n.code];
       const rows = items.filter((r) => r.nhom === n.code);
       const tps = HDV.includes(n.code) ? costData.thau_phu.filter((c) => (c.nhom || 'thau_phu') === n.code) : [];
-      const open = costOpen.has(n.code);
-      html += `<tr class="c-g1"><td class="num">${no}</td>
+      const open = costOpen.has(n.code), gc = `c-gc${i % 6}`; // màu nền riêng cho từng nhóm (nhóm, hạng mục, chi tiết cùng tông)
+      html += `<tr class="c-g1 ${gc}${open ? ' c-open' : ''}${(g.so_dong || tps.length) ? '' : ' c-empty'}"><td class="num">${no}</td>
         <td colspan="3">${toggle(n.code, rows.length || n.sub.length || tps.length)}<b>${esc(n.ten)}</b> <span class="muted small">(${tps.length ? `${new Set(tps.map((c) => c.hd_cdt_id || 0)).size} HĐ CĐT · ${tps.length} HĐ` + (rows.length ? ' + ' + rows.length + ' dòng lẻ' : '') : g.so_dong + ' dòng'})</span>${g.tam_tinh ? ' <span class="st st-tam-tinh">Có tạm tính</span>' : ''}</td>
         ${sumCells(g, 'strong')}<td></td><td class="row-actions">${addBtn(n.code, n.sub[0]?.code)}</td></tr>`;
       if (!open) return;
@@ -1396,44 +1397,44 @@ function renderCost() {
       tpGs.forEach((tg, j) => {
         const key = `${n.code}:hd${tg.k}`;
         const st = tg.rows.reduce((a, c) => ({ gia_tri: a.gia_tri + c.qt_gia_tri, tien_vat: a.tien_vat + c.qt_tien_vat, sau_vat: a.sau_vat + c.qt_sau_vat }), { gia_tri: 0, tien_vat: 0, sau_vat: 0 });
-        html += `<tr class="c-g2${tg.k ? '' : ' tv-sub-warn'}"><td class="num muted">${no}.${j + 1}</td>
+        html += `<tr class="c-g2 ${gc}${tg.k ? '' : ' tv-sub-warn'}"><td class="num muted">${no}.${j + 1}</td>
           <td colspan="3" class="indent-1">${toggle(key, tg.rows.length)}${tg.k ? `<span class="kind-tag kind-hd">HĐ CĐT</span> ${esc(hdCdtName(tg.k).replace(/^HĐ\s+/, ''))}` : '<span class="st st-tam-tinh">Chưa gắn HĐ CĐT</span>'}
             <span class="muted small">(${tg.rows.length} HĐ)</span></td>
-          ${sumCells(st)}<td></td><td></td></tr>`;
+          ${sumCells(st, '', false)}<td></td><td></td></tr>`;
         if (!costOpen.has(key)) return;
         tg.rows.forEach((c, x) => {
-          html += `<tr class="c-row">
+          html += `<tr class="c-row ${gc}">
             <td class="num muted">${no}.${j + 1}.${x + 1}</td>
             <td class="indent-2"><span class="tree">└</span><b class="tp-open" data-tp="${c.id}" title="Nhấp đúp để mở chi tiết">${esc(c.so_ma)}</b>${c.so_pl ? ` <span class="muted small">(+${c.so_pl} PL)</span>` : ''}</td>
             <td class="c-dt">${esc(c.doi_tac)}</td><td></td>
             <td class="num">${money(c.qt_gia_tri)}</td>
             <td class="num strong">${money(c.qt_sau_vat)}<div class="c-vat">HT/QT</div></td>
-            <td class="num muted">${pct(c.qt_sau_vat)}</td><td class="c-note">${esc(c.ghi_chu)}</td>
+            <td></td><td class="c-note">${esc(c.ghi_chu)}</td>
             <td class="row-actions"><button class="sm" data-tpopen="${c.id}">Chi tiết</button></td>
           </tr>`;
         });
       });
       if (!n.sub.length) {
-        rows.forEach((r, x) => { html += detail(r, `${no}.${tpGs.length + x + 1}`, 1); });
+        rows.forEach((r, x) => { html += detail(r, `${no}.${tpGs.length + x + 1}`, 1, gc); });
         return;
       }
       n.sub.forEach((sc, j) => {
         const key = `${n.code}:${sc.code}`;
         const sr = rows.filter((r) => r.nhom_con === sc.code);
         const st = g.sub[sc.code];
-        html += `<tr class="c-g2${sc.khong_tinh_cp ? ' ngoai-cp' : ''}"><td class="num muted">${no}.${tpGs.length + j + 1}</td>
+        html += `<tr class="c-g2 ${gc}${sc.khong_tinh_cp ? ' ngoai-cp' : ''}${st.so_dong ? '' : ' c-empty'}"><td class="num muted">${no}.${tpGs.length + j + 1}</td>
           <td colspan="3" class="indent-1">${toggle(key, sr.length)}${esc(sc.ten)} <span class="muted small">(${st.so_dong} dòng)</span></td>
-          ${sc.khong_tinh_cp ? sumCells(st).replace(/<td class="num">[^<]*<\/td>\s*$/, '<td class="num muted">—</td>') : sumCells(st)}<td></td><td class="row-actions">${addBtn(n.code, sc.code)}</td></tr>`;
-        if (costOpen.has(key)) sr.forEach((r, x) => { html += detail(r, `${no}.${tpGs.length + j + 1}.${x + 1}`, 2); });
+          ${sumCells(st, '', false)}<td></td><td class="row-actions">${addBtn(n.code, sc.code)}</td></tr>`;
+        if (costOpen.has(key)) sr.forEach((r, x) => { html += detail(r, `${no}.${tpGs.length + j + 1}.${x + 1}`, 2, gc); });
       });
       // Dòng cũ chưa chọn hạng mục (vd: Trả nợ vay nhập trước khi tách gốc/lãi) -> cần Sửa để phân loại
       const orphan = rows.filter((r) => !n.sub.some((sc) => sc.code === r.nhom_con));
       if (orphan.length) {
         const key = `${n.code}:_`;
-        html += `<tr class="c-g2"><td class="num muted">${no}.${n.sub.length + 1}</td>
+        html += `<tr class="c-g2 ${gc}"><td class="num muted">${no}.${n.sub.length + 1}</td>
           <td colspan="3" class="indent-1">${toggle(key, orphan.length)}<span class="warn-text">Chưa phân loại hạng mục – bấm Sửa để chọn</span> <span class="muted small">(${orphan.length} dòng)</span></td>
           <td colspan="3"></td><td></td><td></td></tr>`;
-        if (costOpen.has(key)) orphan.forEach((r, x) => { html += detail(r, `${no}.${n.sub.length + 1}.${x + 1}`, 2); });
+        if (costOpen.has(key)) orphan.forEach((r, x) => { html += detail(r, `${no}.${n.sub.length + 1}.${x + 1}`, 2, gc); });
       }
     });
     return html;
