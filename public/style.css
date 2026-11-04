@@ -1593,3 +1593,7 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .th-htb i { display: block; height: 100%; border-radius: 99px; background: #3462a3; }
 .th-table td.th-ht b { font-size: 12px; color: #475569; font-weight: 700; }
 @media print { .th-htb { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* Cột Hoàn thành: chỉ thanh mức đạt, tỷ lệ % ở cột bên phải */
+.th-table td.th-ht .f-meter { display: block; width: 100%; max-width: 140px; margin: 0; }
+.th-table th.th-ht { text-align: left; }

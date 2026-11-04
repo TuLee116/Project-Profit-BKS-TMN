@@ -459,9 +459,9 @@ function bTongHopHtml(list, v, P) {
       <div class="f-body"><div class="f-title">${title}</div>
         <div class="f-val ${val < 0 ? 'neg' : ''}">${unit === '%' ? bpct(val, 1) : `${bTy(val)} <small>${TY()}</small>`}</div>
         <div class="f-lines">${lines.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div></div></div>`;
-  // Cột dự án tách riêng: STT | Mã DA | Tên dự án | Tình trạng; cột Hoàn thành = tiến độ % của dự án
+  // Cột dự án tách riêng: STT | Mã DA | Tên dự án | Tình trạng
   const prj = (x, i) => `<td class="num th-stt">${i + 1}</td><td class="th-ma"><b>${esc(x.d.ma_du_an)}</b></td><td class="th-prj th-name" title="${esc(x.d.ten_du_an)}">${esc(x.d.ten_du_an)}</td><td class="th-tt2"><span class="st st-${slug(x.d.trang_thai)} th-st">${esc(x.d.trang_thai)}</span></td>`;
-  const ht = (x) => { const p = Math.max(0, Math.min(100, Number(x.d.tien_do) || 0)); return `<td class="th-ht"><span class="th-htb"><i style="width:${p}%"></i></span><b>${p}%</b></td>`; };
+  // Cột Hoàn thành = thanh mức đạt (tách từ ô tỷ lệ), cột tỷ lệ % bên phải
   const dTo = to === bNowYm() ? new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : `${lastDay(to)}/${to.slice(5)}/${to.slice(0, 4)}`;
   const hd = (cols) => `<thead><tr><th class="num th-stt">STT</th><th>Mã DA</th><th>Tên dự án</th><th>Tình trạng</th>${cols.map((c) => `<th class="${c === 'Hoàn thành' ? 'th-ht' : 'num'}">${c}</th>`).join('')}</tr></thead>`;
   const foot = (cells) => `<tfoot><tr><td></td><td colspan="3">Tổng cộng (${rows.length} dự án)</td>${cells.map((c) => `<td class="num">${c}</td>`).join('')}</tr></tfoot>`;
@@ -475,10 +475,10 @@ function bTongHopHtml(list, v, P) {
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu', 'Chi phí', 'Lợi nhuận', 'Hoàn thành', 'Tỷ lệ LN'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.dt1)}</td><td class="num">${bTy(x.cp1)}</td>
-        <td class="num strong ${x.ln1 < 0 ? 'neg' : 'pos'}">${bTy(x.ln1)}</td>${ht(x)}<td class="f-pct">${meter(x.dt1 ? x.ln1 / x.dt1 : 0, 0.3, BCOL.dk)}<b class="${x.ln1 < 0 ? 'neg' : ''}">${bpct(x.ln1, x.dt1)}${x.td1 ? '' : '<sup class="th-tt" title="Chưa chốt TĐ1: lấy HĐ gốc và chi phí trên hệ thống">*</sup>'}</b></td></tr>`).join('')}</tbody>
+        <td class="num strong ${x.ln1 < 0 ? 'neg' : 'pos'}">${bTy(x.ln1)}</td><td class="th-ht">${meter(x.dt1 ? x.ln1 / x.dt1 : 0, 0.3, BCOL.dk)}</td><td class="num"><b class="${x.ln1 < 0 ? 'neg' : ''}">${bpct(x.ln1, x.dt1)}${x.td1 ? '' : '<sup class="th-tt" title="Chưa chốt TĐ1: lấy HĐ gốc và chi phí trên hệ thống">*</sup>'}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.dt1), bTy(T.cp1), ty(T.ln1), '', bpct(T.ln1, T.dt1)])}
     </table></div>
-    <p class="muted small f-note">Số dự kiến theo TĐ1 đã chốt (Doanh thu, Chi phí khi ký HĐ – nhập ở bảng TĐ của từng dự án). <b>(*)</b> Dự án chưa chốt TĐ1: lấy HĐ gốc với CĐT, thầu phụ theo HĐ gốc và chi phí khác đã ghi nhận trên hệ thống. Xem sau VAT: doanh thu quy đổi theo VAT của HĐ gốc, chi phí theo tỷ lệ VAT của chi phí dự án, làm tròn tới 0,1 tỷ. Thanh tỷ lệ: đầy = 30%.</p>
+    <p class="muted small f-note">Số dự kiến theo TĐ1 đã chốt (Doanh thu, Chi phí khi ký HĐ – nhập ở bảng TĐ của từng dự án). <b>(*)</b> Dự án chưa chốt TĐ1: lấy HĐ gốc với CĐT, thầu phụ theo HĐ gốc và chi phí khác đã ghi nhận trên hệ thống. Xem sau VAT: doanh thu quy đổi theo VAT của HĐ gốc, chi phí theo tỷ lệ VAT của chi phí dự án, làm tròn tới 0,1 tỷ. Cột Hoàn thành: thanh đầy = tỷ suất LN 30%.</p>
     ${(() => { // Thẻ DT – CP – LN tại thời điểm mới nhất (đã QT: TĐ3 · chưa QT: TĐ2), lấy cùng nguồn mục IV
       const M = bMuc4Data(list, v), q = M.rows.filter((x) => x.qt), t = M.rows.filter((x) => !x.qt);
       const S = (a, k) => a.reduce((s2, x) => s2 + x[k], 0);
@@ -498,10 +498,10 @@ function bTongHopHtml(list, v, P) {
       ${card('ln', 'Còn lại (thu − chi)', T.con, [T.con < 0 ? 'Đang chi nhiều hơn thu' : 'Tiền dự án đang có', 'Không gồm tiền vay, trả nợ gốc'])}
     </div>
     <div class="table-wrap"><table class="b-table th-table">
-      ${hd(['Dòng thu', 'Dòng chi', 'Còn lại (Thu − Chi)', 'Hoàn thành'])}
+      ${hd(['Dòng thu', 'Dòng chi', 'Còn lại (Thu − Chi)'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.thu)}</td><td class="num">${bTy(x.chi)}</td>
-        <td class="num strong ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td>${ht(x)}</tr>`).join('')}</tbody>
-      ${foot([bTy(T.thu), bTy(T.chi), ty(T.con), ''])}
+        <td class="num strong ${x.con < 0 ? 'neg' : 'pos'}">${bTy(x.con)}</td></tr>`).join('')}</tbody>
+      ${foot([bTy(T.thu), bTy(T.chi), ty(T.con)])}
     </table></div>
     ${v === 'gt' ? '<p class="muted small f-note">Trước VAT: tiền thật (đã gồm VAT) được quy đổi theo tỷ lệ trước / sau VAT của doanh thu (dòng thu) và chi phí (dòng chi) từng dự án, làm tròn tới 0,1 tỷ.</p>' : ''}
 
@@ -514,7 +514,7 @@ function bTongHopHtml(list, v, P) {
     <div class="table-wrap"><table class="b-table th-table">
       ${hd(['Doanh thu (TĐ mới nhất)', 'Thực chi', 'Còn lại', 'Hoàn thành', '% thực chi / DT'])}
       <tbody>${rows.map((x, i) => `<tr>${prj(x, i)}<td class="num">${bTy(x.hd_sv)}</td><td class="num">${bTy(x.chi)}</td>
-        <td class="num strong">${ty(x.hd_sv - x.chi)}</td>${ht(x)}<td class="f-pct">${meter(x.chi, x.hd_sv, BCOL.chi)}<b>${bpct(x.chi, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
+        <td class="num strong">${ty(x.hd_sv - x.chi)}</td><td class="th-ht">${meter(x.chi, x.hd_sv, BCOL.chi)}</td><td class="num"><b>${bpct(x.chi, x.hd_sv)}</b></td></tr>`).join('')}</tbody>
       ${foot([bTy(T.hd_sv), bTy(T.chi), ty(T.hd_sv - T.chi), '', bpct(T.chi, T.hd_sv)])}
     </table></div>
     ${bMuc4Html(list, v)}`;
