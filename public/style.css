@@ -1532,3 +1532,52 @@ button.map-r:hover { background: #efe6d8; } button.map-r.on { background: #e9dcc
 .b-cash-u { font-size: 11px; color: var(--muted); text-align: right; }
 @media (max-width: 760px) { .b-cash { width: 100%; min-width: 0; } }
 .b-brand img { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 12px; padding: 6px; box-shadow: 0 2px 8px rgba(15,23,42,.12); }
+
+/* =====================================================================
+   Trang Báo cáo – tông CAFE làm điểm nhấn (nền vẫn trắng, chỉ đổi tiêu đề, đầu bảng, dòng tổng, thẻ)
+   Kem #f6f1e9 · viền #e7ddcf · vàng đồng #c9a96a · nâu #8a6a3e · xanh than #1f2a44
+   DT #3462a3 · CP #b07338 · LN #2a9d8f
+   ===================================================================== */
+#b-report { --cfb-bd: #e7ddcf; --cfb-navy: #1f2a44; --cfb-gold: #c9a96a; --cfb-br: #8a6a3e; --cfb-cream: #f6f1e9; --cfb-cream2: #fbf8f3; }
+/* Đầu báo cáo */
+#b-report .b-head { background: linear-gradient(120deg, #f6f1e9 0%, #fbf7f0 60%, #f3ece1 100%); border: 1px solid var(--cfb-bd); }
+#b-report .b-company { color: #9a7a45; }
+#b-report .b-head h1 { color: var(--cfb-navy); }
+#b-report .b-cash-i.con { border-top-color: #dccfb9; }
+#b-report .b-cash-i b, #b-report .b-cash-i.con span { color: var(--cfb-navy); }
+#b-report .b-cash-i i { background: #3462a3; } #b-report .b-cash-i.chi i { background: #b07338; } #b-report .b-cash-i.con i { background: #2a9d8f; }
+/* Tiêu đề khung lớn (Tổng quan tài chính, Báo cáo theo công trình): vạch vàng đồng */
+#b-report .f-head h2, #b-report .pc-sec-title h2 { color: var(--cfb-navy); }
+#b-report .f-range-btn { border-color: var(--cfb-bd); background: var(--cfb-cream2); }
+/* Tiêu đề mục I–IV: dải kem + số La Mã xanh than + gạch vàng đồng */
+#b-report .th-head { background: linear-gradient(90deg, #f6f1e9 0%, #fbf8f3 55%, #fff 100%); border-color: var(--cfb-bd); border-left-color: var(--cfb-navy); position: relative; }
+#b-report .th-head::after { content: ''; position: absolute; left: 16px; bottom: -1px; width: 64px; height: 3px; border-radius: 2px; background: var(--cfb-gold); }
+#b-report .th-no { background: var(--cfb-navy); box-shadow: 0 2px 6px rgba(31,42,68,.3); }
+#b-report .th-ttl h3 { color: var(--cfb-navy); }
+#b-report .th-tags span { border-color: var(--cfb-bd); background: #fff; color: #5b4a36; }
+/* Thẻ chỉ tiêu: màu nhóm DT / CP / LN theo bộ cafe, nền thoáng */
+#b-report .f-dt { --f-ac: #3462a3; } #b-report .f-cp { --f-ac: #b07338; } #b-report .f-ln { --f-ac: #2a9d8f; }
+#b-report .f-card { border-color: #ebe4d8; background: linear-gradient(165deg, color-mix(in srgb, var(--f-ac) 5%, #fff) 0%, #fff 55%); }
+#b-report .th-moi { border-top-color: var(--cfb-gold); background: linear-gradient(165deg, #fbf7ef 0%, #fff 60%); }
+#b-report .th-moi-i + .th-moi-i { border-left-color: var(--cfb-bd); }
+/* Bảng: đầu bảng kem, chữ nâu; dòng tổng viền xanh than */
+#b-report th { background: var(--cfb-cream); color: var(--cfb-br); border-bottom: 1px solid var(--cfb-bd); }
+#b-report .table-wrap { border-color: var(--cfb-bd); }
+#b-report tbody tr:hover td { background: #fdfaf5; }
+#b-report tfoot td, #b-report .th-table tfoot td { background: #f3ede3; color: var(--cfb-navy); border-top: 2px solid var(--cfb-navy); }
+/* Mục IV (TĐ1-TĐ2-TĐ3) */
+#b-report .td-mx thead th { background: var(--cfb-cream2); }
+#b-report .td-h1 { --td-ac: #3462a3; } #b-report .td-h2 { --td-ac: #b07338; } #b-report .td-h3 { --td-ac: #2a9d8f; }
+#b-report .td-hn b { color: var(--cfb-navy); }
+#b-report .iv-ct { border-color: var(--cfb-bd); }
+#b-report .iv-ct.on { background: var(--cfb-navy); border-color: var(--cfb-navy); color: #fff; }
+/* Nút chuyển (bản đồ: Tỷ suất / Trạng thái) */
+#b-report .map-seg button.on { background: var(--cfb-navy); }
+/* Báo cáo theo công trình, phân tích chi tiết */
+#b-report .b-detail-bar { border-top: 1px solid var(--cfb-bd); }
+#b-report .b-detail-bar .primary { background: linear-gradient(135deg, #1f2a44 0%, #34507a 100%); box-shadow: 0 6px 14px -8px rgba(31,42,68,.6); }
+#b-report .b-kpi { border-color: var(--cfb-bd); }
+#b-report .b-proj { border-color: var(--cfb-bd); }
+#b-report .b-proj-title { color: var(--cfb-navy); }
+@media print { #b-report th, #b-report tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+#b-report .card h2::before { background: linear-gradient(180deg, #c9a96a 0%, #8a6a3e 100%); }
