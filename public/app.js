@@ -1159,7 +1159,11 @@ function bindTienVe() {
 // =====================================================================
 let costData = null;
 let costAll = (() => { try { return localStorage.getItem('costAll') === '1'; } catch { return false; } })(); // Chi phí: xem tổng hợp tất cả dự án
-const costOpen = new Set();          // nhóm / hạng mục đang mở: 'thau_phu', 'vat_tu', 'vat_tu:chinh'...
+const costOpen = new Set();
+// 3 khối chi phí (trực tiếp / gián tiếp / tài chính): mặc định thu gọn, chỉ hiện tiêu đề + Tổng; bấm tiêu đề để mở
+const cKhoiMo = new Set();
+const khoiOfNhom = (code) => NHOM().find((n) => n.code === code)?.khoi;
+const moKhoiCua = (code) => { const k = khoiOfNhom(code); if (k) cKhoiMo.add(k); }; // vừa thêm / mở nhóm -> mở khối chứa nhóm          // nhóm / hạng mục đang mở: 'thau_phu', 'vat_tu', 'vat_tu:chinh'...
 const cForm = $('#c-form');
 const NHOM = () => META.nhom_chi_phi || [];
 const KHOI = () => META.khoi_chi_phi || [];
@@ -1384,7 +1388,7 @@ async function saveCost() {
         nhom, so_ma: so, doi_tac: e.doi_tac.value, hang_muc: e.hang_muc?.value || '', ghi_chu: e.ghi_chu.value, hd_cdt_id: e.hd_cdt.value,
         hd: { ngay, gia_tri: parseMoney(e.gia_tri.value), vat: e.vat.value },
       }) });
-      costOpen.add(nhom);
+      costOpen.add(nhom); moKhoiCua(nhom);
       tpOpen.add(Number(e.hd_cdt.value) || 0); // mở nhóm HĐ CĐT vừa thêm
       const hinh = e.hinh_thuc.value;
       tpGoiYAt = 0; // nạp lại bộ nhớ gợi ý (có nhà thầu / hạng mục mới)
@@ -1403,7 +1407,7 @@ async function saveCost() {
   };
   try {
     await api(id ? `/api/chi-phi/${id}` : `/api/du-an/${revProjectId}/chi-phi`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
-    costOpen.add(body.nhom);
+    costOpen.add(body.nhom); moKhoiCua(body.nhom);
     if (body.nhom_con) costOpen.add(`${body.nhom}:${body.nhom_con}`);
     resetCostForm(body.nhom, body.nhom_con);
     showMsg(msg, id ? 'Đã cập nhật' : 'Đã thêm dòng');
@@ -1516,7 +1520,7 @@ function renderCost() {
     wrap.innerHTML = KHOI().map((k) => `
       <div class="card c-block" data-khoi="${k.code}">
         <div class="toolbar tv-head">
-          <h2>${esc(k.ten)}</h2>
+          <h2 class="c-khoi-h" data-ckhoi="${k.code}" role="button" tabindex="0" title="Bấm để mở / thu gọn"><span class="c-khoi-car">▸</span>${esc(k.ten)}</h2>
           <button type="button" class="sm" data-ctoggle="${k.code}">Mở tất cả</button>
           <div class="tv-total">Tổng: <b data-ktotal>0</b></div>
         </div>
@@ -1533,6 +1537,7 @@ function renderCost() {
   }
   for (const k of KHOI()) {
     const card = $(`.c-block[data-khoi="${k.code}"]`);
+    card.classList.toggle('c-thu', !cKhoiMo.has(k.code));
     const t = tong.theo_khoi[k.code];
     $('[data-ktotal]', card).textContent = dvT(t.sau_vat);
     $('tbody', card).innerHTML = blockRows(k);
@@ -1550,7 +1555,10 @@ $('#tab-cost').addEventListener('dblclick', (e) => {
   if (el) { window.getSelection?.().removeAllRanges(); openTp(Number(el.dataset.tp)); }
 });
 
+$('#tab-cost').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-ckhoi]')) { e.preventDefault(); e.target.click(); } });
 $('#tab-cost').addEventListener('click', async (e) => {
+  const kh = e.target.closest('[data-ckhoi]');
+  if (kh) { const k = kh.dataset.ckhoi; cKhoiMo.has(k) ? cKhoiMo.delete(k) : cKhoiMo.add(k); kh.closest('.c-block').classList.toggle('c-thu', !cKhoiMo.has(k)); return; }
   const { cgrp, cadd, csub, cedit, cdel, tpopen, tpdel } = e.target.dataset;
   if (tpopen) return openTp(Number(tpopen));
   if (tpdel) return deleteTp(Number(tpdel));
@@ -1777,7 +1785,7 @@ $('#tp-toggle-all').addEventListener('click', () => {
 $('#tp-tbody').addEventListener('click', (e) => {
   const le = e.target.closest('[data-leopen]')?.dataset.leopen;
   if (le) { // mở nhóm chi phí tương ứng ở cây chi phí và cuộn tới
-    costOpen.add(le); NHOM().find((n) => n.code === le)?.sub.forEach((sc) => costOpen.add(`${le}:${sc.code}`));
+    moKhoiCua(le); costOpen.add(le); NHOM().find((n) => n.code === le)?.sub.forEach((sc) => costOpen.add(`${le}:${sc.code}`));
     renderCost();
     return $(`[data-cgrp="${le}"]`)?.closest('tr')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -1799,7 +1807,7 @@ $('#tp-tbody').addEventListener('change', async (e) => {
   try {
     await api(`/api/thau-phu/${c.id}`, { method: 'PUT', body: JSON.stringify({ nhom: sel.value, so_ma: c.so_ma, doi_tac: c.doi_tac, hang_muc: c.hang_muc || '', ghi_chu: c.ghi_chu, hd_cdt_id: c.hd_cdt_id ?? '' }) });
     showMsg($('#c-msg'), `Đã chuyển HĐ ${c.so_ma} từ ${TPN()[cu]} sang ${TPN()[sel.value]}.`);
-    costOpen.add(sel.value);
+    costOpen.add(sel.value); moKhoiCua(sel.value);
     await loadCost();
   } catch (err) { sel.value = cu; sel.disabled = false; alert(err.message); }
 });

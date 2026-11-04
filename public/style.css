@@ -1903,3 +1903,14 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .cb-list li.on { background: #e4edfb; }
 .cb-list li b { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cb-list li.top::before { margin-right: 2px; }
+
+/* 3 khối chi phí: thu gọn mặc định, bấm tiêu đề để mở */
+.c-khoi-h { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 8px; }
+.c-khoi-h::before { display: none !important; }
+.c-khoi-car { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: #eef3fb; color: #1f3b73; font-size: 11px; transition: transform .18s; }
+.c-block:not(.c-thu) .c-khoi-car { transform: rotate(90deg); }
+.c-khoi-h:hover .c-khoi-car { background: #1f3b73; color: #fff; }
+.c-block.c-thu > .table-wrap, .c-block.c-thu [data-ctoggle] { display: none; }
+.c-block.c-thu .toolbar { margin-bottom: 0; }
+.c-block.c-thu { padding-top: 14px; padding-bottom: 14px; }
+@media print { .c-block.c-thu > .table-wrap { display: block; } .c-khoi-car { display: none; } }
