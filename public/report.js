@@ -1096,6 +1096,8 @@ function renderReport() {
 
   const { list, one } = bScope();
   const v = BST.vat, vt = v === 'gt' ? 'trước VAT' : 'sau VAT';
+  if (typeof bViewUI === 'function') bViewUI();
+  if (BST.view === 'db' && typeof bDashRender === 'function') return bDashRender(list, v, one); // chế độ Dashboard tổng
   const T = bTotals(list);
   const lnDk = T.dk.dt[v] - T.dk.cp[v], lnTh = T.th.dt[v] - T.th.cp[v];
   const lap = new Date(BC.lap_luc);
