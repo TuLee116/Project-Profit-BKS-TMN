@@ -1829,3 +1829,24 @@ td .dmy-wrap > input:not(.dmy-cal) { min-width: 128px; }
 .unlock-bar { background: #fff7e6; border-color: #f3d29a; color: #8a5a00; }
 .tp-qt-row td:first-child b { color: #0f6b44; }
 .lock-bar .sm { margin-left: 8px; }
+
+/* HĐ đầu vào: bộ lọc Loại nổi bật theo màu từng loại; tình trạng quyết toán 3 mức */
+#tp-nhom { padding: 4px; gap: 4px; background: #eef2f8; border: 1px solid #dfe6f0; }
+#tp-nhom button { --tk: #1f3b73; --tb: #e4edfb; font-weight: 700; padding: 6px 13px; border-radius: 999px; }
+#tp-nhom button[data-v="thau_phu"] { --tk: #1f3a6e; --tb: #e3ecfa; }
+#tp-nhom button[data-v="vat_tu"] { --tk: #b25a12; --tb: #fdeedd; }
+#tp-nhom button[data-v="nhan_cong"] { --tk: #0f6f66; --tb: #dcf3ef; }
+#tp-nhom button[data-v="may_moc"] { --tk: #5b3e94; --tb: #ece6f7; }
+#tp-nhom button[data-v]:not([data-v=""])::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tk); margin-right: 6px; vertical-align: 1px; }
+#tp-nhom button:not(.on):not(.zero) { background: #fff; color: var(--tk); box-shadow: 0 1px 2px rgba(15,23,42,.06); }
+#tp-nhom button.on { background: var(--tk); color: #fff; box-shadow: 0 6px 14px -8px var(--tk); }
+#tp-nhom button.on::before { background: #fff !important; }
+#tp-nhom button.on .cnt { background: rgba(255,255,255,.25); color: #fff; }
+#tp-nhom button.zero:not(.on) { opacity: .55; }
+.tp-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.tp-dot.d-chua { background: #d08a1e; } .tp-dot.d-con { background: #e07b39; } .tp-dot.d-du { background: #0f7a4f; }
+.tp-st { padding: 2px 8px; border-radius: 999px; font-size: 10.5px; }
+.tp-st-chua { background: #fdf0d9; color: #9a5b0a; border: 1px solid #f6dcae; }
+.tp-st-con { background: #fde8da; color: #b4501a; border: 1px solid #f6c9a9; }
+.tp-st-lock { background: #0f7a4f; color: #fff; border: 1px solid #0f7a4f; }
+.tp-st-vuot { background: #fde4e5; color: #b4232a; border: 1px solid #f7c6c9; }

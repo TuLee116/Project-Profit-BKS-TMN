@@ -1208,7 +1208,7 @@ async function loadCost() {
 // ---------- Form nhập ----------
 // Nhóm Thầu phụ (thêm mới) -> form tạo hợp đồng thầu phụ; các nhóm khác -> dòng chi phí
 // Hợp đồng đầu vào: thầu phụ luôn theo HĐ; vật tư, MMTB, nhân công chọn Hình thức = Hợp đồng
-const HDV = ['thau_phu', 'vat_tu', 'may_moc', 'nhan_cong'];
+const HDV = ['thau_phu', 'vat_tu', 'nhan_cong', 'may_moc']; // thứ tự hiển thị: Thầu phụ, Vật tư, Nhân công, MMTB
 const TPN = () => META.tp_nhom || { thau_phu: 'Thầu phụ', vat_tu: 'Vật tư', may_moc: 'Máy móc thiết bị', nhan_cong: 'Nhân công giao khoán' };
 const TP_DT = { thau_phu: 'Nhà thầu phụ', vat_tu: 'Nhà cung cấp', may_moc: 'Đơn vị cho thuê / cung cấp', nhan_cong: 'Tổ đội / nhà thầu nhân công' };
 const TP_TAG = { thau_phu: 'TP', vat_tu: 'VT', may_moc: 'MMTB', nhan_cong: 'NC' };
@@ -1554,6 +1554,15 @@ $('#tab-cost').addEventListener('click', async (e) => {
 // ---------------------------------------------------------------------
 // Bộ lọc bảng thầu phụ: từ khóa + trạng thái quyết toán
 const tpFilter = { q: '', loc: '', nhom: '' };
+// Tình trạng quyết toán HĐ đầu vào: chua = chưa QT (đang thực hiện) · con = đã QT, còn phải trả (giữ bảo hành, chưa trả hết)
+// · du = đã QT/đã trả đủ (còn lại = 0, khóa số) · vuot = trả vượt giá trị HT/QT
+const tpTT = (c) => (c.con_lai < 0 ? 'vuot' : !(c.khoa || c.da_qt) ? 'chua' : c.con_lai === 0 ? 'du' : 'con');
+const TP_TT = {
+  chua: ['tp-st-chua', 'Chưa QT', 'Chưa quyết toán – đang thực hiện'],
+  con: ['tp-st-con', 'Đã QT · còn phải trả', 'Đã quyết toán, còn tiền chưa trả (giữ bảo hành / chưa thanh toán hết)'],
+  du: ['tp-st-lock', '🔒 Đã QT · trả đủ', 'Đã quyết toán và trả đủ (còn lại = 0) – khóa số'],
+  vuot: ['tp-st-vuot', 'Trả vượt', 'Đã trả nhiều hơn giá trị HT/QT – cần kiểm tra'],
+};
 const tpDaQt = (c) => c.khoa || c.da_qt;
 // Nhóm theo HĐ chủ đầu tư (0 = chưa gắn); mặc định thu gọn, đang lọc/tìm thì tự mở
 const tpOpen = new Set();
@@ -1593,14 +1602,15 @@ function renderTpCard() {
   $('#tp-nhom').innerHTML = ['', ...nhoms].map((k) => `<button type="button" data-v="${k}" class="${tpFilter.nhom === k ? 'on' : ''} ${dem(k) || coLe(k) ? '' : 'zero'}" title="${k ? esc(TPN()[k]) : 'Tất cả loại'}${k && leOf(k).length ? ` · ${dem(k)} HĐ + ${leOf(k).length} dòng mua lẻ` : ''}">${k ? TP_NGAN[k] : 'Tất cả'} <span class="cnt">${dem(k)}${k && leOf(k).length ? '<i>+lẻ</i>' : ''}</span></button>`).join('');
   const all = tpFilter.nhom ? tatCa.filter((c) => (c.nhom || 'thau_phu') === tpFilter.nhom) : tatCa;
   const edit = can('hd') && !costAll;
-  const nDa = all.filter(tpDaQt).length;
+  const nTT = (k) => all.filter((c) => (k === 'con' ? ['con', 'vuot'].includes(tpTT(c)) : tpTT(c) === k)).length;
   $$('#tp-loc button').forEach((b) => {
     b.classList.toggle('on', b.dataset.v === tpFilter.loc);
-    b.innerHTML = { '': `Tất cả <span class="cnt">${all.length}</span>`, chua: `Chưa QT <span class="cnt">${all.length - nDa}</span>`, da: `Đã QT <span class="cnt">${nDa}</span>` }[b.dataset.v];
+    b.innerHTML = { '': `Tất cả <span class="cnt">${all.length}</span>`, chua: `<i class="tp-dot d-chua"></i>Chưa QT <span class="cnt">${nTT('chua')}</span>`,
+      con: `<i class="tp-dot d-con"></i>Đã QT · còn phải trả <span class="cnt">${nTT('con')}</span>`, du: `<i class="tp-dot d-du"></i>Đã QT · trả đủ <span class="cnt">${nTT('du')}</span>` }[b.dataset.v];
   });
   const q = normVn(tpFilter.q);
   const list = all.filter((c) =>
-    (!tpFilter.loc || (tpFilter.loc === 'da') === tpDaQt(c)) &&
+    (!tpFilter.loc || (tpFilter.loc === 'con' ? ['con', 'vuot'].includes(tpTT(c)) : tpTT(c) === tpFilter.loc)) &&
     (!q || normVn(`${c.so_ma} ${c.doi_tac} ${c.ghi_chu} ${hdCdtName(c.hd_cdt_id)}`).includes(q)));
   const filtered = list.length !== tatCa.length;
   const sumOf = (rows, f) => rows.reduce((s, c) => s + c[f], 0);
@@ -1630,7 +1640,7 @@ function renderTpCard() {
     <tr class="tv-child" data-tpid="${c.id}">
       <td class="num muted">${stt}</td>
       <td class="indent tp-hd"><div class="tp-l1">${daTag(c)}${tpKindCell(c, edit)}<b class="tp-open so-ma-pick" data-tp="${c.id}" title="Nhấp đúp để mở bảng nhập chi tiết">${esc(c.so_ma)}</b></div>
-        <div class="tp-l2">${c.khoa ? '<span class="tp-st tp-st-lock" title="Thanh toán đủ (còn lại = 0) – khóa số">🔒 Đã QT</span>' : c.da_qt ? '<span class="tp-st tp-st-ok">Đã QT</span>' : '<span class="tp-st">Chưa QT</span>'}${c.so_pl ? `<span>${c.so_pl} phụ lục</span>` : '<span>Không phụ lục</span>'}</div></td>
+        <div class="tp-l2">${(([cls, lab, tip]) => `<span class="tp-st ${cls}" title="${tip}">${lab}</span>`)(TP_TT[tpTT(c)])}${c.so_pl ? `<span>${c.so_pl} phụ lục</span>` : '<span>Không phụ lục</span>'}</div></td>
       <td class="c-dt tp-dt">${esc(c.doi_tac)}</td>
       <td class="num">${mtr(c.hd_sau_vat)}</td>
       <td class="num">${mtr(c.qt_sau_vat)}</td>
