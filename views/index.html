@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap&subset=vietnamese">
   <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -52,6 +53,7 @@
       </div>
       <label class="dv-pick" title="Đơn vị hiển thị số tiền trên toàn hệ thống (chỉ đổi cách hiện, không đổi số liệu)"><span>Đơn vị</span>
         <select id="dv-pick"><option value="auto">Tự động</option><option value="dong">Đồng</option><option value="nghin">Nghìn</option><option value="trieu">Triệu</option><option value="ty">Tỷ</option></select></label>
+      <button type="button" class="theme-btn" data-theme-toggle title="Giao diện sáng / tối" aria-label="Giao diện sáng / tối">🌙</button>
       <div class="tab-grp user-grp" data-grp="me">
         <button type="button" class="tab-grp-btn" data-grp-toggle aria-expanded="false" aria-haspopup="true"><span id="me-name"></span> <span id="me-role" class="badge"></span> <span class="caret">▾</span></button>
         <div class="tab-menu right" role="menu">

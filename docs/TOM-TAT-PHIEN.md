@@ -2,6 +2,12 @@
 
 Cập nhật: 22/10/2026. Đọc file này đầu phiên mới; chi tiết kỹ thuật xem code và `git log`.
 
+
+## V02.06.11.26 — Giao diện Sáng / Tối (đồng bộ từ hệ thống `ducptclaude/Quanlytaichinh`, bản V02.06.11.26)
+- Nút ☀️/🌙 trên thanh đầu trang; trang Đăng nhập / Khởi tạo có nút nổi. Lần đầu theo cài đặt máy, bấm thì ghi nhớ trên máy đó.
+- In / PDF luôn giao diện sáng. Excel / PowerPoint không ảnh hưởng. Giao diện sáng giữ nguyên màu gốc.
+- Tệp: `public/style.css` (màu cố định → biến), `public/theme.js` (mới), `views/index.html`, `login.html`, `setup.html`.
+
 ## 1. Hệ thống
 | | Repo / nhánh | Địa chỉ |
 |---|---|---|
