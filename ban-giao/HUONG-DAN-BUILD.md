@@ -31,7 +31,7 @@ Web nội bộ cho **Ban Kiểm soát / Ban Giám đốc** công ty xây dựng 
 ## 3. Chạy thử trên máy
 
 ```bash
-unzip BKS-staging-V30.04.11.26.zip -d bks && cd bks
+unzip BKS-staging-V30.04.11.26.zip && cd bks   # file nén có sẵn thư mục bks/
 npm install
 npm start            # http://localhost:3000  (không có DATABASE_URL = bộ nhớ tạm)
 ```
